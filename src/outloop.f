@@ -8,7 +8,8 @@ C     resdev: residual deviance
 C     ypre: yhat
 
       subroutine outloop(x,y,weights, wt, n,m, penalty, nlambda, lam, 
-     +     alpha,gam,theta,rescale,mu,eta, family,standardize, nulldev, 
+     +     alpha,gam,theta,rescale,mu,eta, offset,
+     #family,standardize, nulldev, 
      +     thresh, maxit, innermaxit, eps, trace, start, startv,b, bz,
      +     resdev,ypre, convout, satu, good, ep, outpll)
 
@@ -21,7 +22,7 @@ C     ypre: yhat
      +     bz(nlambda),xold(n,m), yold(n), start(m+1), resdev(nlambda), 
      +     v(n), ypre(n,nlambda), lamk(m), beta(m), b0,dev,
      +     weights(n),yhat(n),ep, pll(maxit), outpll(maxit, nlambda),
-     +     normx(m),xd(m),avg 
+     +     normx(m),xd(m),avg, offset(n) 
 
       if(family .NE. 1)then
          call preprocess(x, y, n, m, weights, family, standardize,
@@ -63,7 +64,8 @@ C     active set here only applies for family!=1. For family=1, active set
 C     is implemented in lmnetGaus
 C     70: begin if the block 
          if(family .EQ. 1)then
-            call midloop(n,m,x,y, xold,yold,weights,mu, eta, family, 
+            call midloop(n,m,x,y, xold,yold,weights,mu, eta, offset,
+     + family, 
      +           penalty,lamk,alpha,gam,theta,rescale,standardize, eps,
      +           innermaxit, maxit, thresh, nulldev, wt, beta, b0, yhat,
      +           dev, trace, convmid,satu,ep,pll,normx,xd,avg)

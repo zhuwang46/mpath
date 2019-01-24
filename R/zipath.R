@@ -100,7 +100,7 @@ zipath <- function(formula, data, weights, subset, na.action, offset, standardiz
     pen_zipath1 <- function(start){
         m=length(start$count[-1])
         pencount <- 0
-        if(m > 0)
+	if(m > 0)
             pencount <- .Fortran("penGLM",
                                  start=as.double(start$count[-1]),
                                  m=as.integer(length(start$count[-1])),
@@ -459,7 +459,10 @@ zipath <- function(formula, data, weights, subset, na.action, offset, standardiz
         else lambda.count <- rep(0, nlambda)
         if(dim(Znew)[2] > 1 && is.null(lambda.zero)){
     		lambda.zero <- glmreg_fit(Znew, probi, weights=weights, family="binomial", penalty=penalty, penalty.factor=penalty.factor.zero, rescale=rescale, nlambda=nlambda, lambda.min.ratio=lambda.zero.min.ratio, alpha=alpha.zero, maxit=1, eps.bino=eps.bino, ...)$lambda
-	 	# if(penalty %in% c("mnet", "snet") && !rescale) 
+        ### it is possible that the length of lambda.zero < lambda.count (and vice versa), for instance, a saturated model returns ealier
+        if(length(lambda.zero) < nlambda)
+		lambda.zero <- rep_len(lambda.zero, nlambda)
+		# if(penalty %in% c("mnet", "snet") && !rescale) 
        #   {###it seems lambda.zero[1] too small, thus ...
        #    lmax <- 0.632 * sqrt(lambda.zero[1])
        #    lambda.zero <- seq(log(lmax), log(lambda.zero.min.ratio * lmax), length.out=nlambda)
@@ -649,7 +652,7 @@ zipath <- function(formula, data, weights, subset, na.action, offset, standardiz
                 w <- weights
                 ll2init <- sum(w*(probi*eta - log(1+exp(eta)))) - length(Y)*lambda.zero[k]*sum(abs(coef(model_zero)[-1]))
                 cat("loglik1=", loglik1, "ll2init=", ll2init, "\n")
-            }
+	    }
             ll_raw <- loglikfun(c(start$count, start$zero, log(start$theta)))
             ll_new <- ll_raw - pen_zipath1(start)
 ### intercept is not penalized      
