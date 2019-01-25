@@ -286,11 +286,9 @@ glmreg_fit <- function(x, y, weights, start=NULL, etastart=NULL, mustart=NULL, o
 ### Names
     if(is.null(colnames(x))) varnames <- paste("V", 1:ncol(x), sep="")
     else varnames <- colnames(x)
-    #if(lambda > 0.0757) browser()
     beta <- matrix(tmp$b, ncol=nlambda)[,good]
     beta <- as.matrix(beta)
     b0 <- tmp$bz[good]
-    b0 <- b0 - mean(offset)
     ### note: pll was from standardized beta values if standardize=TRUE
     if(trace)
         pll <- matrix(tmp$outpll, ncol=nlambda)
@@ -303,6 +301,7 @@ glmreg_fit <- function(x, y, weights, start=NULL, etastart=NULL, mustart=NULL, o
         b0 <- b0 - crossprod(meanx,beta)
         if (family == "gaussian")
             b0 <- mean(y) + b0    ### changed 4/22/2015
+    b0 <- b0 - mean(offset)
     }
     else normx <- NULL
     resdev <- tmp$resdev[good]
