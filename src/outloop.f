@@ -82,7 +82,8 @@ C     some loop, if no change to the active set, stop
                   activesetold(j)=activeset(j)
  501           continue
 C     set maxit=1, and have a complete cycle through all the variables
-               call midloopGLM(n,m,x,y,xold,yold,weights,mu,eta,family, 
+               call midloopGLM(n,m,x,y,xold,yold,weights,mu,eta,offset,
+     +              family, 
      +              penalty,lamk,alpha,gam,theta,rescale,standardize,
      +              eps,innermaxit,1,thresh,nulldev,wt,beta,b0,yhat, 
      +              dev,trace,convmid,satu,ep,pll,normx,xd,avg,fullset,
@@ -98,10 +99,10 @@ C     jk: number of variables in active set
  601           continue
 C     it is possible, jk=0 if beta=0, like intercept-only model for
 C     large lambda value
-               if(jk .EQ. 0)then
-                  convact=1
-                  exit
-               endif
+C               if(jk .EQ. 0)then
+C                  convact=1
+C                  exit
+C               endif
 C     check if the active set was changed--begin
                if(kk .GT. 1)then
                   do 901 j=1, m
@@ -118,7 +119,8 @@ C     check if the active set was changed--begin
                endif
 C     check if the active set was changed--end
 C     now cycle through only the active set
-               call midloopGLM(n,m,x,y,xold,yold,weights,mu,eta,family, 
+               call midloopGLM(n,m,x,y,xold,yold,weights,mu,eta,offset,
+     +              family, 
      +              penalty,lamk,alpha,gam,theta,rescale,standardize,
      +              eps,innermaxit,maxit,thresh,nulldev,wt,beta,b0,yhat,
      +              dev,trace,convmid,satu,ep,pll,normx,xd,avg,

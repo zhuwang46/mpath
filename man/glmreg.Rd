@@ -80,7 +80,7 @@ Zhu Wang, Shuangge Ma, Michael Zappitelli, Chirag Parikh, Ching-Yun Wang and Pra
 2014 Apr 17. [Epub ahead of print]
 }
 
-\author{Zhu Wang <zwang@connecticutchildrens.org>}
+\author{Zhu Wang <wangz1@uthscsa.edu>}
 \seealso{\code{\link{print}}, \code{\link{predict}}, \code{\link{coef}} and \code{\link{plot}} methods, and the \code{\link{cv.glmreg}} function.}
 \examples{
 #binomial
@@ -93,6 +93,12 @@ fm_pois <- glmreg(art ~ ., data = bioChemists, family = "poisson")
 coef(fm_pois)
 fm_nb1 <- glmreg(art ~ ., data = bioChemists, family = "negbin", theta=1)
 coef(fm_nb1)
+#offset
+x <- matrix(rnorm(100*20),100,20)
+y <- rpois(100, lambda=1)
+exposure <- rep(0.5, length(y))
+fit2 <- glmreg(x,y, lambda=NULL, nlambda=10, lambda.min.ratio=1e-4, offset=log(exposure), family="poisson")
+predict(fit2, newx=x, newoffset=log(exposure))
 \dontrun{
 fm_nb2 <- glmregNB(art ~ ., data = bioChemists)
 coef(fm_nb2)

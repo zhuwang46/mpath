@@ -67,7 +67,7 @@ An object with S3 class \code{"nclreg"} for the various types of models.
   \item{lambda}{The actual sequence of \code{lambda} values used}
 }
 
-\author{Zhu Wang <zwang@connecticutchildrens.org>}
+\author{Zhu Wang <wangz1@uthscsa.edu>}
 
 \seealso{\code{\link{nclreg}}}
 \keyword{models}

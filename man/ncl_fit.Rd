@@ -33,7 +33,7 @@ An object with S3 class \code{"ncl"} for the various types of models.
 \item{h}{ pseudo response values in the MM algorithm }
 }
 
-\author{Zhu Wang <zwang@connecticutchildrens.org>}
+\author{Zhu Wang <wangz1@uthscsa.edu>}
 
 \seealso{\code{\link{ncl}}}
 \keyword{models}

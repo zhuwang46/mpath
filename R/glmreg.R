@@ -111,7 +111,6 @@ glmreg_fit <- function(x, y, weights, start=NULL, etastart=NULL, mustart=NULL, o
     }
     if (is.null(offset))
                     offset <- rep.int(0, nobs)
-
     if(family=="binomial"){
         if(is.factor(y))
             y <- as.integer(y) - 1
@@ -153,22 +152,22 @@ glmreg_fit <- function(x, y, weights, start=NULL, etastart=NULL, mustart=NULL, o
     if(is.null(weights)) weights <- rep(1, n)
     wt <- weights/sum(weights)
     if(is.null(mustart) || is.null(etastart)){
-        tmp <- init(wt, y, family=family)
-        #mu <- tmp$mu
+        tmp <- init(wt, y, offset, family=family)
+        mu <- tmp$mu
         eta <- rep(tmp$eta,n)
-	eta <- eta + offset
-	mu <- eta
+	#eta <- eta + offset
+	#mu <- eta
     }
     else{
         mu <- mustart
         eta <- etastart
     }
     if(is.null(lambda)){
-        tmp <- init(wt, y, family=family)
-        #mu <- tmp$mu
+        tmp <- init(wt, y, offset, family=family)
+        mu <- tmp$mu
         eta <- rep(tmp$eta,n)
-	eta <- eta + offset
-	mu <- eta
+	#eta <- eta + offset
+	#mu <- eta
         w <- .Fortran("glmlink",
                       n=as.integer(1),
                       mu=as.double(mu),
@@ -299,9 +298,10 @@ glmreg_fit <- function(x, y, weights, start=NULL, etastart=NULL, mustart=NULL, o
                                         #if (family != "gaussian" && standardize){ 
         beta <- as.matrix(beta/as.vector(normx))
         b0 <- b0 - crossprod(meanx,beta)
-        if (family == "gaussian")
+        if (family == "gaussian"){
             b0 <- mean(y) + b0    ### changed 4/22/2015
-    b0 <- b0 - mean(offset)
+            b0 <- b0 - mean(offset)
+	}
     }
     else normx <- NULL
     resdev <- tmp$resdev[good]
@@ -374,8 +374,8 @@ g <- function(mu, family, eps.bino=1e-5){
 }
 
 ### eta is the estimated beta_0 in the intercept-only model
-init <- function(wt, y, family){
-    mu <- wt %*% y
+init <- function(wt, y, offset, family){
+    mu <- as.vector(wt %*% y) + offset
     switch(family,
            "gaussian"={
                eta <- mu
