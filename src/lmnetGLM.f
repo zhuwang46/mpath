@@ -128,9 +128,6 @@ C     70: cycle through in the active set (end with endif statement)
  40   continue
       call checkConvergence(1, b0, b0_old, eps, thresh, converged,
      +     1, 1)      
-      call dblepr("  b0 value", -1, b0, 1)
-      call dblepr("  b0_old value", -1, b0_old, 1)
-      call intpr("   converged", -1, converged, 1)
       if(converged.EQ.1) then
         call checkConvergence(m, beta, beta_old, eps, thresh, converged,
      +     activeset, jk)
