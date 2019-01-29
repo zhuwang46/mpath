@@ -25,6 +25,7 @@ x.keep=FALSE, y.keep=TRUE, ...)
   \item{data}{argument controlling formula processing
     via \code{\link[stats]{model.frame}}.}
   \item{weights}{optional numeric vector of weights. If \code{standardize=TRUE}, weights are renormalized to weights/sum(weights). If \code{standardize=FALSE}, weights are kept as original input}
+  \item{offset}{this can be used to specify an a priori known component to be included in the linear predictor during fitting. This should be NULL or a numeric vector of length equal to the number of cases. Currently only one offset term can be included in the formula.}
   \item{x}{input matrix, of dimension nobs x nvars; each row is an
   observation vector}
   \item{y}{response variable. Quantitative for \code{family="gaussian"}.
@@ -32,7 +33,6 @@ x.keep=FALSE, y.keep=TRUE, ...)
   \code{family="binomial"} should be either a factor with two levels or
   a vector of proportions.}
   \item{x.keep, y.keep}{logical values: keep response variables or keep response variable?} 
-  \item{offset}{Not implemented yet}
   \item{contrasts}{the contrasts corresponding to \code{levels} from the
     respective models}
   \item{...}{Other arguments passing to \code{glmreg_fit}}

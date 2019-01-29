@@ -155,8 +155,6 @@ glmreg_fit <- function(x, y, weights, start=NULL, etastart=NULL, mustart=NULL, o
         tmp <- init(wt, y, offset, family=family)
         mu <- tmp$mu
         eta <- rep(tmp$eta,n)
-	#eta <- eta + offset
-	#mu <- eta
     }
     else{
         mu <- mustart
@@ -166,8 +164,6 @@ glmreg_fit <- function(x, y, weights, start=NULL, etastart=NULL, mustart=NULL, o
         tmp <- init(wt, y, offset, family=family)
         mu <- tmp$mu
         eta <- rep(tmp$eta,n)
-	#eta <- eta + offset
-	#mu <- eta
         w <- .Fortran("glmlink",
                       n=as.integer(1),
                       mu=as.double(mu),

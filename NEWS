@@ -134,4 +134,5 @@
                
                CHANGES in `mpath' VERSION 0.3-7 (01-26-2019)
   o  changes were made to make offset in glmreg work. This includes changes in outloop.f, midloop.f, midloopGLM.f, lmnetGLM.
-  o  Changes were made in midloopGLM.f so that iterations run and check for convergency for b0 as well as beta  o  Changes were made in zipath to make offset work 
+  o  Changes were made in midloopGLM.f so that iterations run and check for convergency for b0 as well as beta  o  Changes were made in zipath to make offset work
+  o  offset is now working in glmregNB, zipath, cv.glmreg, cv.glmregNB and cv.zipath

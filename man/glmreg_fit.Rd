@@ -27,7 +27,7 @@ convex=FALSE, x.keep=FALSE, y.keep=TRUE, trace=FALSE)
   \item{start}{starting values for the parameters in the linear predictor.}
   \item{etastart}{starting values for the linear predictor.}
   \item{mustart}{starting values for the vector of means.}
-  \item{offset}{this can be used to specify an a priori known component to be included in the linear predictor during fitting. This should be NULL or a numeric vector of length equal to the number of cases. In this version, only one offset term can be included in the formula.}
+  \item{offset}{this can be used to specify an a priori known component to be included in the linear predictor during fitting. This should be NULL or a numeric vector of length equal to the number of cases. Currently only one offset term can be included in the formula.}
   \item{nlambda}{The number of \code{lambda} values - default is 100. The sequence may be truncated before \code{nlambda} is reached if a close to saturated model is fitted. See also \code{satu}.}
   \item{lambda}{ by default, the algorithm provides a sequence of regularization values, or a user supplied \code{lambda} sequence }
   \item{lambda.min.ratio}{Smallest value for \code{lambda}, as a fraction of

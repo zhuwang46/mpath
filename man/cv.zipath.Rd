@@ -5,16 +5,16 @@
 \description{Does k-fold cross-validation for zipath, produces a plot,
   and returns cross-validated log-likelihood values for \code{lambda}}
 \usage{
-cv.zipath(formula, data, weights, nlambda=100, lambda.count=NULL, lambda.zero=NULL,
-nfolds=10, foldid, plot.it=TRUE, se=TRUE, n.cores=2, ...)
+cv.zipath(formula, data, weights, nlambda=100, lambda.count=NULL, 
+lambda.zero=NULL, nfolds=10, foldid, plot.it=TRUE, se=TRUE, n.cores=2, ...)
 \method{coef}{cv.zipath}(object, which=object$lambda.which, model = c("full", "count", "zero"), \dots)
 }
 \arguments{
-  \item{formula}{symbolic description of the model}
+  \item{formula}{symbolic description of the model with an optional numeric vector \code{offset} with an a priori known component to be included in the linear predictor of the count model or zero model. Offset must be a variable in \code{data} if used, while this is optional in \code{zipath}. See an example below.}
   \item{data}{arguments controlling formula processing
     via \code{\link[stats]{model.frame}}.}
   \item{weights}{Observation weights; defaults to 1 per observation}
-\item{nlambda}{number of \code{lambda} value, default value is 10.}
+  \item{nlambda}{number of \code{lambda} value, default value is 10.}
   \item{lambda.count}{Optional user-supplied lambda.count sequence; default is
     \code{NULL}}
   \item{lambda.zero}{Optional user-supplied lambda.zero sequence; default is
@@ -80,6 +80,8 @@ fm_zip_predict <- predict(object=fm_zip$fit, which=fm_zip$lambda.which, type="re
 model=c("full"))
 fm_znb <- cv.zipath(art ~ . | ., data = bioChemists, family = "negbin", nlambda=10)
 coef(fm_znb)
+fm_zinb2 <- cv.zipath(art ~ . +offset(log(phd))| ., data = bioChemists, family = "poisson", nlambda=10)
+coef(fm_zinb2)
 }
 }
 \keyword{models}

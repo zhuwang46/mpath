@@ -318,14 +318,11 @@ zipath <- function(formula, data, weights, subset, na.action, offset, standardiz
     if(length(weights) == 1) weights <- rep.int(weights, n)
     weights <- as.vector(weights)
     names(weights) <- rownames(mf)
-### Todo: offset  
-browser()
     offsetx <- model_offset_2(mf, terms = mtX, offset = TRUE)
     ##  offsetx <- NULL
     if(is.null(offsetx)) offsetx <- 0
     if(length(offsetx) == 1) offsetx <- rep.int(offsetx, n)
     offsetx <- as.vector(offsetx)
-### Todo: offset
     offsetz <- model_offset_2(mf, terms = mtZ, offset = FALSE)
     if(is.null(offsetz)) offsetz <- 0
     if(length(offsetz) == 1) offsetz <- rep.int(offsetz, n)
