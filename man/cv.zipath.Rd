@@ -1,5 +1,6 @@
 \name{cv.zipath}
 \alias{cv.zipath}
+\alias{predict.cv.zipath}
 \alias{coef.cv.zipath}
 \title{Cross-validation for zipath}
 \description{Does k-fold cross-validation for zipath, produces a plot,
@@ -7,6 +8,7 @@
 \usage{
 cv.zipath(formula, data, weights, nlambda=100, lambda.count=NULL, 
 lambda.zero=NULL, nfolds=10, foldid, plot.it=TRUE, se=TRUE, n.cores=2, ...)
+\method{predict}{cv.zipath}(object, newdata, \dots)
 \method{coef}{cv.zipath}(object, which=object$lambda.which, model = c("full", "count", "zero"), \dots)
 }
 \arguments{
@@ -29,6 +31,8 @@ lambda.zero=NULL, nfolds=10, foldid, plot.it=TRUE, se=TRUE, n.cores=2, ...)
   will attempt to send different CV folds off to different cores.}
   \item{\dots}{Other arguments that can be passed to \code{zipath}.}
  \item{object}{object of class \code{cv.zipath}.}
+ \item{newdata}{optionally, a data frame in which to look for variables with
+    which to predict. If omitted, the original observations are used.}
  \item{which}{Indices of the pair of penalty parameters \code{lambda.count} and \code{lambda.zero} at which
     estimates are extracted.  By default, the one which generates the optimal cross-validation value.}
  \item{model}{character specifying for which component of the model the
@@ -75,12 +79,13 @@ Zhu Wang, Shuangge Ma and Ching-Yun Wang (2015) \emph{Variable selection for zer
 data("bioChemists", package = "pscl")
 fm_zip <- cv.zipath(art ~ . | ., data = bioChemists, family = "poisson", nlambda=10)
 ### prediction from the best model
+predict(fm_zip, newdata=bioChemists)
+fm_zip_predict <- predict(object=fm_zip$fit, which=fm_zip$lambda.which, type="response", model=c("full"))
 coef(fm_zip)
-fm_zip_predict <- predict(object=fm_zip$fit, which=fm_zip$lambda.which, type="response", 
-model=c("full"))
 fm_znb <- cv.zipath(art ~ . | ., data = bioChemists, family = "negbin", nlambda=10)
 coef(fm_znb)
-fm_zinb2 <- cv.zipath(art ~ . +offset(log(phd))| ., data = bioChemists, family = "poisson", nlambda=10)
+fm_zinb2 <- cv.zipath(art ~ . +offset(log(phd))| ., data = bioChemists, 
+		      family = "poisson", nlambda=10)
 coef(fm_zinb2)
 }
 }

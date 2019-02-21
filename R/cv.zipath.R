@@ -65,6 +65,8 @@ if(se)
 invisible()
 }
 
+predict.cv.zipath <- function(object, newdata, ...)
+predict(object$fit, newdata, which=object$lambda.which, ...)
 
 coef.cv.zipath <- function(object, which=object$lambda.which, model = c("full", "count", "zero"), ...) {
     model <- match.arg(model)

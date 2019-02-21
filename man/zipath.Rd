@@ -173,7 +173,8 @@ fm_zinb4 <- zerofinfl(art ~ . | ., data = bioChemists, dist = "negbin")
 summary(fm_zinb4)
 ### offset
 exposure <- rep(0.5, dim(bioChemists)[1])
-fm_zinb <- zipath(art ~ . +offset(log(exposure))| ., data = bioChemists, family = "poisson", nlambda=10)
+fm_zinb <- zipath(art ~ . +offset(log(exposure))| ., data = bioChemists, 
+		  family = "poisson", nlambda=10)
 print(coef(fm_zinb))
 print(predict(fm_zinb))
 

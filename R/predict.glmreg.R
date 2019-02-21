@@ -28,6 +28,8 @@ if(!is.null(object$terms)){
 					"negbin"=4)
   n <- dim(newx)[1]
   m <- dim(newx)[2]
+  if(is.list(newx))
+	  newx <- as.matrix(as.data.frame(lapply(newx, as.numeric)))
   res <- .Fortran("pred",
 				  n=as.integer(n),
 				  m=as.integer(m),

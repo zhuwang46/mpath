@@ -118,6 +118,10 @@ cv.glmreg_fit <- function(x, y, weights, offset, lambda=NULL, balance=TRUE,
         invisible()
     }
 
+predict.cv.glmreg=function(object, newx, ...){
+      	predict(object$fit,newx,which=object$lambda.which,...)
+}
+
 coef.cv.glmreg=function(object,which=object$lambda.which,...){
     coef(object$fit,which=which,...)
 }
