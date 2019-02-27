@@ -80,7 +80,8 @@ data("bioChemists", package = "pscl")
 fm_zip <- cv.zipath(art ~ . | ., data = bioChemists, family = "poisson", nlambda=10)
 ### prediction from the best model
 predict(fm_zip, newdata=bioChemists)
-fm_zip_predict <- predict(object=fm_zip$fit, which=fm_zip$lambda.which, type="response", model=c("full"))
+fm_zip_predict <- predict(object=fm_zip$fit, which=fm_zip$lambda.which, 
+			  type="response", model=c("full"))
 coef(fm_zip)
 fm_znb <- cv.zipath(art ~ . | ., data = bioChemists, family = "negbin", nlambda=10)
 coef(fm_znb)

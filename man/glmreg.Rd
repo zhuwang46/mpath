@@ -97,7 +97,8 @@ coef(fm_nb1)
 x <- matrix(rnorm(100*20),100,20)
 y <- rpois(100, lambda=1)
 exposure <- rep(0.5, length(y))
-fit2 <- glmreg(x,y, lambda=NULL, nlambda=10, lambda.min.ratio=1e-4, offset=log(exposure), family="poisson")
+fit2 <- glmreg(x,y, lambda=NULL, nlambda=10, lambda.min.ratio=1e-4, 
+	       offset=log(exposure), family="poisson")
 predict(fit2, newx=x, newoffset=log(exposure))
 \dontrun{
 fm_nb2 <- glmregNB(art ~ ., data = bioChemists)
