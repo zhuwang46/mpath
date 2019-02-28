@@ -1,4 +1,4 @@
-C     outer loop: decrement lambda
+C     outer loop: sequence of lambda
 C     input:
 C     mu: a vector
 C     output
@@ -53,23 +53,38 @@ C     keep a copy of x and y in case x and y will be changed in subroutine lmnet
  1000 if(k .LE. nlambda .AND. satu .EQ. 0)then
          if(trace.EQ.1)then
             call dblepr("", -1, 1,0)
-            call dblepr("Outer loop: Decrement lambda", -1, 1,0)
+            call dblepr("Outer loop: sequence of lambda", -1, 1,0)
             call intpr("  lambda iteration", -1, k, 1)
             call dblepr("  lambda value", -1, lam(1,k), 1)
          endif
          do 10 j=1,m
             lamk(j) = lam(j,k)
  10      continue
-C     active set here only applies for family!=1. For family=1, active set
-C     is implemented in lmnetGaus
-C     70: begin if the block 
+C     Active set: begin with the 1st element of the sequence of lambda
+C     values, i.e., k=1 in this subroutine. Now, the active set
+C     contains all variables, cycle through once (iteration=1) all
+C     coefficients with coordinate descent algorithm, then there is a
+C     new active set. Compare with the previous (old) active set. If no
+C     change, then we are done with this 1st lambda. Otherwise, we cycle
+C     through all coefficients in the active set until convergency (with 
+C     maxit iterations) with coordinate descent algorithm, and we obtain
+C     a new active set, that is compared with the previous one. The
+C     process is repeated until convergency or the number of iteration,
+C     convact, is met. Next, move to the 2nd element of the sequence of
+C     lambda values. We repeat the above process with the current active
+C     set.   
+C   
+C     70: if block --begin
          if(family .EQ. 1)then
+C     For family=1, active set is implemented in midloop -> lmnetGaus 
+C                                                    -> loop_gaussian
             call midloop(n,m,x,y, xold,yold,weights,mu, eta, offset,
      + family, 
      +           penalty,lamk,alpha,gam,theta,rescale,standardize, eps,
      +           innermaxit, maxit, thresh, nulldev, wt, beta, b0, yhat,
      +           dev, trace, convmid,satu,ep,pll,normx,xd,avg)
          else 
+C     active set applies for family!=1. 
             do 401 j=1, m
                activeset(j)=j
                fullset(j)=j
@@ -128,7 +143,7 @@ C     now cycle through only the active set
                kk=kk+1
  2000       continue
          endif
-C     70: end if the block
+C     70: if block --end
          if(satu .EQ. 1)then
             good = k - 1
          endif

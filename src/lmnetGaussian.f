@@ -126,11 +126,15 @@ C     fullset(j)=1
 C     some loop, if no change to the active set, stop
       k = 1
       do 2000 while (k .LT. 100 .AND. convact .EQ. 0)
+         call intpr("  iteration k=", -1, k, 1)
          do 50 j=1, m
             activesetold(j)=activeset(j)
  50      continue
 C     set maxit=1, and have a complete cycle through all the variables
-         call loop_gaussian(x,y, n,m,penalty,thresh,eps,1,standardize,
+           call intpr("  iteration maxit=", -1, maxit, 1)
+
+            call loop_gaussian(x,y,n,m,penalty,thresh,eps,maxit,
+     +        standardize,
      +        beta,b0,resid,xd,lambda,alpha,gam,weights,avg,meanx, 
      +        jj,rescale, converged, fullset, m)
 C     determine the active set with only non-zero coefficients 

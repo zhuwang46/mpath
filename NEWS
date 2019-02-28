@@ -114,7 +114,7 @@
                
                CHANGES in `mpath' VERSION 0.3-3 (08-17-2017)
   
-  o  cycle through active set 
+  o  cycle through active set with modified codes in Fortran files in src directory 
                
                CHANGES in `mpath' VERSION 0.3-4 (08-22-2017)
   

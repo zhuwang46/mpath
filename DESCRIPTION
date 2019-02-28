@@ -1,6 +1,6 @@
 Package: mpath
 Title: Regularized Linear Models
-Version: 0.3-7
+Version: 0.3-8
 Date: 2019-02-27
 Author: Zhu Wang, with contributions from Achim Zeileis, Simon Jackman, Brian Ripley, Trevor Hastie, Rob Tibshirani, Balasubramanian Narasimhan, Gil Chu and Patrick Breheny
 Maintainer: Zhu Wang <wangz1@uthscsa.edu>

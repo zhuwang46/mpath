@@ -40,9 +40,10 @@ C     dev
      +     gam, eps, beta(m), betaold(m), b0, b0old, yhat(n),avg, ep, 
      +     pll(maxit), offset(n)
 
-      innermaxit = maxit
+C      innermaxit = maxit
       maxit = 1
-      
+C     innermaxit serves as maxit here
+
 C      do 5 jj=1, maxit
 C         pll(jj)=0
 C 5    enddo
