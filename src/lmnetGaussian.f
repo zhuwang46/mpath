@@ -116,11 +116,14 @@ C     compute weighted means sum(weights_i*y_i)
  30   continue
 C     compute weighted column averages meanx = x^(transpose) * wtnew
       call DGEMV('T',n, m, 1.0D0, x, n, wtnew, 1, 0.0D0, meanx, 1)
+C     jk: number of variables in active set
+         jk = 0
       do 40 j=1, m
 C     activeset(j)=1
 C     fullset(j)=1
          activeset(j)=j
          fullset(j)=j
+               jk=jk+1
  40   continue
       convact=0
 C     some loop, if no change to the active set, stop
@@ -130,14 +133,18 @@ C     some loop, if no change to the active set, stop
          do 50 j=1, m
             activesetold(j)=activeset(j)
  50      continue
-C     set maxit=1, and have a complete cycle through all the variables
            call intpr("  iteration maxit=", -1, maxit, 1)
 
             call loop_gaussian(x,y,n,m,penalty,thresh,eps,maxit,
      +        standardize,
      +        beta,b0,resid,xd,lambda,alpha,gam,weights,avg,meanx, 
+     +        jj,rescale, converged, activeset, jk)
+C     set maxit=1, and have a complete cycle through all the variables
+            call loop_gaussian(x,y,n,m,penalty,thresh,eps,1,
+     +        standardize,
+     +        beta,b0,resid,xd,lambda,alpha,gam,weights,avg,meanx, 
      +        jj,rescale, converged, fullset, m)
-C     determine the active set with only non-zero coefficients 
+C     update the active set with only non-zero coefficients 
 C     jk: number of variables in active set
          jk = 0
 C     it is possible, jk=0 if beta=0, like intercept-only model
@@ -173,9 +180,9 @@ C     check if the active set was changed--begin
          endif
 C     check if the active set was changed--end
 C     now cycle through only the active set
-         call loop_gaussian(x,y, n,m,penalty,thresh,eps,maxit,
-     +        standardize,beta,b0,resid,xd,lambda,alpha,gam,weights,
-     +        avg,meanx, jj,rescale, converged, activeset, jk)
+C         call loop_gaussian(x,y, n,m,penalty,thresh,eps,maxit,
+C     +        standardize,beta,b0,resid,xd,lambda,alpha,gam,weights,
+C     +        avg,meanx, jj,rescale, converged, activeset, jk)
          k = k + 1
  2000 continue
 C     used to match outside loop in subroutine midloop
