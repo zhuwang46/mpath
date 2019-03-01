@@ -50,6 +50,11 @@ C     keep a copy of x and y in case x and y will be changed in subroutine lmnet
       k = 1
       satu = 0
 
+      do 401 j=1, m
+         activeset(j)=j
+         fullset(j)=j
+ 401     continue
+      jk = m
  1000 if(k .LE. nlambda .AND. satu .EQ. 0)then
          if(trace.EQ.1)then
             call dblepr("", -1, 1,0)
@@ -60,35 +65,37 @@ C     keep a copy of x and y in case x and y will be changed in subroutine lmnet
          do 10 j=1,m
             lamk(j) = lam(j,k)
  10      continue
+C       if jk=0, it means an intercept-only model, thus, we update
+C       actieset
+         if(jk .EQ. 0)then
+            do 18 j=1, m
+            activeset(j)=j
+ 18        continue
+            jk = m
+         endif
 C     Active set: begin with the 1st element of the sequence of lambda
 C     values, i.e., k=1 in this subroutine. Now, the active set
-C     contains all variables, cycle through once (iteration=1) all
-C     coefficients with coordinate descent algorithm, then there is a
-C     new active set. Compare with the previous (old) active set. If no
-C     change, then we are done with this 1st lambda. Otherwise, we cycle
-C     through all coefficients in the active set until convergency (with 
-C     maxit iterations) with coordinate descent algorithm, and we obtain
-C     a new active set, that is compared with the previous one. The
-C     process is repeated until convergency or the number of iteration,
-C     convact, is met. Next, move to the 2nd element of the sequence of
-C     lambda values. We repeat the above process with the current active
-C     set.   
+C     contains all variables, cycle through all coefficents in the
+C     active set with coordinate descent algorithm until convergency,
+C     then cycle through the full set with all variables, but only ONCE.
+C     This generates a new active set. Compare with the previous (old) 
+C     active set. If no changes, then we are done with this 1st lambda. 
+C     Otherwise, we repeat the above process with the updated active
+C     set remains the same, or the number of iteration (convact) is met. 
+C     Next, move to the 2nd element of the sequence of lambda values. We 
+C     repeat the above process with the current active set.   
 C   
 C     70: if block --begin
          if(family .EQ. 1)then
 C     For family=1, active set is implemented in midloop -> lmnetGaus 
 C                                                    -> loop_gaussian
             call midloop(n,m,x,y, xold,yold,weights,mu, eta, offset,
-     + family, 
-     +           penalty,lamk,alpha,gam,theta,rescale,standardize, eps,
-     +           innermaxit, maxit, thresh, nulldev, wt, beta, b0, yhat,
-     +           dev, trace, convmid,satu,ep,pll,normx,xd,avg)
+     +           family, penalty,lamk,alpha,gam,theta,rescale,
+     +           standardize, eps,innermaxit, maxit, thresh, nulldev, 
+     +           wt, beta, b0, yhat, dev, trace, convmid,satu,ep,
+     +           pll,normx,xd,avg, activeset, jk, fullset)
          else 
 C     active set applies for family!=1. 
-            do 401 j=1, m
-               activeset(j)=j
-               fullset(j)=j
- 401        continue
             convact=0
 C     some loop, if no change to the active set, stop
             kk = 1
