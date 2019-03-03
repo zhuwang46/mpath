@@ -120,9 +120,9 @@ C     compute weighted column averages meanx = x^(transpose) * wtnew
 C     some loop, if no change to the active set, stop
       k = 1
       do 2000 while (k .LT. 100 .AND. convact .EQ. 0)
-         do 50 j=1, m
-            activesetold(j)=activeset(j)
- 50      continue
+C         do 50 j=1, m
+C            activesetold(j)=activeset(j)
+C 50      continue
 
 C     update the active set with only non-zero coefficients 
             call loop_gaussian(x,y,n,m,penalty,thresh,eps,maxit,
