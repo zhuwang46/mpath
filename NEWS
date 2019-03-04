@@ -12,7 +12,7 @@
                 
                 CHANGES in `gzipath' VERSION 0.1_14   (2014-5-8)
 
-  o for rescale=TRUE and penalty="mnet" or "snet" in zipath, data driven lambda.zero[1] (i.e., the maximum value of lambda in zero component) is too small, now changed to 0.5*sqrt(lambda.zero[1]). This may    be modified if the maximum value of lambda in glmreg was changed in the similar situations. 
+  o for rescale=TRUE and penalty="mnet" or "snet" in zipath, data driven lambda.zero[1] (i.e., the maximum value of lambda in zero component) is too small, now changed to 0.5*sqrt(lambda.zero[1]). This may be modified if the maximum value of lambda in glmreg was changed in the similar situations. 
 
                 CHANGES in `gzipath' VERSION 0.1_14   (2014-6-9)
 
@@ -137,3 +137,7 @@
   o  Changes were made in midloopGLM.f so that iterations run and check for convergency for b0 as well as beta  
   o  Changes were made in zipath to make offset work
   o  offset is now working in glmregNB, zipath, cv.glmreg, cv.glmregNB and cv.zipath
+               
+               CHANGES in `mpath' VERSION 0.3-8 (03-03-2019)
+  o  changes were made on how active set works. Now, we cycle through the active set until convergence, then cycle through all the variables ONCE, this is an reverse to the previous procedure. This includes changes in outloop.f, midloop.f, midloopGLM.f, lmnetGLM, add src/find_activeset.f to simplify the codes.
+
