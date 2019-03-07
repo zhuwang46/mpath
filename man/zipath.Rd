@@ -176,6 +176,7 @@ exposure <- rep(0.5, dim(bioChemists)[1])
 fm_zinb <- zipath(art ~ . +offset(log(exposure))| ., data = bioChemists, 
 		  family = "poisson", nlambda=10)
 print(coef(fm_zinb))
+### offset can't be specified in predict function as it has been contained
 print(predict(fm_zinb))
 
 }
