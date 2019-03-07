@@ -324,6 +324,7 @@ nclreg_fit <- function(x,y, weights, offset=NULL, cost=0.5, rfamily=c("clossR", 
 	penalty.factor.act <- penalty.factor
         los <- pll <- matrix(NA, nrow=iter, ncol=nlambda)
         while(i <= nlambda){
+		cat("i=", i, "\n")
             if(trace) message("loop in lambda:", i, ", lambda=", lambda[i], "\n")
             if(trace) {
                 cat("Quadratic majorization iterations ...\n")
@@ -331,12 +332,14 @@ nclreg_fit <- function(x,y, weights, offset=NULL, cost=0.5, rfamily=c("clossR", 
             k <- 1
             d1 <- 10
             while(d1 > del && k <= iter){
+		cat("k=", k, "\n")
                 fk_old <- RET$fitted.values
                 h <- compute.h(rfamily, y, fk_old, s, B)
                 if(any(is.nan(h))){ # exit loop 
                     stopit <- TRUE
                     break
                 }
+		cat("h=", h, "\n")
                RET <- .Fortran("glmreg_fit_fortran",
 	                        x=as.double(x), 
 	                        #x=as.double(x.act), 
@@ -368,6 +371,11 @@ nclreg_fit <- function(x,y, weights, offset=NULL, cost=0.5, rfamily=c("clossR", 
 				b0=as.double(0),
 				yhat=as.double(rep(0, n)),
 				PACKAGE="mpath")
+	       cat("beta_1=", RET$beta, "\n")
+	       cat("yhat=", RET$yhat[1:5], "\n")
+	       cat("etastart", RET$etastart[1:5], "\n")
+	       cat("mustart", RET$mustart[1:5], "\n")
+	       cat("start", RET$start, "\n")
      # thresh, epsbino, theta are not used in the above Fortran call with family="gaussian"
 #		RET <- glmreg_fit(x=x.act*sqrt(B), y=h*sqrt(B), weights=weights, offset=offset, lambda=lambda[i],alpha=alpha,gamma=gamma, rescale=FALSE, standardize=FALSE, penalty.factor = penalty.factor.act, maxit=maxit, eps=eps, family="gaussian", penalty=penalty, start=start.act)
 #		RET$b0 <- RET$b0/sqrt(B)  ### this line should be removed after calling glmreg_fit_fortran
@@ -419,6 +427,51 @@ nclreg_fit <- function(x,y, weights, offset=NULL, cost=0.5, rfamily=c("clossR", 
         }
         list(beta=beta, b0=b0, RET=RET, risk=los, pll=pll)
     }
+#typeBB was converted from typeB
+    rfamilytype <- switch(rfamily,       
+                    "clossR"=1,
+                    "closs"=2,
+                    "gloss"=3,
+                    "qloss"=4
+                    )
+    typeBB <- function(beta, b0){
+	    RET <- .Fortran("nclreg_fortran",
+			    x=as.double(x), 
+			    y=as.double(y),
+			    weights=as.double(weights),
+			    n=as.integer(n),
+			    m=as.integer(m),
+			    start=as.double(start), 
+			    etastart=as.double(etastart),
+			    mustart=as.double(mustart),
+			    offset=as.double(offset),
+			    nlambda=as.integer(nlambda), 
+			    lambda=as.double(lambda), 
+			    alpha=as.double(alpha),
+		            gam=as.double(gamma), 
+			    standardize=as.integer(0), 
+			    penaltyfactor=as.double(penalty.factor),
+			    maxit=as.integer(maxit), 
+			    eps=as.double(eps), 
+			    family=as.integer(1), 
+			    penalty=as.integer(pentype), 
+			    trace=as.integer(trace), 
+			    beta=as.double(beta),
+		            b0=as.double(b0), 
+			    yhat=as.double(RET$fitted.values), 
+			    iter=as.integer(iter),
+			    del=as.double(del), 
+			    rfamily=as.integer(rfamilytype),
+			    B=as.double(B), 
+			    s=as.double(s),
+			    rescale=as.integer(0),
+			    thresh=as.double(0),
+			    epsbino=as.double(0),
+			    theta=as.double(0),
+			    PACKAGE="mpath")
+        list(beta=matrix(RET$beta, ncol=nlambda), b0=RET$b0, RET=RET, risk=NULL, pll=NULL)
+    }
+#    beta=matrix(RET$beta, ncol=nlambda); b0=RET$b0; RET=RET; risk=NULL; pll=NULL;
 ### update for one element of lambda depending on direction="fwd" (last element of lambda) or "bwd" (then first element of lambda) in each MM iteration, and iterate until convergency of prediction. Then fit a solution path based on the sequence of lambda.
     typeC <- function(beta, b0){
         if(trace) {
@@ -464,7 +517,8 @@ nclreg_fit <- function(x,y, weights, offset=NULL, cost=0.5, rfamily=c("clossR", 
         b0 <- RET$b0
         list(beta=beta, b0=b0, RET=RET, risk=los, pll=pll)
     }
-    if(type.path=="active") tmp <- typeB(beta, b0)
+    #if(type.path=="active") tmp <- typeB(beta, b0)
+    if(type.path=="active") tmp <- typeBB(beta, b0)
     else if(type.path=="naive") tmp <- typeA(beta, b0)
     else if(type.path=="onestep") tmp <- typeC(beta, b0)
     beta <- tmp$beta
