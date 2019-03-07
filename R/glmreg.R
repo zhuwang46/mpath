@@ -108,8 +108,11 @@ glmreg_fit <- function(x, y, weights, start=NULL, etastart=NULL, mustart=NULL, o
     if( !is.null(weights) && any(weights < 0) ){
         stop("negative weights not allowed")
     }
-    if (is.null(offset))
-                    offset <- rep.int(0, nobs)
+    if (is.null(offset)){
+	    is.offset <- FALSE
+            offset <- rep.int(0, nobs)
+    }
+    else is.offset <- TRUE
     if(family=="binomial"){
         if(is.factor(y))
             y <- as.integer(y) - 1
@@ -308,7 +311,7 @@ glmreg_fit <- function(x, y, weights, start=NULL, etastart=NULL, mustart=NULL, o
         rownames(beta) <- colnames(x)
         colnames(beta) <- round(lambda,digits=4)[good]
     }
-    RET <- list(family=family,standardize=standardize, satu=tmp$satu, lambda=lambda[good], nlambda=length(lambda[good]), beta=beta, b0=matrix(b0, ncol=nlambda), meanx=meanx, normx=normx, theta=theta[good], nulldev=nulldev, resdev=resdev, pll = pll, fitted.values=yhat, converged=tmp$convout[good], convex.min=convex.min, penalty.factor=penalty.factor, gamma=gamma, alpha=alpha)
+    RET <- list(family=family,standardize=standardize, satu=tmp$satu, lambda=lambda[good], nlambda=length(lambda[good]), beta=beta, b0=matrix(b0, ncol=nlambda), meanx=meanx, normx=normx, theta=theta[good], nulldev=nulldev, resdev=resdev, pll = pll, fitted.values=yhat, converged=tmp$convout[good], convex.min=convex.min, penalty.factor=penalty.factor, gamma=gamma, alpha=alpha, is.offset=is.offset)
     if(x.keep) RET$x <- x
     if(y.keep) RET$y <- y
     class(RET) <- "glmreg"
