@@ -21,11 +21,11 @@ extern void F77_NAME(compute_h)(void *, void *, void *, void *, void *, void *, 
 extern void F77_NAME(deveval)(void *, void *, void *, void *, void *, void *, void *);
 extern void F77_NAME(find_activeset)(void *, void *, void *, void *, void *);
 extern void F77_NAME(glmlink)(void *, void *, void *, void *, void *, void *);
-extern void F77_NAME(glmreg_fit_fortran)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
+extern void F77_NAME(glmreg_fit_fortran)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
 extern void F77_NAME(gradient)(void *, void *, void *, void *, void *);
 extern void F77_NAME(linkinv)(void *, void *, void *, void *);
 extern void F77_NAME(loglikfor)(void *, void *, void *, void *, void *, void *, void *);
-extern void F77_NAME(ncvreg_fortran)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
+extern void F77_NAME(nclreg_fortran)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
 extern void F77_NAME(outloop)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
 extern void F77_NAME(outprod)(void *, void *, void *, void *, void *);
 extern void F77_NAME(penglm)(void *, void *, void *, void *, void *, void *, void *);
@@ -42,7 +42,7 @@ static const R_FortranMethodDef FortranEntries[] = {
 	    {"gradient",                   (DL_FUNC) &F77_NAME(gradient),            5},
 	    {"linkinv",                    (DL_FUNC) &F77_NAME(linkinv),             4},
 	    {"loglikfor",                  (DL_FUNC) &F77_NAME(loglikfor),           7},
-	    {"ncvreg_fortran",             (DL_FUNC) &F77_NAME(linkinv),            26},
+	    {"nclreg_fortran",             (DL_FUNC) &F77_NAME(nclreg_fortran),     32},
 	    {"outloop",                    (DL_FUNC) &F77_NAME(outloop),            35},
 	    {"outprod",                    (DL_FUNC) &F77_NAME(outprod),             5},
 	    {"penglm",                     (DL_FUNC) &F77_NAME(penglm),              7},
