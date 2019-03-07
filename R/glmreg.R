@@ -102,7 +102,6 @@ glmreg_fit <- function(x, y, weights, start=NULL, etastart=NULL, mustart=NULL, o
     nvars <- m <- nm[2]
     if(missing(weights)) weights=rep(1,nobs)
     weights <- as.vector(weights)
-    penalty <- match.arg(penalty)
     if(!is.null(weights) && !is.numeric(weights))
         stop("'weights' must be a numeric vector")
     ## check weights and offset
@@ -147,14 +146,14 @@ glmreg_fit <- function(x, y, weights, start=NULL, etastart=NULL, mustart=NULL, o
     lambda <- rep(0, nvars)
     penalty.factor <- rep(1, nvars)
 }
-    im <- inactive <- seq(m)
+#    im <- inactive <- seq(m)
 ### compute the pathwise coordinate descent, cf: section 2.5 in Friedman et al., JSS 2010, 33(1)
     if(is.null(weights)) weights <- rep(1, n)
     wt <- weights/sum(weights)
     if(is.null(mustart) || is.null(etastart)){
         tmp <- init(wt, y, offset, family=family)
         mu <- tmp$mu
-        eta <- rep(tmp$eta,n)
+        eta <- tmp$eta
     }
     else{
         mu <- mustart
@@ -163,7 +162,7 @@ glmreg_fit <- function(x, y, weights, start=NULL, etastart=NULL, mustart=NULL, o
     if(is.null(lambda)){
         tmp <- init(wt, y, offset, family=family)
         mu <- tmp$mu
-        eta <- rep(tmp$eta,n)
+        eta <- tmp$eta
         w <- .Fortran("glmlink",
                       n=as.integer(1),
                       mu=as.double(mu),

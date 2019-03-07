@@ -150,7 +150,6 @@ C     70: if block --end
                outpll(i,k) = pll(i)
  15         continue
          endif
-         
          do 20 j=1, m
             b(j, k) = beta(j)
  20      continue

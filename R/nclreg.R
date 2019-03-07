@@ -115,6 +115,8 @@ nclreg_fit <- function(x,y, weights, offset=NULL, cost=0.5, rfamily=c("clossR", 
     if( !is.null(weights) && any(weights < 0) ){
         stop("negative weights not allowed")
     }
+    if (is.null(offset))
+	                        offset <- rep.int(0, nobs)
     pentype <- switch(penalty,
                       "enet"=1,
                       "mnet"=2,
@@ -250,6 +252,15 @@ nclreg_fit <- function(x,y, weights, offset=NULL, cost=0.5, rfamily=c("clossR", 
         nlambda <- length(lambda)
     beta <- matrix(0, ncol=nlambda, nrow=m)
     b0 <- rep(0, nlambda)
+    ### initialize start values -begin
+    fk_old <- RET$fitted.values
+    h <- compute.h(rfamily, y, fk_old, s, B)
+    if(any(is.nan(h)))
+      h <- y
+    tmp <- init(w, h, offset, family="gaussian")
+    mustart <- tmp$mu
+    etastart <- tmp$eta
+    ### initialize the start values -end
     stopit <- FALSE
 ### for each element of the lambda sequence, iterate until convergency
     typeA <- function(beta, b0){
@@ -326,14 +337,50 @@ nclreg_fit <- function(x,y, weights, offset=NULL, cost=0.5, rfamily=c("clossR", 
                     stopit <- TRUE
                     break
                 }
-                                        #if(i==70 && k==iter) browser()
-		RET <- glmreg_fit(x=x.act*sqrt(B), y=h*sqrt(B), weights=weights, offset=offset, lambda=lambda[i],alpha=alpha,gamma=gamma, rescale=FALSE, standardize=FALSE, penalty.factor = penalty.factor.act, maxit=maxit, eps=eps, family="gaussian", penalty=penalty, start=start.act)
-		RET$b0 <- RET$b0/sqrt(B)
-### for LASSO, the above two lines are equivalent to the next line
+               RET <- .Fortran("glmreg_fit_fortran",
+	                        x=as.double(x), 
+	                        #x=as.double(x.act), 
+				y=as.double(h), 
+				weights=as.double(weights),
+			        n=as.integer(n),
+			        m=as.integer(m),	
+				start=as.double(start), 
+				#start=as.double(start.act), 
+				etastart=as.double(etastart),
+	                        mustart=as.double(mustart),
+			       	offset=as.double(offset),
+			       	nlambda=as.integer(1),
+			       	lambda=as.double(lambda[i]/B), 
+				alpha=as.double(alpha),        
+			        gam=as.double(gamma), 
+				rescale=as.integer(0),
+			       	standardize=as.integer(0),
+				penaltyfactor=as.double(penalty.factor),
+				thresh=as.double(0), 
+				epsbino=as.double(0), 
+				maxit=as.integer(maxit),
+			        eps=as.double(eps), 
+				theta=as.double(0),
+			       	family=as.integer(1), 
+				penalty=as.integer(pentype), 
+				trace=as.integer(trace),
+				beta=as.double(matrix(0, ncol=1, nrow=m)),
+				b0=as.double(0),
+				yhat=as.double(rep(0, n)),
+				PACKAGE="mpath")
+     # thresh, epsbino, theta are not used in the above Fortran call with family="gaussian"
+#		RET <- glmreg_fit(x=x.act*sqrt(B), y=h*sqrt(B), weights=weights, offset=offset, lambda=lambda[i],alpha=alpha,gamma=gamma, rescale=FALSE, standardize=FALSE, penalty.factor = penalty.factor.act, maxit=maxit, eps=eps, family="gaussian", penalty=penalty, start=start.act)
+#		RET$b0 <- RET$b0/sqrt(B)  ### this line should be removed after calling glmreg_fit_fortran
+### for LASSO, the above two lines are equivalent to the next line if and only if standardize=FALSE
                                         #RET <- glmreg_fit(x=x, y=h, weights=weights, lambda=lambda[i]/B,alpha=alpha,gamma=gamma, rescale=FALSE, standardize=FALSE, penalty.factor = penalty.factor, maxit=maxit, eps=eps, family="gaussian", penalty=penalty)
-                fk <- RET$fitted.values <- predict(RET, newx=x.act)
-                start.act <- coef(RET)
-                los[k, i] <- mean(loss(y, f=fk, cost, family = rfamily, s=s, fk=NULL))
+#                fk <- RET$fitted.values <- predETt(RET, newx=x.act)
+#                start.act <- coef(RET)
+                fk <- RET$fitted.values <- RET$yhat
+                start <- c(RET$b0, RET$beta)
+                #start.act <- c(RET$b0, RET$beta)
+                etastart <- RET$yhat
+		mustart <- RET$mustart
+	  	los[k, i] <- mean(loss(y, f=fk, cost, family = rfamily, s=s, fk=NULL))
 ###penalized loss value for beta
                 penval <- .Fortran("penGLM",
                                    start=as.double(RET$beta),

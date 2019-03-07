@@ -17,23 +17,37 @@
 
 /* .Fortran calls */
 extern void F77_NAME(checkconvergence)(void *, void *, void *, void *, void *, void *, void *);
+extern void F77_NAME(compute_h)(void *, void *, void *, void *, void *, void *, void *);
 extern void F77_NAME(deveval)(void *, void *, void *, void *, void *, void *, void *);
+extern void F77_NAME(find_activeset)(void *, void *, void *, void *, void *);
 extern void F77_NAME(glmlink)(void *, void *, void *, void *, void *, void *);
+extern void F77_NAME(glmreg_fit_fortran)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
+extern void F77_NAME(gradient)(void *, void *, void *, void *, void *);
+extern void F77_NAME(linkinv)(void *, void *, void *, void *);
 extern void F77_NAME(loglikfor)(void *, void *, void *, void *, void *, void *, void *);
+extern void F77_NAME(ncvreg_fortran)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
 extern void F77_NAME(outloop)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
+extern void F77_NAME(outprod)(void *, void *, void *, void *, void *);
 extern void F77_NAME(penglm)(void *, void *, void *, void *, void *, void *, void *);
 extern void F77_NAME(pred)(void *, void *, void *, void *, void *, void *, void *, void *, void *);
 extern void F77_NAME(zeval)(void *, void *, void *, void *, void *, void *, void *);
 
 static const R_FortranMethodDef FortranEntries[] = {
-	    {"checkconvergence", (DL_FUNC) &F77_NAME(checkconvergence),  7},
-	    {"deveval",          (DL_FUNC) &F77_NAME(deveval),           7},
-	    {"glmlink",          (DL_FUNC) &F77_NAME(glmlink),           6},
-	    {"loglikfor",        (DL_FUNC) &F77_NAME(loglikfor),         7},
-	    {"outloop",          (DL_FUNC) &F77_NAME(outloop),          35},
-	    {"penglm",           (DL_FUNC) &F77_NAME(penglm),            7},
-	    {"pred",             (DL_FUNC) &F77_NAME(pred),              9},
-	    {"zeval",            (DL_FUNC) &F77_NAME(zeval),             7},
+	    {"checkconvergence",           (DL_FUNC) &F77_NAME(checkconvergence),    7},
+	    {"compute_h",                  (DL_FUNC) &F77_NAME(compute_h),           7},
+	    {"deveval",                    (DL_FUNC) &F77_NAME(deveval),             7},
+	    {"find_activeset",             (DL_FUNC) &F77_NAME(find_activeset),      5},
+	    {"glmlink",                    (DL_FUNC) &F77_NAME(glmlink),             6},
+	    {"glmreg_fit_fortran",         (DL_FUNC) &F77_NAME(glmreg_fit_fortran), 27},
+	    {"gradient",                   (DL_FUNC) &F77_NAME(gradient),            5},
+	    {"linkinv",                    (DL_FUNC) &F77_NAME(linkinv),             4},
+	    {"loglikfor",                  (DL_FUNC) &F77_NAME(loglikfor),           7},
+	    {"ncvreg_fortran",             (DL_FUNC) &F77_NAME(linkinv),            26},
+	    {"outloop",                    (DL_FUNC) &F77_NAME(outloop),            35},
+	    {"outprod",                    (DL_FUNC) &F77_NAME(outprod),             5},
+	    {"penglm",                     (DL_FUNC) &F77_NAME(penglm),              7},
+	    {"pred",                       (DL_FUNC) &F77_NAME(pred),                9},
+	    {"zeval",                      (DL_FUNC) &F77_NAME(zeval),               7},
 					        {NULL, NULL, 0}
 };
 
