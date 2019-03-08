@@ -339,7 +339,6 @@ nclreg_fit <- function(x,y, weights, offset=NULL, cost=0.5, rfamily=c("clossR", 
                     stopit <- TRUE
                     break
                 }
-		cat("h=", h, "\n")
                RET <- .Fortran("glmreg_fit_fortran",
 	                        x=as.double(x), 
 	                        #x=as.double(x.act), 
@@ -371,11 +370,6 @@ nclreg_fit <- function(x,y, weights, offset=NULL, cost=0.5, rfamily=c("clossR", 
 				b0=as.double(0),
 				yhat=as.double(rep(0, n)),
 				PACKAGE="mpath")
-	       cat("beta_1=", RET$beta, "\n")
-	       cat("yhat=", RET$yhat[1:5], "\n")
-	       cat("etastart", RET$etastart[1:5], "\n")
-	       cat("mustart", RET$mustart[1:5], "\n")
-	       cat("start", RET$start, "\n")
      # thresh, epsbino, theta are not used in the above Fortran call with family="gaussian"
 #		RET <- glmreg_fit(x=x.act*sqrt(B), y=h*sqrt(B), weights=weights, offset=offset, lambda=lambda[i],alpha=alpha,gamma=gamma, rescale=FALSE, standardize=FALSE, penalty.factor = penalty.factor.act, maxit=maxit, eps=eps, family="gaussian", penalty=penalty, start=start.act)
 #		RET$b0 <- RET$b0/sqrt(B)  ### this line should be removed after calling glmreg_fit_fortran
@@ -392,14 +386,16 @@ nclreg_fit <- function(x,y, weights, offset=NULL, cost=0.5, rfamily=c("clossR", 
 ###penalized loss value for beta
                 penval <- .Fortran("penGLM",
                                    start=as.double(RET$beta),
-                                   m=as.integer(m.act),
-                                   lambda=as.double(lambda[i]*penalty.factor.act),
+                                   #m=as.integer(m.act),
+                                   #lambda=as.double(lambda[i]*penalty.factor.act),
+                                   m=as.integer(m),
+                                   lambda=as.double(lambda[i]/B*penalty.factor),
                                    alpha=as.double(alpha),
                                    gam=as.double(gamma),
                                    penalty=as.integer(pentype),
                                    pen=as.double(0.0),
                                    PACKAGE="mpath")$pen
-                if(standardize)  ### lambda value, hence penval, depends on whether standardize is TRUE/FALSE
+     		if(standardize)  ### lambda value, hence penval, depends on whether standardize is TRUE/FALSE
                     pll[k, i] <- los[k, i] + n*penval
                 else pll[k, i] <- los[k, i] + penval
                 d1 <- sum((fk_old - fk)^2)
@@ -427,12 +423,13 @@ nclreg_fit <- function(x,y, weights, offset=NULL, cost=0.5, rfamily=c("clossR", 
         }
         list(beta=beta, b0=b0, RET=RET, risk=los, pll=pll)
     }
-#typeBB was converted from typeB
+#typeBB was converted from typeB, works for both "bwd" and "fwd".
+### these number conversion should be consistent to those in Fortran subroutines src/compute_h and loss
     rfamilytype <- switch(rfamily,       
-                    "clossR"=1,
-                    "closs"=2,
-                    "gloss"=3,
-                    "qloss"=4
+                    "clossR"=11,
+                    "closs"=12,
+                    "gloss"=13,
+                    "qloss"=14
                     )
     typeBB <- function(beta, b0){
 	    RET <- .Fortran("nclreg_fortran",
@@ -464,14 +461,22 @@ nclreg_fit <- function(x,y, weights, offset=NULL, cost=0.5, rfamily=c("clossR", 
 			    rfamily=as.integer(rfamilytype),
 			    B=as.double(B), 
 			    s=as.double(s),
+			    los=as.double(matrix(0, nrow=iter, ncol=nlambda)),
+			    pll=as.double(matrix(0, nrow=iter, ncol=nlambda)),
 			    rescale=as.integer(0),
 			    thresh=as.double(0),
 			    epsbino=as.double(0),
 			    theta=as.double(0),
+			    cost=as.double(cost),
 			    PACKAGE="mpath")
-        list(beta=matrix(RET$beta, ncol=nlambda), b0=RET$b0, RET=RET, risk=NULL, pll=NULL)
+	    if(trace){
+		    risk <- matrix(RET$los, nlambda)
+	            pll <- matrix(RET$pll, nlambda)
+	    }
+	    else 
+		    risk <- pll <- NULL
+        list(beta=matrix(RET$beta, ncol=nlambda), b0=RET$b0, RET=RET, risk=risk, pll=pll)
     }
-#    beta=matrix(RET$beta, ncol=nlambda); b0=RET$b0; RET=RET; risk=NULL; pll=NULL;
 ### update for one element of lambda depending on direction="fwd" (last element of lambda) or "bwd" (then first element of lambda) in each MM iteration, and iterate until convergency of prediction. Then fit a solution path based on the sequence of lambda.
     typeC <- function(beta, b0){
         if(trace) {
