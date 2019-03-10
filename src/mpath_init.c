@@ -18,6 +18,7 @@
 /* .Fortran calls */
 extern void F77_NAME(checkconvergence)(void *, void *, void *, void *, void *, void *, void *);
 extern void F77_NAME(compute_h)(void *, void *, void *, void *, void *, void *, void *);
+extern void F77_NAME(copymatrix)(void *, void *, void *, void *);
 extern void F77_NAME(deveval)(void *, void *, void *, void *, void *, void *, void *);
 extern void F77_NAME(find_activeset)(void *, void *, void *, void *, void *);
 extern void F77_NAME(glmlink)(void *, void *, void *, void *, void *, void *);
@@ -38,6 +39,7 @@ extern void F77_NAME(zeval)(void *, void *, void *, void *, void *, void *, void
 static const R_FortranMethodDef FortranEntries[] = {
 	    {"checkconvergence",           (DL_FUNC) &F77_NAME(checkconvergence),    7},
 	    {"compute_h",                  (DL_FUNC) &F77_NAME(compute_h),           7},
+	    {"copymatrix",                 (DL_FUNC) &F77_NAME(copymatrix),          4},
 	    {"deveval",                    (DL_FUNC) &F77_NAME(deveval),             7},
 	    {"find_activeset",             (DL_FUNC) &F77_NAME(find_activeset),      5},
 	    {"glmlink",                    (DL_FUNC) &F77_NAME(glmlink),             6},

@@ -280,8 +280,6 @@ C     endif
       jj = 1
       converged = 0
  1000 if(jj .LE. maxit .AND. converged .EQ.0)then
-C      call intpr(" in loop_gauassian, jj=", -1, jj, 1)
-C      call intpr("                    jk=", -1, jk, 1)
          do 100 ii = 1, jk
             j = activeset(ii)
             beta_old(j) = beta(j)
