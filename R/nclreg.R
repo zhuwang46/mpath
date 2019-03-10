@@ -96,7 +96,8 @@ nclreg_fit <- function(x,y, weights, offset=NULL, cost=0.5, rfamily=c("clossR", 
     type.path <- match.arg(type.path)
     if(type.path=="active") direction <- "bwd"
     if(!is.null(lambda) && type.path == "active"){
-        if (length(lambda) > 1 && any(diff(lambda) < 0))
+        #if (length(lambda) > 1 && any(diff(lambda) < 0))
+        if (length(lambda) > 1 && !all(lambda == cummax(lambda)))
 	    stop("for type.path='active', the provided lambda sequence must be increasing\n")
     }
     if(rfamily %in% c("closs", "gloss", "qloss"))
