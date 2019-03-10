@@ -45,6 +45,7 @@ C used in nclreg.R
       call dcopy(m, penaltyfactor, 1, penaltyfactor_act, 1)
            do 101 j=1, m
            varsel_old(j)=j
+           varsel(j)=j
 101        continue
 10    if(i .LE. nlambda)then
              if(trace .EQ. 1)then
@@ -53,10 +54,10 @@ C used in nclreg.R
        k = 1
        d = 10
 500        if(d .GT. del .AND. k .LE. iter)then
-             if(trace .EQ. 1)then
+C             if(trace .EQ. 1)then
                call intpr("  k=", -1, k, 1)
                call dblepr("     d=", -1, d, 1)
-             endif
+C             endif
            call dcopy(n, yhat, 1, fk_old, 1)
            call compute_h(rfamily, n, y, fk_old, s, B, h)
 C          check if h has NAN value
@@ -72,10 +73,14 @@ C          check if h has NAN value
      +          gam, rescale, standardize, penaltyfactor_act, thresh,
      +          epsbino, maxit, eps, theta, family,  
      +          penalty, trace, beta_1, b0_1, yhat)
+               call intpr("     ok after glmreg_fit_fortran", -1, 1, 1)
            call dcopy(n, yhat, 1, fk, 1)
            call find_activeset(m_act, beta_1, eps, activeset, jk)
+               call intpr("     ok after find_activeset", -1, 1, 1)
 C this activeset is relative to the current x_act, but how about
 C relative to x instead? compute varsel for true index in x
+               call intpr("     jk=", -1, jk, 1)
+               call intpr("     m_act=", -1, m_act, 1)
            if(jk .NE. m_act)then
               deallocate(start_act, stat=DeAllocateStatus)
               allocate(start_act(jk+1), stat=AllocateStatus)
@@ -87,6 +92,7 @@ C relative to x instead? compute varsel for true index in x
               do 35 j=1, jk
                  varsel(j)=varsel_old(activeset(j))
 35            continue
+               call intpr("     varsel=", -1, varsel, jk)
               do 351 j=1, jk
                  varsel_old(j)=varsel(j)
 351            continue
@@ -107,6 +113,7 @@ C             update x_act matrix
                   j = varsel(ii)
                   penaltyfactor_act(ii)=penaltyfactor(j)
 65            continue
+              m_act = jk
              else
                start_act(1) = b0_1
                do 100 j=1, m_act
@@ -114,7 +121,8 @@ C             update x_act matrix
 100            continue
              endif 
 
-           m_act = jk
+C           m_act = jk
+C         needs some work when trace=1
            if(trace .EQ. 1)then
                call loss(n, y, fk, cost, rfamily, s, los(k, i))
                penval = 0.d0
@@ -126,7 +134,6 @@ C             update x_act matrix
                        pll(k, i)=los(k, i) + penval
                endif
            endif
-C may add call penGLM and loss values in the future
            a = 0
            do 120 ii=1, n
             a=a+(fk_old(i) - fk(i))**2
@@ -135,6 +142,11 @@ C may add call penGLM and loss values in the future
             k = k + 1
            goto 500
            endif
+               call intpr("     ok below goto 500", -1, 1, 1)
+               call intpr("     stopit", -1, stopit, 1)
+               call intpr("     jk", -1, jk, 1)
+               call intpr("     varsel", -1, varsel, jk)
+               call dblepr("     beta_1", -1, beta_1, jk)
            if(stopit .EQ. 0)then
                if(jk .EQ. 0)then
                   i = nlambda + 1
@@ -142,8 +154,14 @@ C may add call penGLM and loss values in the future
                b0(i) = b0_1
                do 200 ii = 1, jk
                   j = varsel(ii)
-                  beta(j, i) = beta_1(ii)
+C                 something wrong here: it is possible beta_1 has length
+C                 m_act > jk, then how to update below?
+                  beta(j, i) = beta_1(activeset(ii))
+C                  beta(j, i) = beta_1(ii)
 200            continue
+               call intpr("     ok here", -1, 1, 1)
+               call intpr("     activeset here", -1, activeset, jk)
+               call dblepr("     beta_1", -1, beta_1, jk)
                i = i + 1
            else
               i = nlambda + 1
