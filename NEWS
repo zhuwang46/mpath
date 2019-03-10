@@ -140,4 +140,4 @@
                
                CHANGES in `mpath' VERSION 0.3-8 (03-03-2019)
   o  changes were made on how active set works. Now, we cycle through the active set until convergence, then cycle through all the variables ONCE, this is an reverse to the previous procedure. This includes changes in outloop.f, midloop.f, midloopGLM.f, lmnetGLM, add src/find_activeset.f to simplify the codes.
-
+  o  R/nclreg seems to be incorrect when update beta[activeset, i], since activeset is relative to the current x.act, not x. The new Fortran subroutine using dynamic allocation to deal with this. The Fortran subroutine nclreg_fortran.f conducts the three layers of iteration loops, lambda, MM and internal penalty estimation loop.
