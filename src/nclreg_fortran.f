@@ -54,10 +54,10 @@ C used in nclreg.R
        k = 1
        d = 10
 500        if(d .GT. del .AND. k .LE. iter)then
-C             if(trace .EQ. 1)then
+             if(trace .EQ. 1)then
                call intpr("  k=", -1, k, 1)
                call dblepr("     d=", -1, d, 1)
-C             endif
+             endif
            call dcopy(n, yhat, 1, fk_old, 1)
            call compute_h(rfamily, n, y, fk_old, s, B, h)
 C          check if h has NAN value
@@ -73,61 +73,50 @@ C          check if h has NAN value
      +          gam, rescale, standardize, penaltyfactor_act, thresh,
      +          epsbino, maxit, eps, theta, family,  
      +          penalty, trace, beta_1, b0_1, yhat)
-               call intpr("     ok after glmreg_fit_fortran", -1, 1, 1)
            call dcopy(n, yhat, 1, fk, 1)
            call find_activeset(m_act, beta_1, eps, activeset, jk)
-               call intpr("     ok after find_activeset", -1, 1, 1)
 C this activeset is relative to the current x_act, but how about
 C relative to x instead? compute varsel for true index in x
-               call intpr("     jk=", -1, jk, 1)
-               call intpr("     m_act=", -1, m_act, 1)
-           if(jk .NE. m_act)then
-              deallocate(start_act, stat=DeAllocateStatus)
-              allocate(start_act(jk+1), stat=AllocateStatus)
-              start_act(1) = b0_1
-              do ii=1, jk
-                j=activeset(ii)
-                start_act(ii+1)=beta_1(j)
-              enddo
-              do 35 j=1, jk
-                 varsel(j)=varsel_old(activeset(j))
-35            continue
-               call intpr("     varsel=", -1, varsel, jk)
-              do 351 j=1, jk
-                 varsel_old(j)=varsel(j)
-351            continue
-              deallocate(beta_1, stat=DeAllocateStatus) 
-              allocate(beta_1(jk), stat=AllocateStatus)
-              deallocate(x_act, stat=DeAllocateStatus)
-              allocate(x_act(n, jk), stat=AllocateStatus)
-C             update x_act matrix
-              do 55 jj=1, n
-                 do 45 ii=1, jk
-                  j = varsel(ii)
-                  x_act(jj, ii) = x(jj, j)
-  45             continue
-  55          continue
-              deallocate(penaltyfactor_act, stat=DeAllocateStatus)
-              allocate(penaltyfactor_act(jk), stat=AllocateStatus)
-              do 65 ii=1, jk
-                  j = varsel(ii)
-                  penaltyfactor_act(ii)=penaltyfactor(j)
-65            continue
-              m_act = jk
-             else
+             if(jk .NE. m_act .AND. jk .GT. 0)then
+               deallocate(start_act, stat=DeAllocateStatus)
+               allocate(start_act(jk+1), stat=AllocateStatus)
+               deallocate(penaltyfactor_act, stat=DeAllocateStatus)
+               allocate(penaltyfactor_act(jk), stat=AllocateStatus)
                start_act(1) = b0_1
-               do 100 j=1, m_act
-                 start_act(j+1)=beta_1(j)
-100            continue
-             endif 
+               do 35 ii=1, jk
+                start_act(ii+1)=beta_1(activeset(ii))
+                varsel(ii)=varsel_old(activeset(ii))
+                varsel_old(ii)=varsel(ii)
+                penaltyfactor_act(ii)=penaltyfactor(varsel(ii))
+35             continue
+               deallocate(beta_1, stat=DeAllocateStatus) 
+               allocate(beta_1(jk), stat=AllocateStatus)
+               deallocate(x_act, stat=DeAllocateStatus)
+               allocate(x_act(n, jk), stat=AllocateStatus)
+C              update x_act matrix
+               do 55 jj=1, n
+                 do 45 ii=1, jk
+                  x_act(jj, ii) = x(jj, varsel(ii))
+  45             continue
+  55           continue
+               m_act = jk
+           else if(jk .EQ. m_act .AND. jk .GT. 0)then
+                start_act(1) = b0_1
+                do 100 j=1, jk
+                  start_act(j+1)=beta_1(j)
+100             continue
+           else if(jk .EQ. 0)then
+                 deallocate(start_act, stat=DeAllocateStatus)
+                 allocate(start_act(1), stat=AllocateStatus)
+                 start_act(1) = b0_1
+           endif 
 
-C           m_act = jk
 C         needs some work when trace=1
            if(trace .EQ. 1)then
                call loss(n, y, fk, cost, rfamily, s, los(k, i))
                penval = 0.d0
-               call penGLM(beta_1, m, lambda_i*penaltyfactor, alpha,
-     +                    gam, penalty, penval)
+               call penGLM(beta_1, m_act, lambda_i*penaltyfactor_act, 
+     +                    alpha, gam, penalty, penval)
                if(standardize .EQ. 1)then
                        pll(k, i)=los(k, i) + n*penval
                  else 
@@ -142,30 +131,21 @@ C         needs some work when trace=1
             k = k + 1
            goto 500
            endif
-               call intpr("     ok below goto 500", -1, 1, 1)
-               call intpr("     stopit", -1, stopit, 1)
-               call intpr("     jk", -1, jk, 1)
-               call intpr("     varsel", -1, varsel, jk)
-               call dblepr("     beta_1", -1, beta_1, jk)
-           if(stopit .EQ. 0)then
-               if(jk .EQ. 0)then
-                  i = nlambda + 1
-               endif
+C           if(stopit .EQ. 0)then
+C               if(jk .EQ. 0)then
+C                  i = nlambda + 1
+C               endif
                b0(i) = b0_1
-               do 200 ii = 1, jk
-                  j = varsel(ii)
-C                 something wrong here: it is possible beta_1 has length
-C                 m_act > jk, then how to update below?
-                  beta(j, i) = beta_1(activeset(ii))
-C                  beta(j, i) = beta_1(ii)
-200            continue
-               call intpr("     ok here", -1, 1, 1)
-               call intpr("     activeset here", -1, activeset, jk)
-               call dblepr("     beta_1", -1, beta_1, jk)
+               if(jk  .GT. 0)then
+                 do 200 ii = 1, jk
+C it is possible beta_1 has length m_act > jk
+                    beta(varsel(ii), i) = beta_1(activeset(ii))
+200              continue
+               endif
                i = i + 1
-           else
-              i = nlambda + 1
-           endif 
+C           else
+C              i = nlambda + 1
+C           endif 
       goto 10
       endif
       deallocate(beta_1, start_act, x_act, penaltyfactor_act)
