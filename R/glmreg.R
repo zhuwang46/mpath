@@ -108,9 +108,8 @@ glmreg_fit <- function(x, y, weights, start=NULL, etastart=NULL, mustart=NULL, o
     if( !is.null(weights) && any(weights < 0) ){
         stop("negative weights not allowed")
     }
-    if (is.null(offset)){
+    if (is.null(offset) || all(offset==0)){
 	    is.offset <- FALSE
-            offset <- rep.int(0, nobs)
     }
     else is.offset <- TRUE
     if(family=="binomial"){
