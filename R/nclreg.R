@@ -80,7 +80,7 @@ compute.2d <- function(y, f, s, family=c("clossR", "closs", "gloss", "qloss")){
         sqrt(2/pi)*u/s^3*exp(-u^2/(2*s^2))
 }
 
-nclreg_fit <- function(x,y, weights, offset=NULL, cost=0.5, rfamily=c("clossR", "closs", "gloss", "qloss"), s=NULL, fk=NULL, iter=10, del=1e-10, nlambda=100, lambda=NULL, lambda.min.ratio=ifelse(nobs<nvars,.05, .001),alpha=1, gamma=3, standardize=TRUE, penalty.factor = NULL, maxit=1000, type.init="bst", mstop.init=10, nu.init=0.1, direction=c("bwd", "fwd"), eps=.Machine$double.eps, trace=FALSE, penalty=c("enet","mnet","snet"), type.path=c("active", "naive", "onestep")){ 
+nclreg_fit <- function(x,y, weights, offset=NULL, cost=0.5, rfamily=c("clossR", "closs", "gloss", "qloss"), s=NULL, fk=NULL, iter=10, del=1e-10, nlambda=100, lambda=NULL, lambda.min.ratio=ifelse(nobs<nvars,.05, .001),alpha=1, gamma=3, standardize=TRUE, penalty.factor = NULL, maxit=1000, type.init="bst", mstop.init=10, nu.init=0.1, decreasing=FALSE, eps=.Machine$double.eps, trace=FALSE, penalty=c("enet","mnet","snet"), type.path=c("active", "naive", "onestep")){ 
 ### compute h value
     compute.h <- function(rfamily, y, fk_old, s, B){
         if(rfamily=="clossR")
@@ -92,18 +92,15 @@ nclreg_fit <- function(x,y, weights, offset=NULL, cost=0.5, rfamily=c("clossR", 
     call <- match.call()
     rfamily <- match.arg(rfamily)
     penalty <- match.arg(penalty)
-    direction <- match.arg(direction)
     type.path <- match.arg(type.path)
-    if(type.path=="active") {
-	    direction <- "bwd"
+    if(type.path=="active")
 	    active <- 1
-    }
     else active <- 0
-    if(!is.null(lambda) && type.path == "active"){
-        #if (length(lambda) > 1 && any(diff(lambda) < 0))
-        if (length(lambda) > 1 && !all(lambda == cummax(lambda)))
-	    stop("for type.path='active', the provided lambda sequence must be increasing\n")
+    if (!is.null(lambda) && length(lambda) > 1 && all(lambda == cummin(lambda))){
+	    decreasing <- TRUE
     }
+    else if(!is.null(lambda) && length(lambda) > 1 && all(lambda == cummax(lambda)))
+	    decreasing <- FALSE
     if(rfamily %in% c("closs", "gloss", "qloss"))
         if(!all(names(table(y)) %in% c(1, -1)))
             stop("response variable must be 1/-1 for family ", rfamily, "\n")
@@ -215,7 +212,7 @@ nclreg_fit <- function(x,y, weights, offset=NULL, cost=0.5, rfamily=c("clossR", 
         lambda <- glmreg_fit(x=x*sqrt(B), y=h*sqrt(B), weights=weights, offset=offset, lambda.min.ratio=lambda.min.ratio, nlambda=nlambda, alpha=alpha,gamma=gamma, rescale=FALSE, standardize=FALSE, penalty.factor = penalty.factor, maxit=1, eps=eps, family="gaussian", penalty=penalty)$lambda
 ### with type.init, add two different lambda sequences and make lambda values flexible to have different solution paths
         if(type.init %in% c("bst", "heu")){
-            if(direction=="bwd")#{### solution path backward direction
+            if(!decreasing)#{### solution path backward direction
                 lambda <- rev(lambda)
         }
                                         #cat("lambda in method A", lambda[1], "\n")
@@ -479,7 +476,7 @@ nclreg_fit <- function(x,y, weights, offset=NULL, cost=0.5, rfamily=c("clossR", 
 		    risk <- pll <- NULL
        	    list(beta=matrix(RET$beta, ncol=nlambda), b0=RET$b0, RET=RET, risk=risk, pll=pll)
     }
-### update for one element of lambda depending on direction="fwd" (last element of lambda) or "bwd" (then first element of lambda) in each MM iteration, and iterate until convergency of prediction. Then fit a solution path based on the sequence of lambda.
+### update for one element of lambda depending on increasing sequence of lambda (last element of lambda) or decreasing sequence of lambda (then first element of lambda) in each MM iteration, and iterate until convergency of prediction. Then fit a solution path based on the sequence of lambda. Experiment code. Argument direction has been removed.
     typeC <- function(beta, b0){
         if(trace) {
             cat("Quadratic majorization iterations ...\n")
@@ -488,7 +485,7 @@ nclreg_fit <- function(x,y, weights, offset=NULL, cost=0.5, rfamily=c("clossR", 
         k <- 1
         fk <- RET$fitted.values
         d1 <- 10
-        lam <- lambda[ifelse(direction=="fwd", nlambda, 1)]
+        lam <- lambda[ifelse(decreasing, nlambda, 1)]
 	while(d1 > del && k <= iter){
 	    fk_old <- fk
             h <- compute.h(rfamily, y, fk_old, s, B)
@@ -525,9 +522,10 @@ nclreg_fit <- function(x,y, weights, offset=NULL, cost=0.5, rfamily=c("clossR", 
         list(beta=beta, b0=b0, RET=RET, risk=los, pll=pll)
     }
     #if(type.path=="active") tmp <- typeB(beta, b0)
+# typeA and typeB are combined into typeBB
     if(type.path=="active" || type.path=="naive") tmp <- typeBB(beta, b0)
 #    if(type.path=="active") tmp <- typeBB(beta, b0)
-    else if(type.path=="naive") tmp <- typeA(beta, b0)
+#    else if(type.path=="naive") tmp <- typeA(beta, b0)
     else if(type.path=="onestep") tmp <- typeC(beta, b0)
     beta <- tmp$beta
     b0 <- tmp$b0
@@ -556,7 +554,7 @@ nclreg_fit <- function(x,y, weights, offset=NULL, cost=0.5, rfamily=c("clossR", 
     RET$type.init <- type.init
     RET$mstop.init <- mstop.init
     RET$nu.init <- nu.init
-    RET$direction <- direction
+    RET$decreasing <- decreasing
     RET$type.path <- type.path
     class(RET) <- "nclreg"
     RET
