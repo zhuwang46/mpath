@@ -94,7 +94,11 @@ nclreg_fit <- function(x,y, weights, offset=NULL, cost=0.5, rfamily=c("clossR", 
     penalty <- match.arg(penalty)
     direction <- match.arg(direction)
     type.path <- match.arg(type.path)
-    if(type.path=="active") direction <- "bwd"
+    if(type.path=="active") {
+	    direction <- "bwd"
+	    active <- 1
+    }
+    else active <- 0
     if(!is.null(lambda) && type.path == "active"){
         #if (length(lambda) > 1 && any(diff(lambda) < 0))
         if (length(lambda) > 1 && !all(lambda == cummax(lambda)))
@@ -336,7 +340,7 @@ nclreg_fit <- function(x,y, weights, offset=NULL, cost=0.5, rfamily=c("clossR", 
 		cat("k=", k, "\n")
                 fk_old <- RET$fitted.values
                 h <- compute.h(rfamily, y, fk_old, s, B)
-                if(any(is.nan(h))){ # exit loop 
+	    	if(any(is.nan(h))){ # exit loop 
                     stopit <- TRUE
                     break
                 }
@@ -345,7 +349,7 @@ nclreg_fit <- function(x,y, weights, offset=NULL, cost=0.5, rfamily=c("clossR", 
 				y=as.double(h), 
 				weights=as.double(weights),
 			        n=as.integer(n),
-			        m=as.integer(m),	
+			        m=as.integer(m.act),	
 				start=as.double(start.act), 
 				etastart=as.double(etastart),
 	                        mustart=as.double(mustart),
@@ -356,7 +360,7 @@ nclreg_fit <- function(x,y, weights, offset=NULL, cost=0.5, rfamily=c("clossR", 
 			        gam=as.double(gamma), 
 				rescale=as.integer(0),
 			       	standardize=as.integer(0),
-				penaltyfactor=as.double(penalty.factor),
+				penaltyfactor=as.double(penalty.factor.act),
 				thresh=as.double(0), 
 				epsbino=as.double(0), 
 				maxit=as.integer(maxit),
@@ -465,6 +469,7 @@ nclreg_fit <- function(x,y, weights, offset=NULL, cost=0.5, rfamily=c("clossR", 
 			    epsbino=as.double(0),
 			    theta=as.double(0),
 			    cost=as.double(cost),
+			    active=as.integer(active),
 			    PACKAGE="mpath")
 	    if(trace){
 		    risk <- matrix(RET$los, nlambda)
@@ -472,7 +477,7 @@ nclreg_fit <- function(x,y, weights, offset=NULL, cost=0.5, rfamily=c("clossR", 
 	    }
 	    else 
 		    risk <- pll <- NULL
-        list(beta=matrix(RET$beta, ncol=nlambda), b0=RET$b0, RET=RET, risk=risk, pll=pll)
+       	    list(beta=matrix(RET$beta, ncol=nlambda), b0=RET$b0, RET=RET, risk=risk, pll=pll)
     }
 ### update for one element of lambda depending on direction="fwd" (last element of lambda) or "bwd" (then first element of lambda) in each MM iteration, and iterate until convergency of prediction. Then fit a solution path based on the sequence of lambda.
     typeC <- function(beta, b0){
@@ -520,7 +525,8 @@ nclreg_fit <- function(x,y, weights, offset=NULL, cost=0.5, rfamily=c("clossR", 
         list(beta=beta, b0=b0, RET=RET, risk=los, pll=pll)
     }
     #if(type.path=="active") tmp <- typeB(beta, b0)
-    if(type.path=="active") tmp <- typeBB(beta, b0)
+    if(type.path=="active" || type.path=="naive") tmp <- typeBB(beta, b0)
+#    if(type.path=="active") tmp <- typeBB(beta, b0)
     else if(type.path=="naive") tmp <- typeA(beta, b0)
     else if(type.path=="onestep") tmp <- typeC(beta, b0)
     beta <- tmp$beta
