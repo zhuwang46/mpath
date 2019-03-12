@@ -27,7 +27,7 @@ extern void F77_NAME(gradient)(void *, void *, void *, void *, void *);
 extern void F77_NAME(linkinv)(void *, void *, void *, void *);
 extern void F77_NAME(loglikfor)(void *, void *, void *, void *, void *, void *, void *);
 extern void F77_NAME(loss)(void *, void *, void *, void *, void *, void *, void *);
-extern void F77_NAME(nclreg_fortran)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
+extern void F77_NAME(nclreg_fortran)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
 extern void F77_NAME(nonconvexloss)(void *, void *, void *, void *, void *);
 extern void F77_NAME(outloop)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
 extern void F77_NAME(outprod)(void *, void *, void *, void *, void *);
@@ -48,7 +48,7 @@ static const R_FortranMethodDef FortranEntries[] = {
 	    {"linkinv",                    (DL_FUNC) &F77_NAME(linkinv),             4},
 	    {"loglikfor",                  (DL_FUNC) &F77_NAME(loglikfor),           7},
 	    {"loss",                       (DL_FUNC) &F77_NAME(loss),                7},
-	    {"nclreg_fortran",             (DL_FUNC) &F77_NAME(nclreg_fortran),     35},
+	    {"nclreg_fortran",             (DL_FUNC) &F77_NAME(nclreg_fortran),     36},
 	    {"nonconvesloss",              (DL_FUNC) &F77_NAME(nonconvexloss),       5},
 	    {"outloop",                    (DL_FUNC) &F77_NAME(outloop),            35},
 	    {"outprod",                    (DL_FUNC) &F77_NAME(outprod),             5},
