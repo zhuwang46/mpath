@@ -4,10 +4,11 @@ C     used in nclreg.R
      +     gam, standardize, penaltyfactor, maxit, eps, family,
      +     penalty, trace, beta, b0, yhat, iter,
      +     del, rfamily, B, s, los, pll, rescale, thresh, epsbino, 
-     +     theta, cost)
+     +     theta, cost, active)
       implicit none
       integer n,m,i,ii,k,j,jj,penalty,nlambda,family,standardize, maxit,
-     +     trace, iter, rfamily, rescale, jk, activeset(m),stopit,m_act,
+     +     trace, iter, rfamily, rescale, jk, active, activeset(m), 
+     +     stopit,m_act,
      +     AllocateStatus, DeAllocateStatus, varsel(m), varsel_old(m)
       double precision x(n, m), y(n), weights(n),start(m+1),etastart(n),
      +     mustart(n), offset(n), lambda(nlambda),
@@ -50,16 +51,17 @@ C     used in nclreg.R
          varsel(j)=j
  101  continue
  10   if(i .LE. nlambda)then
-      if(trace .EQ. 1)then
-         call intpr("i=", -1, i, 1)
-      endif
+         if(trace .EQ. 1)then
+            call intpr("i=", -1, i, 1)
+         endif
          k = 1
          d = 10
  500     if(d .GT. del .AND. k .LE. iter)then
-      if(trace .EQ. 1)then
-            call intpr("  k=", -1, k, 1)
-            call dblepr("     d=", -1, d, 1)
-      endif
+            if(trace .EQ. 1)then
+               call intpr("  k=", -1, k, 1)
+               call intpr("  activeset", -1, activeset, jk)
+               call dblepr("     d=", -1, d, 1)
+            endif
             call dcopy(n, yhat, 1, fk_old, 1)
             call compute_h(rfamily, n, y, fk_old, s, B, h)
 C     check if h has NAN value
@@ -105,39 +107,37 @@ C     check if h has NAN value
          b0(i) = b0_1
          if(jk .GT. 0)then
             do 200 ii = 1, m_act
-C               if(activeset(ii) .NE. ii)then
-C                  call intpr("ii=", -1, ii, 1)
-C                  call intpr("activeset(ii)", -1, activeset(ii), 1)
-C               endif
                beta(varsel(ii), i) = beta_1(ii)
  200        continue
          endif
-         call find_activeset(m_act, beta_1, eps, activeset, jk)
+         if(active .EQ. 1)then
+            call find_activeset(m_act, beta_1, eps, activeset, jk)
 C     this activeset is relative to the current x_act, but how about
 C     relative to x instead? compute varsel for true index in x
-         if(jk .NE. m_act .AND. jk .GT. 0)then
-            deallocate(start_act, stat=DeAllocateStatus)
-            allocate(start_act(jk+1), stat=AllocateStatus)
-            deallocate(penaltyfactor_act, stat=DeAllocateStatus)
-            allocate(penaltyfactor_act(jk), stat=AllocateStatus)
-            start_act(1) = b0_1
-            do 35 ii=1, jk
-               start_act(ii+1)=beta_1(activeset(ii))
-               varsel(ii)=varsel_old(activeset(ii))
-               varsel_old(ii)=varsel(ii)
-               penaltyfactor_act(ii)=penaltyfactor(varsel(ii))
- 35         continue
-            deallocate(beta_1, stat=DeAllocateStatus) 
-            allocate(beta_1(jk), stat=AllocateStatus)
-            deallocate(x_act, stat=DeAllocateStatus)
-            allocate(x_act(n, jk), stat=AllocateStatus)
+            if(jk .NE. m_act .AND. jk .GT. 0)then
+               deallocate(start_act, stat=DeAllocateStatus)
+               allocate(start_act(jk+1), stat=AllocateStatus)
+               deallocate(penaltyfactor_act, stat=DeAllocateStatus)
+               allocate(penaltyfactor_act(jk), stat=AllocateStatus)
+               start_act(1) = b0_1
+               do 35 ii=1, jk
+                  start_act(ii+1)=beta_1(activeset(ii))
+                  varsel(ii)=varsel_old(activeset(ii))
+                  varsel_old(ii)=varsel(ii)
+                  penaltyfactor_act(ii)=penaltyfactor(varsel(ii))
+ 35            continue
+               deallocate(beta_1, stat=DeAllocateStatus) 
+               allocate(beta_1(jk), stat=AllocateStatus)
+               deallocate(x_act, stat=DeAllocateStatus)
+               allocate(x_act(n, jk), stat=AllocateStatus)
 C     update x_act matrix
-            do 55 jj=1, n
-               do 45 ii=1, jk
-                  x_act(jj, ii) = x(jj, varsel(ii))
- 45            continue
- 55         continue
-            m_act = jk
+               do 55 jj=1, n
+                  do 45 ii=1, jk
+                     x_act(jj, ii) = x(jj, varsel(ii))
+ 45               continue
+ 55            continue
+               m_act = jk
+            endif
          endif
          i = i + 1
          goto 10
