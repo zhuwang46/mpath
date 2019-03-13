@@ -98,9 +98,14 @@ nclreg_fit <- function(x,y, weights, offset=NULL, cost=0.5, rfamily=c("clossR", 
     else active <- 0
     if (!is.null(lambda) && length(lambda) > 1 && all(lambda == cummin(lambda))){
 	    decreasing <- TRUE
+	    if(type.path=="active")
+	      warnings("choose type.path='naive' with increasing sequence of lambda, or let lambda=rev(lambda) as computed below\n")
+	    lambda <- rev(lambda)
     }
     else if(!is.null(lambda) && length(lambda) > 1 && all(lambda == cummax(lambda)))
 	    decreasing <- FALSE
+    else if(is.null(lambda) && decreasing && type.path=="active")
+	    stop("set decreasing=FALSE or type.path='naive'")
     if(rfamily %in% c("closs", "gloss", "qloss"))
         if(!all(names(table(y)) %in% c(1, -1)))
             stop("response variable must be 1/-1 for family ", rfamily, "\n")
@@ -474,7 +479,7 @@ nclreg_fit <- function(x,y, weights, offset=NULL, cost=0.5, rfamily=c("clossR", 
 	    }
 	    else 
 		    risk <- pll <- NULL
-       	    list(beta=matrix(RET$beta, ncol=nlambda), b0=RET$b0, RET=RET, risk=risk, pll=pll)
+       	    list(beta=matrix(RET$beta, ncol=nlambda), b0=RET$b0, RET=RET, risk=risk, pll=pll, lambda=lambda)
     }
 ### update for one element of lambda depending on increasing sequence of lambda (last element of lambda) or decreasing sequence of lambda (then first element of lambda) in each MM iteration, and iterate until convergency of prediction. Then fit a solution path based on the sequence of lambda. Experiment code. Argument direction has been removed.
     typeC <- function(beta, b0){
@@ -519,7 +524,7 @@ nclreg_fit <- function(x,y, weights, offset=NULL, cost=0.5, rfamily=c("clossR", 
 	}
         beta <- RET$beta
         b0 <- RET$b0
-        list(beta=beta, b0=b0, RET=RET, risk=los, pll=pll)
+        list(beta=beta, b0=b0, RET=RET, risk=los, pll=pll, lambda=RET$lambda)
     }
     #if(type.path=="active") tmp <- typeB(beta, b0)
 # typeA and typeB are combined into typeBB
@@ -544,7 +549,7 @@ nclreg_fit <- function(x,y, weights, offset=NULL, cost=0.5, rfamily=c("clossR", 
     RET$y <- y
     RET$call <- call
     RET$cost <- cost
-    RET$lambda <- lambda
+    RET$lambda <- tmp$lambda
     RET$nlambda <- nlambda
     RET$penalty <- penalty
     RET$s <- s
