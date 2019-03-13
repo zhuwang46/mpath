@@ -479,7 +479,7 @@ nclreg_fit <- function(x,y, weights, offset=NULL, cost=0.5, rfamily=c("clossR", 
 	    }
 	    else 
 		    risk <- pll <- NULL
-       	    list(beta=matrix(RET$beta, ncol=nlambda), b0=RET$b0, RET=RET, risk=risk, pll=pll, lambda=lambda)
+       	    list(beta=matrix(RET$beta, ncol=nlambda), b0=RET$b0, RET=RET, risk=risk, pll=pll)
     }
 ### update for one element of lambda depending on increasing sequence of lambda (last element of lambda) or decreasing sequence of lambda (then first element of lambda) in each MM iteration, and iterate until convergency of prediction. Then fit a solution path based on the sequence of lambda. Experiment code. Argument direction has been removed.
     typeC <- function(beta, b0){
@@ -524,7 +524,7 @@ nclreg_fit <- function(x,y, weights, offset=NULL, cost=0.5, rfamily=c("clossR", 
 	}
         beta <- RET$beta
         b0 <- RET$b0
-        list(beta=beta, b0=b0, RET=RET, risk=los, pll=pll, lambda=RET$lambda)
+        list(beta=beta, b0=b0, RET=RET, risk=los, pll=pll)
     }
     #if(type.path=="active") tmp <- typeB(beta, b0)
 # typeA and typeB are combined into typeBB
@@ -549,7 +549,7 @@ nclreg_fit <- function(x,y, weights, offset=NULL, cost=0.5, rfamily=c("clossR", 
     RET$y <- y
     RET$call <- call
     RET$cost <- cost
-    RET$lambda <- tmp$lambda
+    RET$lambda <- lambda
     RET$nlambda <- nlambda
     RET$penalty <- penalty
     RET$s <- s
