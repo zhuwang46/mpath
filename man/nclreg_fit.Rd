@@ -13,7 +13,7 @@ nclreg_fit(x, y, weights, offset=NULL, cost=0.5,
 	   lambda.min.ratio=ifelse(nobs<nvars,.05, .001),alpha=1, gamma=3, 
 	   standardize=TRUE, penalty.factor = NULL, maxit=1000, type.init="bst", 
 	   mstop.init=10, nu.init=0.1, decreasing=FALSE,
-	   eps=.Machine$double.eps, trace=FALSE, 
+	   eps=.Machine$double.eps, thresh=1e-6, trace=FALSE, 
 	   penalty=c("enet","mnet","snet"),type.path=c("active", "naive", "onestep"))
 }
 
@@ -53,6 +53,7 @@ nclreg_fit(x, y, weights, offset=NULL, cost=0.5,
  \item{maxit}{Within each MM algorithm iteration, maximum number of coordinate descent iterations for each \code{lambda} value; default is 1000.}
  \item{del}{convergency critera} 
  \item{eps}{If a coefficient is less than \code{eps} in magnitude, then it is reported to be 0}
+ \item{thresh}{Convergence threshold for coordinate descent. Defaults value is \code{1e-6}.}
  \item{penalty}{Type of regularization}
  \item{type.path}{solution path. If \code{type.path="active"}, then cycle through only the active set in the next increasing \code{lambda} sequence. If \code{type.path="naive"}, no active set for each element of the lambda sequence and cycle through all the predictor variables. If \code{type.path="onestep"}, update for one element of lambda depending on \code{decreasing=FALSE} (last element of lambda) or \code{decreasing=TRUE} (then first element of lambda) in each MM iteration, and iterate until convergency of prediction. Then fit a solution path based on the sequence of lambda.}
  \item{trace}{If \code{TRUE}, fitting progress is reported}
