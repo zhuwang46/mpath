@@ -21,7 +21,6 @@ C     used in nclreg.R
       double precision, dimension(:), allocatable :: start_act, beta_1,
      +     penaltyfactor_act
 
-      i=1
       b0_1=0
       stopit = 0
       m_act = m
@@ -44,12 +43,13 @@ C     used in nclreg.R
          beta_1(j)=0
          activeset(j)=j
  5    continue
-      call dcopy(m, start, 1, start_act, 1)
+      call dcopy(m+1, start, 1, start_act, 1)
       call dcopy(m, penaltyfactor, 1, penaltyfactor_act, 1)
       do 101 j=1, m
          varsel_old(j)=j
          varsel(j)=j
  101  continue
+      i=1
  10   if(i .LE. nlambda)then
          if(trace .EQ. 1)then
             call intpr("i=", -1, i, 1)
@@ -67,6 +67,11 @@ C     used in nclreg.R
 C     check if h has NAN value
             do 30 ii=1, n
                if(h(ii) .NE. h(ii))then
+                  call intpr("i=", -1, i, 1)
+                  call intpr("  k=", -1, k, 1)
+                  call intpr("    ii=", -1, ii, 1)
+                  call dblepr("     h(ii)", -1, h(ii), 1)
+                  call dblepr("     fk_old(ii)", -1, fk_old(ii), 1)
                   stopit = 1
                   exit
                endif
