@@ -1,5 +1,6 @@
 C similar to and derived from R/glmreg_fit
-C input: etastart, mustart - changed
+C input: start, etastart, mustart - no change
+c output: yhat is the updated mustart as output
       subroutine glmreg_fit_fortran(x, y, weights, n,m,start, etastart,
      +         mustart, offset, nlambda, lambda, alpha, 
      +         gam, rescale, standardize, penaltyfactor,
@@ -9,14 +10,39 @@ C input: etastart, mustart - changed
       integer n,m, i,j, penalty, nlambda, family, standardize, maxit,
      +     innermaxit, trace, rescale, good,
      +     satu, convout(nlambda), startv
-      double precision x(n, m), y(n), weights(n),start(m+1),etastart(n),
-     +     mustart(n), offset(n), lambda(nlambda), lam(m, nlambda), 
+      double precision, intent(in) :: etastart(n),mustart(n),start(m+1)
+      double precision x(n, m), y(n), weights(n), 
+Cstart(m+1),etastart(n), mustart(n), 
+           offset(n), lambda(nlambda), lam(m, nlambda), 
      +     alpha, gam, thresh, epsbino, eps, theta, penaltyfactor(m),
      +     beta(m, nlambda), b0(nlambda), sumpen, outpll(maxit,nlambda),
      +     wt(n),eta(n), dev, meanx(m), normx(m),xd(m), nulldev,
      +     penfac(m), resdev(nlambda), yhat(n), mu(n), sumwt,
      +     crossprod_beta(nlambda), meany, meanoffset
     
+      if(family.EQ.10)then
+              call dblepr("x=", -1, x(1, 1:m), m)
+              call dblepr("y", -1, y(1:5), 5)
+              call dblepr("weights", -1, weights(1:5), 5)
+              call intpr("m", -1, m, 1)
+              call dblepr("start", -1, start, m+1)
+              call dblepr("etastart", -1, etastart, 5)
+              call dblepr("mustart", -1, mustart, 5)
+              call dblepr("offset", -1, offset, 5)
+              call dblepr("alpha", -1, alpha, 1)
+              call intpr("rescale", -1, rescale, 1)
+              call intpr("standardize", -1, standardize, 1)
+              call dblepr("penaltyfactor", -1, penaltyfactor, 5)
+              call dblepr("thresh", -1, thresh, 1)
+              call intpr("maxit", -1, maxit, 1)
+              call dblepr("eps", -1, eps, 1)
+              call intpr("family", -1, family, 1)
+              call intpr("penalty", -1, penalty, 1)
+              call dblepr("beta", -1, beta, m)
+              call dblepr("b0", -1, b0, 1)
+              call dblepr("yhat", -1, yhat, 5)
+      endif
+
       if(family.EQ.1) then
             rescale = 0
       endif
@@ -96,7 +122,7 @@ C http://www.tat.physik.uni-tuebingen.de/~kley/lehre/ftn77/tutorial/blas.html
          endif
       endif
 C update mustart
-      call linkinv(n, yhat, family, mustart)
+C      call linkinv(n, yhat, family, mustart)
 
       return
       end
