@@ -83,6 +83,7 @@ C     check if h has NAN value
      +           epsbino, maxit, eps, theta, family,  
      +           penalty, trace, beta_1, b0_1, yhat)
             call dcopy(n, yhat, 1, fk, 1)
+            call dcopy(n, yhat, 1, mustart, 1)
             start_act(1) = b0_1
             if(jk .GT. 0)then
                do 100 j=1, m_act
