@@ -115,7 +115,11 @@ C            call dcopy(n, yhat, 1, fk_old, 1)
      +           0, penaltyfactor_count_act, thresh,
      +           epsbino, maxit, eps, theta, family,  
      +           penalty, trace, betax, b0x, yhat)
+C    yhat: the fitted mean values, obtained by transforming the
+C          linear predictors by the inverse of the link function.
             call dcopy(n, yhat, 1, mustart_count, 1)
+C    etastart_count: linear predictors, obtained by transforming the
+C    mean values by the link function.
             call gfunc(yhat, n, family, epsbino, etastart_count)
            call intpr("after glmreg_fit_fortran",-1,1, 1)
            call dblepr("start_count_act",-1,start_count_act,m_count_act)
