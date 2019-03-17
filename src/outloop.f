@@ -20,7 +20,7 @@ C     ypre: yhat
       double precision x(n,m), y(n), wt(n), lam(m, nlambda),alpha,
      +     gam, theta,mu(n),eta(n), nulldev,thresh, eps, b(m,nlambda),
      +     bz(nlambda),xold(n,m), yold(n), start(m+1), resdev(nlambda), 
-     +     v(n), ypre(n,nlambda), lamk(m), beta(m), b0,dev,
+     +     ypre(n,nlambda), lamk(m), beta(m), b0,dev,
      +     weights(n),yhat(n),ep, pll(maxit), outpll(maxit, nlambda),
      +     normx(m),xd(m),avg, offset(n) 
 
@@ -155,10 +155,11 @@ C     70: if block --end
  20      continue
          bz(k) = b0
          resdev(k) = dev
-         call linkinv(n, yhat, family, v)
-         do 30 i=1, n
-            ypre(i,k) = v(i)
- 30      continue
+         call linkinv(n, yhat, family, ypre(1:n,k))
+C         call linkinv(n, yhat, family, v)
+C         do 30 i=1, n
+C            ypre(i,k) = v(i)
+C 30      continue
          k = k + 1
          if(k .LE. nlambda .AND. satu .EQ. 0)then
             do 40 j=1,m
