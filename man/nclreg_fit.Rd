@@ -9,12 +9,13 @@
 \usage{
 nclreg_fit(x, y, weights, offset=NULL, cost=0.5, 
 	   rfamily=c("clossR", "closs", "gloss", "qloss"), 
-	   s=NULL, fk=NULL, iter=10, del=1e-10, nlambda=100, lambda=NULL, 
+	   s=NULL, fk=NULL, iter=10, del=1e-10, 
+	   penalty=c("enet","mnet","snet"), nlambda=100, lambda=NULL, 
+           type.path=c("active", "naive", "onestep"), decreasing=FALSE,
 	   lambda.min.ratio=ifelse(nobs<nvars,.05, .001),alpha=1, gamma=3, 
 	   standardize=TRUE, penalty.factor = NULL, maxit=1000, type.init="bst", 
-	   mstop.init=10, nu.init=0.1, decreasing=FALSE,
-	   eps=.Machine$double.eps, thresh=1e-6, trace=FALSE, 
-	   penalty=c("enet","mnet","snet"),type.path=c("active", "naive", "onestep"))
+	   mstop.init=10, nu.init=0.1, 
+	   eps=.Machine$double.eps, thresh=1e-6, trace=FALSE)
 }
 
 \arguments{
@@ -29,6 +30,7 @@ nclreg_fit(x, y, weights, offset=NULL, cost=0.5,
   \item{fk}{ predicted values at an iteration in the MM algorithm }
   \item{nlambda}{The number of \code{lambda} values - default is 100. The sequence may be truncated before \code{nlambda} is reached if a close to saturated model is fitted. See also \code{satu}.}
   \item{lambda}{ by default, the algorithm provides a sequence of regularization values, or a user supplied \code{lambda} sequence }
+  \item{type.path}{solution path. If \code{type.path="active"}, then cycle through only the active set in the next increasing \code{lambda} sequence. If \code{type.path="naive"}, no active set for each element of the lambda sequence and cycle through all the predictor variables. If \code{type.path="onestep"}, update for one element of lambda depending on \code{decreasing=FALSE} (last element of lambda) or \code{decreasing=TRUE} (then first element of lambda) in each MM iteration, and iterate until convergency of prediction. Then fit a solution path based on the sequence of lambda.}
   \item{lambda.min.ratio}{Smallest value for \code{lambda}, as a fraction of
     \code{lambda.max}, the (data derived) entry value (i.e. the smallest
   value for which all coefficients are zero except the intercept). Note, there is no closed formula for \code{lambda.max}. The default of \code{lambda.min.ratio} depends on the
@@ -55,7 +57,6 @@ nclreg_fit(x, y, weights, offset=NULL, cost=0.5,
  \item{eps}{If a coefficient is less than \code{eps} in magnitude, then it is reported to be 0}
  \item{thresh}{Convergence threshold for coordinate descent. Defaults value is \code{1e-6}.}
  \item{penalty}{Type of regularization}
- \item{type.path}{solution path. If \code{type.path="active"}, then cycle through only the active set in the next increasing \code{lambda} sequence. If \code{type.path="naive"}, no active set for each element of the lambda sequence and cycle through all the predictor variables. If \code{type.path="onestep"}, update for one element of lambda depending on \code{decreasing=FALSE} (last element of lambda) or \code{decreasing=TRUE} (then first element of lambda) in each MM iteration, and iterate until convergency of prediction. Then fit a solution path based on the sequence of lambda.}
  \item{trace}{If \code{TRUE}, fitting progress is reported}
 }
 \details{
