@@ -13,7 +13,7 @@ c output: yhat is the updated mustart as output
       double precision, intent(in) :: etastart(n),mustart(n),start(m+1)
       double precision x(n, m), y(n), weights(n), 
 Cstart(m+1),etastart(n), mustart(n), 
-           offset(n), lambda(nlambda), lam(m, nlambda), 
+     +     offset(n), lambda(nlambda), lam(m, nlambda), 
      +     alpha, gam, thresh, epsbino, eps, theta, penaltyfactor(m),
      +     beta(m, nlambda), b0(nlambda), sumpen, outpll(maxit,nlambda),
      +     wt(n),eta(n), dev, meanx(m), normx(m),xd(m), nulldev,
@@ -97,9 +97,9 @@ C choose family=2 (any interger except 1 to avoid centering/scaling y) below
      +     mu)
       endif
       call outloop(x,y,weights,wt,n,m,penalty,nlambda,lam,alpha,gam,
-     +            theta,rescale,mustart,eta,offset,family,standardize,
-     +            nulldev,thresh,maxit,innermaxit,eps,trace,start,
-     +            startv,beta,b0,resdev,yhat,
+     +            theta,rescale,mustart,etastart,offset,family,
+     +            standardize,nulldev,thresh,maxit,innermaxit,eps,trace,
+     +            start,startv,beta,b0,resdev,yhat,
      +              convout, satu, good, epsbino,outpll) 
       if (standardize .EQ. 1)then
          do 200 j=1, nlambda
