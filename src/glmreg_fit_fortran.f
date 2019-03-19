@@ -31,7 +31,6 @@ Cstart(m+1),etastart(n), mustart(n),
               call dblepr("offset", -1, offset, 5)
               call dblepr("alpha", -1, alpha, 1)
               call intpr("rescale", -1, rescale, 1)
-              call intpr("standardize", -1, standardize, 1)
               call dblepr("penaltyfactor", -1, penaltyfactor, 5)
               call dblepr("thresh", -1, thresh, 1)
               call intpr("maxit", -1, maxit, 1)
@@ -96,6 +95,9 @@ C choose family=2 (any interger except 1 to avoid centering/scaling y) below
               call preprocess(x,y,n,m,weights, 2,standardize,normx,xd,
      +     mu)
       endif
+C    need to check if satu is input or output
+          satu = 0
+          good = nlambda
       call outloop(x,y,weights,wt,n,m,penalty,nlambda,lam,alpha,gam,
      +            theta,rescale,mustart,etastart,offset,family,
      +            standardize,nulldev,thresh,maxit,innermaxit,eps,trace,
