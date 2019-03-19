@@ -255,7 +255,7 @@ glmreg_fit <- function(x, y, weights, start=NULL, etastart=NULL, mustart=NULL, o
                     rescale=as.integer(rescale),
                     mu=as.double(mu),
                     eta=as.double(eta),
-		    offset=as.double(offset),
+	          	    offset=as.double(offset),
                     family=as.integer(famtype),
                     standardize=as.integer(stantype),
                     nulldev=as.double(nulldev),
