@@ -1,5 +1,5 @@
 ###Adapted from file MASS/R/negbin.R
-glmregNB <- function(formula, data, weights, offset=NULL, nlambda=100, lambda=NULL, lambda.min.ratio=ifelse(nobs<nvars,.05, .001),alpha=1, gamma=3, rescale=TRUE, standardize=TRUE, penalty.factor = rep(1, nvars), thresh=1e-3, maxit.theta=25, maxit=1000, eps=.Machine$double.eps, trace=FALSE, start = NULL, etastart = NULL, mustart = NULL, theta.est=TRUE, theta0=NULL, init.theta=ifelse(theta.est, theta0[1],NULL), link=log, penalty=c("enet","mnet","snet"), method="glmreg_fit", model=TRUE, x.keep=FALSE, y.keep=TRUE, contrasts=NULL, convex=FALSE, ...)
+glmregNB <- function(formula, data, weights, offset=NULL, nlambda=100, lambda=NULL, lambda.min.ratio=ifelse(nobs<nvars,.05, .001),alpha=1, gamma=3, rescale=TRUE, standardize=TRUE, penalty.factor = rep(1, nvars), thresh=1e-3, maxit.theta=25, maxit=1000, eps=.Machine$double.eps, eps.bino=1e-5, trace=FALSE, start = NULL, etastart = NULL, mustart = NULL, theta.est=TRUE, theta0=NULL, init.theta=ifelse(theta.est, theta0[1],NULL), link=log, penalty=c("enet","mnet","snet"), method="glmreg_fit", model=TRUE, x.keep=FALSE, y.keep=TRUE, contrasts=NULL, convex=FALSE, ...)
 {
     if(!theta.est)
         if(length(theta0)!=nlambda)
@@ -68,7 +68,62 @@ glmregNB <- function(formula, data, weights, offset=NULL, nlambda=100, lambda=NU
     fitted <- matrix(NA, ncol=nlambda, nrow=n)
     pll <- matrix(NA, ncol=nlambda, nrow=maxit)
     b0 <- tht <- nulldev <- resdev <- rep(NA, nlambda)                           
-                                        #    dots <- list(...)
+    if(is.null(mustart) || missing(init.theta)){
+        fit <- glm.nb(Y ~ 1, weights=weights)
+        mustart <- fit$fitted.values
+        etastart <- log(mustart)
+        th <- fit$theta
+        start <- c(coef(fit), rep(0, m))
+    }
+    if(is.null(offset)) offset <- rep(0, n)
+    if(theta.est) theta0 <- rep(0, nlambda)
+    pentype <- switch(penalty,
+                      "enet"=1,
+                      "mnet"=2,
+                      "snet"=3)
+
+    RET <- .Fortran("glmregnb_fortran",
+                    x=as.double(X[,-1]), 
+                    y=as.double(Y), 
+                    weights=as.double(weights),
+                    n=as.integer(n),
+                    m=as.integer(m),
+                    offset=as.double(offset), 
+                    nlambda=as.integer(nlambda),
+                    lambda=as.double(lambda),
+                    penalty=as.integer(pentype),
+                    alpha=as.double(alpha),
+                    gam=as.double(gamma),
+                    rescale=as.integer(rescale), 
+                    standardize=as.integer(standardize), 
+                    penaltyfactor = as.double(penalty.factor), 
+                    thresh=as.double(thresh), 
+                    maxit_theta=as.integer(maxit.theta), 
+                    maxit=as.integer(maxit), 
+                    eps=as.double(eps), 
+                    epsbino=as.double(eps.bino), 
+                    start = as.double(start), 
+                    etastart=as.double(etastart), 
+                    mustart = as.double(mustart), 
+                    thetastart=as.double(th), 
+                    theta_est=as.integer(theta.est), 
+                    theta0=as.double(theta0), 
+                    trace=as.integer(trace), 
+                    beta=as.double(matrix(0, nrow=m, ncol=nlambda)),
+                    b0=as.double(rep(0, nlambda)),
+                    tht=as.double(rep(0, nlambda)),
+                    PACKAGE="mpath")
+        beta <- matrix(RET$beta, ncol=nlambda)
+        b0 <- RET$b0
+    if(standardize) {
+        beta <- beta/normx
+        b0 <- b0 - crossprod(meanx, beta)
+    }
+    cat("beta=\n") 
+    print(beta)
+    cat("b0=\n")
+    print(b0)
+    cat("theta=", RET$tht, "\n")
     k <- 1
     convout <- twologlik <- rep(NA, nlambda)
     while(k <= nlambda){  
@@ -100,21 +155,28 @@ glmregNB <- function(formula, data, weights, offset=NULL, nlambda=100, lambda=NU
         }
         if(!theta.est) th <- theta0[k]
         iter <- 0
-	#d1 <- sqrt(2 * max(1, fit$df.residual))
         d2 <- del <- 1
         Lm <- loglik(n, th, mu, Y, w)
         converged <- FALSE                                    
         while((iter <- iter + 1) <= maxit.theta && !converged){
             eta <- log(mu)
-	    #            fit <- glmreg_fit(x=X[,-1], y=Y, weights=w, lambda=lambda[k],alpha=alpha,gamma=gamma,rescale=rescale, standardize=standardize, penalty.factor = penalty.factor, thresh=thresh, maxit=maxit, eps=eps, family="negbin", theta=th, trace=trace, penalty=penalty)
-	    fit <- glmreg_fit(x=X[,-1], y=Y, weights=w, start = start, etastart=eta, mustart = mu, offset=offset, lambda=lambda[k],alpha=alpha,gamma=gamma,rescale=rescale, standardize=standardize, penalty.factor = penalty.factor, thresh=thresh, maxit=maxit, eps=eps, family="negbin", theta=th, trace=trace, penalty=penalty)
+                                        #            fit <- glmreg_fit(x=X[,-1], y=Y, weights=w, lambda=lambda[k],alpha=alpha,gamma=gamma,rescale=rescale, standardize=standardize, penalty.factor = penalty.factor, thresh=thresh, maxit=maxit, eps=eps, family="negbin", theta=th, trace=trace, penalty=penalty)
+            fit <- glmreg_fit(x=X[,-1], y=Y, weights=w, start = start, etastart=eta, mustart = mu, offset=offset, lambda=lambda[k],alpha=alpha,gamma=gamma,rescale=rescale, standardize=standardize, penalty.factor = penalty.factor, thresh=thresh, maxit=maxit, eps=eps, family="negbin", theta=th, trace=trace, penalty=penalty)
             t0 <- th
             mu <- fit$fitted.values
             if(theta.est){
-                                        #      th <- theta.ml(Y, mu, sum(w), w, limit=maxit.theta,
-                th <- theta.ml(Y, mu, sum(w), w,
-                               trace = trace)
-            }
+                                        #th <- theta.ml(Y, mu, sum(w), w, trace = trace)
+                th <- .Fortran("theta_ml",
+			       y=as.double(Y), 
+			       mu=as.double(mu), 
+			       n=as.integer(n),
+			       weights=as.double(w), 
+			       limit=as.integer(maxit.theta),
+			       eps=as.double(eps^0.25),
+			       t0=as.double(0),
+			       trace=as.integer(trace),
+			       PACKAGE="mpath")$t0
+ 	    }
             else th <- theta0[k]
             start <- c(fit$b0, fit$beta)
             del <- t0 - th
