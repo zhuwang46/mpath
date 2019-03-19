@@ -49,7 +49,7 @@ C     keep a copy of x and y in case x and y will be changed in subroutine lmnet
 
       k = 1
       satu = 0
-
+C      good = nlambda
       do 401 j=1, m
          activeset(j)=j
          fullset(j)=j
