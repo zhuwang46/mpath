@@ -11,12 +11,11 @@ C     used in nclreg.R
      +     stopit,m_act,
      +     AllocateStatus, DeAllocateStatus, varsel(m), varsel_old(m)
       double precision x(n, m), y(n), weights(n),start(m+1),etastart(n),
-     +     mustart(n), offset(n), lambda(nlambda),
-     +     alpha, gam, eps, penaltyfactor(m), thresh, epsbino,  theta,
-     +     beta(m, nlambda), b0(nlambda), b0_1,
-     +     yhat(n), d, del, lambda_i,
-     +     fk_old(n), s, B, h(n), fk(n), a, los(iter,nlambda), 
-     +     pll(iter, nlambda), cost, penval
+     +     mustart(n), offset(n), lambda(nlambda), alpha, gam, eps, 
+     +     penaltyfactor(m), thresh, epsbino,  theta, beta(m, nlambda), 
+     +     b0(nlambda), b0_1, yhat(n), d, del, lambda_i, fk_old(n), s, 
+     +     B, h(n), fk(n), los(iter,nlambda), pll(iter, nlambda), cost, 
+     +     penval
       double precision, dimension(:, :), allocatable :: x_act
       double precision, dimension(:), allocatable :: start_act, beta_1,
      +     penaltyfactor_act
@@ -104,11 +103,10 @@ C            the above glmref_fit call since family=1.
                   pll(k, i)=los(k, i) + penval
                endif
             endif
-            a = 0
+            d = 0
             do 120 ii=1, n
-               a=a+(fk_old(i) - fk(i))**2
+               d=d+(fk_old(i) - fk(i))**2
  120        continue
-            d = a
             k = k + 1
             goto 500
          endif
