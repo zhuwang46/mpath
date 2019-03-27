@@ -482,14 +482,14 @@ zipath <- function(formula, data, weights, subset, na.action, offset, standardiz
         probi[Y1] <- 0
         if(dim(Xnew)[2] > 1 && is.null(lambda.count)){
             if(family=="poisson"){
-                lambda.count <- glmreg_fit(Xnew, Y, weights=weights*(1-probi)/n, family="poisson", offset=offsetx, penalty.factor=penalty.factor.count, nlambda=nlambda, lambda.min.ratio = lambda.min.ratio, alpha=alpha.count, maxit=1, standardize=FALSE, ...)$lambda
+                lambda.count <- glmreg_fit(Xnew, Y, weights=weights*(1-probi)/sum(weights), family="poisson", offset=offsetx, penalty.factor=penalty.factor.count, nlambda=nlambda, lambda.min.ratio = lambda.min.ratio, alpha=alpha.count, maxit=1, standardize=FALSE, ...)$lambda
             }
             else if(family=="geometric"){
-                lambda.count <- glmreg_fit(Xnew, Y, weights=weights*(1-probi)/n, family="negbin", offset=offsetx, penalty.factor=penalty.factor.count, nlambda=nlambda, lambda.min.ratio=lambda.min.ratio,alpha=alpha.count, theta=1, maxit=1, standardize=FALSE, ...)$lambda
+                lambda.count <- glmreg_fit(Xnew, Y, weights=weights*(1-probi)/sum(weights), family="negbin", offset=offsetx, penalty.factor=penalty.factor.count, nlambda=nlambda, lambda.min.ratio=lambda.min.ratio,alpha=alpha.count, theta=1, maxit=1, standardize=FALSE, ...)$lambda
                 theta <- 1
             }   else if(family=="negbin"){
                 if(theta.fixed){
-                    lambda.count <- glmreg_fit(Xnew, Y, weights=weights*(1-probi)/n, family="negbin", offset=offsetx, penalty.factor=penalty.factor.count, theta=init.theta, nlambda=nlambda, lambda.min.ratio=lambda.min.ratio, alpha=alpha.count, maxit=1, standardize=FALSE, ...)$lambda
+                    lambda.count <- glmreg_fit(Xnew, Y, weights=weights*(1-probi)/sum(weights), family="negbin", offset=offsetx, penalty.factor=penalty.factor.count, theta=init.theta, nlambda=nlambda, lambda.min.ratio=lambda.min.ratio, alpha=alpha.count, maxit=1, standardize=FALSE, ...)$lambda
                 }
                 else{
                     lambda.count <- glmregNB(Y~Xnew, weights=weights*(1-probi)/n, offset=offsetx, penalty.factor=penalty.factor.count, nlambda=nlambda, lambda.min.ratio=lambda.min.ratio, alpha=alpha.count, rescale=FALSE, standardize=FALSE, maxit=1, maxit.theta=2, ...)$lambda
@@ -498,7 +498,7 @@ zipath <- function(formula, data, weights, subset, na.action, offset, standardiz
         }
         else lambda.count <- rep(0, nlambda)
         if(dim(Znew)[2] > 1 && is.null(lambda.zero)){
-            lambda.zero <- glmreg_fit(Znew, probi/n, weights=weights, family="binomial", offset=offsetz, penalty=penalty, penalty.factor=penalty.factor.zero, rescale=rescale, nlambda=nlambda, lambda.min.ratio=lambda.zero.min.ratio, alpha=alpha.zero, maxit=1, standardize=FALSE, eps.bino=eps.bino, ...)$lambda ### added standardize=FALSE AND change probi to probi/n, then the results are corret here. 3/26/2019
+            lambda.zero <- glmreg_fit(Znew, probi/sum(weights), weights=weights, family="binomial", offset=offsetz, penalty=penalty, penalty.factor=penalty.factor.zero, rescale=rescale, nlambda=nlambda, lambda.min.ratio=lambda.zero.min.ratio, alpha=alpha.zero, maxit=1, standardize=FALSE, eps.bino=eps.bino, ...)$lambda ### added standardize=FALSE AND change probi to probi/n, then the results are corret here. 3/26/2019
 ### it is possible that the length of lambda.zero < lambda.count (and vice versa), for instance, a saturated model returns ealier
             if(length(lambda.zero) < nlambda)
 		lambda.zero <- rep_len(lambda.zero, nlambda)
@@ -611,7 +611,7 @@ zipath <- function(formula, data, weights, subset, na.action, offset, standardiz
                     countcoef = model_count$coefficients
                 }
                 else{
-                capture.output(model_count <- glmreg_fit(Xnew, Y, weights = weights * (1-probi)/n, standardize = FALSE, offset=offsetx, penalty.factor=penalty.factor.count, lambda=lambda.count[k], alpha=alpha.count,gamma=gamma.count, rescale=rescale, maxit=maxit,
+                capture.output(model_count <- glmreg_fit(Xnew, Y, weights = weights * (1-probi)/sum(weights), standardize = FALSE, offset=offsetx, penalty.factor=penalty.factor.count, lambda=lambda.count[k], alpha=alpha.count,gamma=gamma.count, rescale=rescale, maxit=maxit,
 ### the line start= ... included 7/20/2018
                                                              start=start$count, mustart=mui, etastart=g(mui, family="poisson"),  
                                                              family = "poisson", penalty=penalty, trace=trace))
@@ -646,7 +646,7 @@ zipath <- function(formula, data, weights, subset, na.action, offset, standardiz
 ### the line start= ... included 7/20/2018
                      #                                       start=start$zero, mustart=model_zero$fitted.values, etastart=g(model_zero$fitted.values, family="binomial", eps.bino=eps.bino),
                      #                                       family = "binomial", penalty=penalty, trace=trace, eps.bino=eps.bino))
-                    model_zero <- glmreg_fit(Znew, probi/n, weights = weights, standardize=FALSE, offset=offsetz, penalty.factor=penalty.factor.zero, lambda=lambda.zero[k], alpha=alpha.zero, gamma=gamma.zero, rescale=rescale, maxit=maxit, 
+                    model_zero <- glmreg_fit(Znew, probi/sum(weights), weights = weights, standardize=FALSE, offset=offsetz, penalty.factor=penalty.factor.zero, lambda=lambda.zero[k], alpha=alpha.zero, gamma=gamma.zero, rescale=rescale, maxit=maxit, 
                                                             start=start$zero, mustart=model_zero$fitted.values, etastart=g(model_zero$fitted.values, family="binomial", eps.bino=eps.bino),
                                                             family = "binomial", penalty=penalty, trace=trace, eps.bino=eps.bino)
                 #    library("glmnet")
