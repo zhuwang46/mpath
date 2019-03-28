@@ -331,6 +331,7 @@ zipath <- function(formula, data, weights, subset, na.action, offset, standardiz
     weights <- model.weights(mf)
     if(is.null(weights)) weights <- 1
     if(length(weights) == 1) weights <- rep.int(weights, n)
+    weights <- weights/sum(weights) 
     weights <- as.vector(weights)
     names(weights) <- rownames(mf)
     offsetx <- model_offset_2(mf, terms = mtX, offset = TRUE)
@@ -611,7 +612,7 @@ zipath <- function(formula, data, weights, subset, na.action, offset, standardiz
                     countcoef = model_count$coefficients
                 }
                 else{
-                capture.output(model_count <- glmreg_fit(Xnew, Y, weights = weights * (1-probi)/sum(weights), standardize = FALSE, offset=offsetx, penalty.factor=penalty.factor.count, lambda=lambda.count[k], alpha=alpha.count,gamma=gamma.count, rescale=rescale, maxit=maxit,
+                capture.output(model_count <- glmreg_fit(Xnew, Y, weights = weights/sum(weights) * (1-probi), standardize = FALSE, offset=offsetx, penalty.factor=penalty.factor.count, lambda=lambda.count[k], alpha=alpha.count,gamma=gamma.count, rescale=rescale, maxit=maxit,
 ### the line start= ... included 7/20/2018
                                                              start=start$count, mustart=mui, etastart=g(mui, family="poisson"),  
                                                              family = "poisson", penalty=penalty, trace=trace))
