@@ -92,7 +92,7 @@ C     dev
 C     compute deviance dev
          call deveval(n, yold, mu, theta, weights, family, dev)
          if(family .EQ. 2)then
-            if(dev/nulldev .LT.0.01 .OR. dev.LT.0.0001)then
+           if(dev/nulldev .LT.0.01 .OR. dev.LT.0.0001)then
                call dblepr("saturated model, residual deviance = ", -1, 
      +              dev,1)
                call dblepr("saturated model, null deviance = ", -1, 
