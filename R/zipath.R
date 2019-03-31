@@ -444,6 +444,8 @@ zipath <- function(formula, data, weights, subset, na.action, offset, standardiz
         penalty.factor.zero <- rep(1, dim(Znew)[2])
         lambda.zero <- rep(0, nlambda)
     }
+    #for poisson family or negbin with fixed theta, using KKT conditions to compute lambda_count and lambda_zero values
+    if(trace)
     lmax <- .Fortran("lmax_zipath",
                           B=as.double(Xnew),
                           G=as.double(Znew),
@@ -465,9 +467,9 @@ zipath <- function(formula, data, weights, subset, na.action, offset, standardiz
                           lmax_zero=as.double(1),
                           PACKAGE="mpath")
     #cat("with Fortran KKT conditions, lmax$lmax_count=", lmax$lmax_count, "lmax_zero=", lmax$lmax_zero, "\n")
-    lpath <- seq(log(lmax$lmax_count), log(lambda.min.ratio * lmax$lmax_count), length.out=nlambda)
+    #lpath <- seq(log(lmax$lmax_count), log(lambda.min.ratio * lmax$lmax_count), length.out=nlambda)
     #lambda.count <- exp(lpath)
-    lpath <- seq(log(lmax$lmax_zero), log(lambda.min.ratio * lmax$lmax_zero), length.out=nlambda)
+    #lpath <- seq(log(lmax$lmax_zero), log(lambda.min.ratio * lmax$lmax_zero), length.out=nlambda)
     #lambda.zero <- exp(lpath)
 
 ### get lambda -begin
@@ -518,7 +520,6 @@ zipath <- function(formula, data, weights, subset, na.action, offset, standardiz
             start$theta <- fit0$theta
         else start$theta <- init.theta
     }
-    cat("after computing lambda, lambda.count[1]=", lambda.count[1], "lambda.zero[1]=", lambda.zero[1], "\n")
     if(is.null(start$theta)) start$theta <- 1
     active <- 0
     if(active == 1)
