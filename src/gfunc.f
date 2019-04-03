@@ -1,9 +1,10 @@
 C input: mu, family, epsbino
 C output: eta
       subroutine gfunc(mu, n, family, epsbino, eta)
+      implicit none
       integer :: family, n, i
-      
-      double precision :: mu(n), eta(n)
+      double precision :: mu(n), epsbino, eta(n)
+
       do i=1, n
        if(family==1)then
          eta(i) = mu(i)
