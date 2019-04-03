@@ -1,5 +1,7 @@
 C     used in zipath.R
 C     inputs: family: 3 (poisson), 4 (negbin)
+C             theta
+C     outputs: coefc, coefz, thetaout
       subroutine zipath_fortran(x, z, y, y1, weights, n, kx, kz, 
      +     start_count, start_zero, mustart_count, mustart_zero, 
      +     offsetx, offsetz, nlambda, lambda_count,
@@ -8,34 +10,33 @@ C     inputs: family: 3 (poisson), 4 (negbin)
      +     penaltyfactor_zero, maxit, eps, family,
      +     penalty, trace, coefc, coefz, yhat, iter,
      +     del, los, pll, rescale, thresh, epsbino, 
-     +     theta, active)
+     +     theta_fixed, maxit_theta, theta, thetaout, active)
       implicit none
       integer n,m,i,ii,k,j,jj,kx, kz, penalty,nlambda,family, 
      +     standardize, maxit, y1(n), trace, iter, rfamily, 
      +     rescale, jk_count, jk_zero, active, activeset_count(kx), 
-     +     activeset_zero(kz), stopit,m_count_act,
+     +     activeset_zero(kz), stopit,m_count_act, maxit_theta,
      +     m_zero_act, AllocateStatus, DeAllocateStatus, 
      +     varsel_count(kx), varsel_count_old(kx),
-     +     varsel_zero(kz), varsel_zero_old(kz)
+     +     varsel_zero(kz), varsel_zero_old(kz), theta_fixed
       double precision x(n, kx), z(n, kz), weights(n), 
-     +     start_count(kx+1), dpois,  
+     +     start_count(kx+1), dpois, dnbinom, 
      +     start_zero(kz+1), etastart_count(n), etastart_zero(n),
      +     mustart_count(n), mustart_zero(n), offsetx(n), offsetz(n), 
-     +     lambda_count(nlambda),
+     +     lambda_count(nlambda), thetastart, thetaout(nlambda),
      +     lambda_zero(nlambda), alpha_count, alpha_zero, gam_count, 
      +     gam_zero, eps, penaltyfactor_count(kx), y(n),
      +     penaltyfactor_zero(kz), wt(n), probi(n), thresh, epsbino, 
-     +     theta, coefc(kx+1, nlambda), coefz(kz+1, nlambda), b0x, b0z,
-     +     yhat(n), d, del, fk(n),
-     +     fk_old(n), a, los(iter,nlambda), 
+     +     theta, coefc(kx+1, nlambda), coefz(kz+1, nlambda), b0_x, b0z,
+     +     yhat(n), d, del, los(iter,nlambda), theta0(nlambda),
      +     pll(iter, nlambda), penval
       double precision, dimension(:, :), allocatable :: x_act, z_act
       double precision, dimension(:), allocatable :: start_count_act,
      +     start_zero_act, betax, betaz,
      +     penaltyfactor_count_act, penaltyfactor_zero_act
-      external :: dpois, gfunc
+      external :: dpois, dnbinom, gfunc
 
-      b0x=0
+      b0_x=0
       b0z=0
       stopit = 0
       m_count_act = kx
@@ -43,17 +44,22 @@ C     inputs: family: 3 (poisson), 4 (negbin)
       jk_count = kx
       jk_zero = kz
 
-      if(family .EQ. 3)then
-         do ii=1, n
+      call gfunc(mustart_count, n, family, epsbino, etastart_count)
+      call gfunc(mustart_zero, n, 2, epsbino, etastart_zero)
+      do ii=1, n
             if(y1(ii) .EQ. 1)then
                probi(ii)=0
             else
               probi(ii)=mustart_zero(ii) 
+              if(family .EQ. 3)then
               probi(ii)=probi(ii)/(probi(ii)+(1-probi(ii))*dpois(0,
      +                  mustart_count(ii)))
+              else if(family .EQ. 4)then
+              probi(ii)=probi(ii)/(probi(ii)+(1-probi(ii))*dnbinom(0,
+     +                  theta, mustart_count(ii)))
+              endif
             endif
-         enddo
-      endif
+      enddo
       allocate(start_count_act(kx+1), stat=AllocateStatus)
       allocate(start_zero_act(kz+1), stat=AllocateStatus)
       allocate(penaltyfactor_count_act(kx), stat=AllocateStatus)
@@ -85,58 +91,62 @@ C     inputs: family: 3 (poisson), 4 (negbin)
          varsel_zero_old(j)=j
          varsel_zero(j)=j
  102  continue
+
       i=1
  10   if(i .LE. nlambda)then
-C         if(trace .EQ. 1)then
-            call intpr("i=", -1, i, 1)
-C         endif
+        if(trace .EQ. 1)then
+            call intpr("Fortran lambda iteration i=", -1, i, 1)
+        endif
          k = 1
          d = 10
-         call dblepr("del=", -1, del, 1)
  500     if(d .GT. del .AND. k .LE. iter)then
-            a = 0
-C      if(trace .EQ. 1)then
-            call intpr("  k=", -1, k, 1)
+      if(trace .EQ. 1)then
+            call intpr("  EM algorirthm iteration k=", -1, k, 1)
             call intpr("  activeset", -1, activeset_count, jk_count)
             call dblepr("     d=", -1, d, 1)
-C      endif
-C            call dcopy(n, yhat, 1, fk_old, 1)
+            call dblepr("start_count=", -1, start_count,m_count_act)
+            call dblepr("etastart_count=", -1, etastart_count, 5)
+            call dblepr("mustart_count=", -1, mustart_count,5)
+      endif
             do 30 ii=1, n
-               wt(ii)=weights(ii)*(1-probi(ii))/n 
+               wt(ii)=weights(ii)*(1-probi(ii)) 
  30         continue
-            call dblepr("wt", -1, wt, 10)
-           call intpr("before glmreg_fit_fortran",-1,1, 1)
-           call dblepr("start_count_act",-1,start_count_act,m_count_act)
-           call dblepr("etastart_count",-1,etastart_count, 10)
-           call dblepr("mustart_count",-1,mustart_count, 10)
+           if(family .NE. 4 .OR. theta_fixed .EQ. 1)then
             call glmreg_fit_fortran(x_act,y,wt,n,m_count_act,
      +           start_count_act,etastart_count,mustart_count,offsetx,
      +           1, lambda_count(i), alpha_count, gam_count, rescale, 
      +           0, penaltyfactor_count_act, thresh,
      +           epsbino, maxit, eps, theta, family,  
-     +           penalty, trace, betax, b0x, yhat)
+     +           penalty, trace, betax, b0_x, yhat)
+           else
+            thetastart = theta 
+            call glmregnb_fortran(x_act,y,wt,n,m_count_act,offsetx,
+     +           1, lambda_count(i), penalty, alpha_count, gam_count, 
+     +           rescale, 0, penaltyfactor_count_act, thresh,
+     +           maxit_theta, maxit, eps, epsbino, start_count_act, 
+     +           etastart_count, mustart_count, thetastart, 1, 
+     +           theta0, trace, betax, b0_x, theta, yhat)
+           endif
+C            call dblepr("start_count_act=", -1, start_count_act, 
+C     +        m_count_act+1)
 C    yhat: the fitted mean values, obtained by transforming the
 C          linear predictors by the inverse of the link function.
             call dcopy(n, yhat, 1, mustart_count, 1)
 C    etastart_count: linear predictors, obtained by transforming the
 C    mean values by the link function.
-            call gfunc(yhat, n, family, epsbino, etastart_count)
-           call intpr("after glmreg_fit_fortran",-1,1, 1)
-           call dblepr("start_count_act",-1,start_count_act,m_count_act)
-           call dblepr("etastart_count",-1,etastart_count, 10)
-           call dblepr("mustart_count",-1,mustart_count, 10)
-           call dblepr("yhat",-1, yhat, 10)
-           a=a+(start_count_act(1) - b0x)**2
-           call dblepr("betax",-1,betax, m_count_act)
-           call dblepr("b0x",-1,b0x, 1)
-            call dcopy(n, yhat, 1, fk, 1)
-            start_count_act(1) = b0x
+            call gfunc(mustart_count, n, family,epsbino,etastart_count)
+           d = 0
+           d=d+(start_count_act(1) - b0_x)**2
+            start_count_act(1) = b0_x
             if(jk_count .GT. 0)then
                do 100 j=1, m_count_act
-               a=a+(start_count_act(j+1) - betax(j))**2
+               d=d+(start_count_act(j+1) - betax(j))**2
                   start_count_act(j+1)=betax(j)
  100           continue
             endif
+           do ii=1, n
+             yhat(ii)=0
+           enddo
 C            call dblepr("after gfunc,etastart_zero",-1,etastart_zero, n)
 C            call dblepr("start_zero_act", -1, start_zero_act,m_zero_act)
 C            call dblepr("lambda_zero(i)", -1, lambda_zero(i), 1)
@@ -144,40 +154,45 @@ C            call dblepr("alpha_zero(i)", -1, alpha_zero, 1)
 C            call dblepr("penaltyfactor_zero_act", -1,
 C     +                  penaltyfactor_zero_act, m_zero_act)
 C            call dblepr("z_act", -1, z_act(1, 1:m_zero_act), m_zero_act)
-            call dblepr("mustart_zero", -1, mustart_zero, 10)
             call glmreg_fit_fortran(z_act,probi,weights,n,m_zero_act,
      +           start_zero_act, etastart_zero, mustart_zero,offsetz,
      +           1, lambda_zero(i), alpha_zero, gam_zero, rescale,
-     +           standardize, penaltyfactor_zero_act, thresh,
+     +           0, penaltyfactor_zero_act, thresh,
      +           epsbino, maxit, eps, theta, 2,  
      +           penalty, trace, betaz, b0z, yhat)
             call dcopy(n, yhat, 1, mustart_zero, 1)
-            call gfunc(yhat, n, 2, epsbino, etastart_zero)
-           call dblepr("betaz",-1,betaz, m_zero_act)
-           call dblepr("b0z",-1,b0z, 1)
-           call dblepr("yhat",-1, yhat, 10)
-           call dblepr("mustart_zero",-1, mustart_zero, 10)
-           if(family .EQ. 3)then
-             do ii=1, n
-              if(y1(ii) .EQ. 0)then
-               probi(ii)=yhat(ii) 
-               probi(ii)=probi(ii)/(probi(ii)+(1-probi(ii))*dpois(0,
+            call gfunc(mustart_zero, n, 2, epsbino, etastart_zero)
+           do ii=1, n
+            if(y1(ii) .EQ. 0)then
+              probi(ii)=mustart_zero(ii) 
+              if(family .EQ. 3)then
+              probi(ii)=probi(ii)/(probi(ii)+(1-probi(ii))*dpois(0,
      +                  mustart_count(ii)))
+              else if(family .EQ. 4)then
+              probi(ii)=probi(ii)/(probi(ii)+(1-probi(ii))*dnbinom(0,
+     +                  theta, mustart_count(ii)))
               endif
-             enddo
-           endif
-            call dblepr("probi updated", -1, probi, 10)
-            
-           a=a+(start_zero_act(1) - b0z)**2
+            endif
+           enddo
+           
+C           if(family .EQ. 3)then
+C             do ii=1, n
+C              if(y1(ii) .EQ. 0)then
+C               probi(ii)=yhat(ii) 
+C               probi(ii)=probi(ii)/(probi(ii)+(1-probi(ii))*dpois(0,
+C     +                  mustart_count(ii)))
+C              endif
+C             enddo
+C           endif
+           d=d+(start_zero_act(1) - b0z)**2
            start_zero_act(1) = b0z
             if(jk_zero .GT. 0)then
                do 1100 j=1, m_zero_act
-               a=a+(start_zero_act(j+1) - betaz(j))**2
+               d=d+(start_zero_act(j+1) - betaz(j))**2
                   start_zero_act(j+1)=betaz(j)
 1100           continue
             endif
             if(trace .EQ. 1)then
-C     call loss(n, y, fk, cost, rfamily, s, los(k, i))
                penval = 0.d0
                call penGLM(betax, m_count_act, 
      +              lambda_count(i)*penaltyfactor_count_act, 
@@ -188,21 +203,16 @@ C     call loss(n, y, fk, cost, rfamily, s, los(k, i))
                   pll(k, i)=los(k, i) + penval
                endif
             endif
-C            do 120 ii=1, n
-C               a=a+(fk_old(i) - fk(i))**2
-C 120        continue
-            d = a
             k = k + 1
             goto 500
          endif
-C     needs to store the b0 result here
-C     b0(i) = b0x
-         coefc(1, i) = b0x
+         coefc(1, i) = b0_x
          if(jk_count .GT. 0)then
             do 200 ii = 1, m_count_act
                coefc(1+varsel_count(ii), i) = betax(ii)
  200        continue
          endif
+         thetaout(i)=theta
          coefz(1, i) = b0z
          if(jk_zero .GT. 0)then
             do 210 ii = 1, m_zero_act
@@ -220,7 +230,7 @@ C     relative to x instead? compute varsel_count for true index in x
                deallocate(penaltyfactor_count_act,stat=DeAllocateStatus)
                allocate(penaltyfactor_count_act(jk_count),stat=
      +                 AllocateStatus)
-               start_count_act(1) = b0x
+               start_count_act(1) = b0_x
                do 35 ii=1, jk_count
                   start_count_act(ii+1)=betax(activeset_count(ii))
                   varsel_count(ii)=varsel_count_old(activeset_count(ii))
