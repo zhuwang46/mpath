@@ -203,6 +203,7 @@ glmreg_fit <- function(x, y, weights, start=NULL, etastart=NULL, mustart=NULL, o
                         dev=as.double(0),
                         PACKAGE="mpath")$dev
     beta <- matrix(0, ncol=nlambda, nrow=m)
+    b0 <- rep(0, nlambda)
     if(is.null(start))
         startv <- 0
     if(!is.null(start)){
@@ -210,11 +211,11 @@ glmreg_fit <- function(x, y, weights, start=NULL, etastart=NULL, mustart=NULL, o
             stop("length of start doesn't match x dimension\n")
         else{
             startv <- 1
-            if(length(start) > 1){
-                for(j in 1: nlambda)
-                    beta[,j] <- start[-1]
-            }
-            b0 <- rep(start[1], nlambda)
+            #if(length(start) > 1){
+            #    for(j in 1: nlambda)
+            #        beta[,j] <- start[-1]
+            #}
+            #b0 <- rep(start[1], nlambda)
         }
     }
     else{
