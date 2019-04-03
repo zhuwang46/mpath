@@ -522,13 +522,15 @@ zipath <- function(formula, data, weights, subset, na.action, offset, standardiz
     }
     if(is.null(start$theta)) start$theta <- 1
     active <- 0
-    if(active == 1)
+    cat("begin of zipath_fortran subroutine\n")
+    tim1 <- proc.time()
+    #if(active == 1)
         RET1 <- .Fortran("zipath_fortran",
 		            x=as.double(Xnew), 
                     z=as.double(Znew), 
                     y=as.double(Y), 
                     y1=as.integer(Y1), 
-                    weights=as.double(weights), 
+                    weights=as.double(weights/sum(weights)), 
                     n=as.integer(n), 
                     kx=as.integer(kx-1), 
                     kz=as.integer(kz-1),
@@ -566,12 +568,32 @@ zipath <- function(formula, data, weights, subset, na.action, offset, standardiz
                     theta_fixed=as.integer(theta.fixed), 
                     maxit_theta=as.integer(maxit.theta), 
                     theta=as.double(start$theta), 
+                    thetaout=as.double(rep(start$theta, nlambda)), 
                     active=as.integer(active),
                     PACKAGE="mpath")
-   # cat("RET1$coefc\n")
-   # print(matrix(RET1$coefc, ncol=nlambda))
-   # cat("RET1$coefz", matrix(RET1$coefz, ncol=nlambda), "\n")
+    coefc <- matrix(RET1$coefc, ncol=nlambda)
+    coefz <- matrix(RET1$coefz, ncol=nlambda)
+    if(standardize) {
+        coefc <- as.matrix(coefc)
+        if(dim(coefc)[1] > 1){
+            coefc[-1,] <- coefc[-1,]/normx 
+            coefc[1,] <- coefc[1,] - crossprod(meanx, coefc[-1,])
+        }
+        coefz <- as.matrix(coefz)
+        if(dim(coefz)[1] > 1){
+            coefz[-1,] <- coefz[-1,]/normz
+            coefz[1,] <- coefz[1,] - crossprod(meanz, coefz[-1,])
+        }
+    }
+    cat("zipath_fortran time", proc.time()-tim1, "\n")
+    cat("coefc\n")
+    print(coefc)
+    cat("coefz\n")
+    print(coefz)
+    cat("theta=", RET1$thetaout, "\n")
+    cat("end of zipath_fortran subroutine\n")
     k <- 1
+    tim2 <- proc.time()
     while(k <= nlambda){
         if(trace) {cat("\nOuter loop: Decremental lambda\n")
             cat(" lambda iteration", k, "\n")
@@ -597,6 +619,7 @@ zipath <- function(formula, data, weights, subset, na.action, offset, standardiz
             testH1 <- testH <- rep(NA, maxit.em)
             converged <- FALSE
             while(j <= maxit.em && !converged) {
+                cat("EM iteration in R, j=", j, "\n")
 #                if(trace) 
                 ll_old <- ll_new
                 start_old <- start
@@ -627,10 +650,7 @@ zipath <- function(formula, data, weights, subset, na.action, offset, standardiz
                     zerocoef = model_zero$coefficients
                 }
                 else{
-                    model_zero <- glmreg_fit(Znew, probi, weights = weights, standardize=FALSE, offset=offsetz, penalty.factor=penalty.factor.zero, lambda=lambda.zero[k], alpha=alpha.zero, gamma=gamma.zero, rescale=rescale, maxit=maxit, 
-                                                            start=start$zero, mustart=model_zero$fitted.values, etastart=g(model_zero$fitted.values, family="binomial", eps.bino=eps.bino),
-                                                            family = "binomial", penalty=penalty, trace=trace, eps.bino=eps.bino)
-                    if(trace)
+                    #if(trace)
                     tmp <- .Fortran("glmreg_fit_fortran",
                                            x=as.double(Znew),
 					   y=as.double(probi),
@@ -646,7 +666,7 @@ zipath <- function(formula, data, weights, subset, na.action, offset, standardiz
 					   alpha=as.double(alpha.zero),
 					   gam=as.double(gamma.zero),
 					   rescale=as.integer(rescale),
-					   standardize=as.integer(standardize),
+					   standardize=as.integer(0),
 					   penaltyfactor=as.double(penalty.factor.zero),
                                            thresh=as.double(thresh),
 					   epsbino=as.double(eps.bino),
@@ -660,6 +680,9 @@ zipath <- function(formula, data, weights, subset, na.action, offset, standardiz
 					   b0=as.double(0),
 					   yhat=as.double(rep(0, n)),
 				    PACKAGE="mpath")
+                    model_zero <- glmreg_fit(Znew, probi, weights = weights, standardize=FALSE, offset=offsetz, penalty.factor=penalty.factor.zero, lambda=lambda.zero[k], alpha=alpha.zero, gamma=gamma.zero, rescale=rescale, maxit=maxit, 
+                                                            start=start$zero, mustart=model_zero$fitted.values, etastart=g(model_zero$fitted.values, family="binomial", eps.bino=eps.bino),
+                                                            family = "binomial", penalty=penalty, trace=trace, eps.bino=eps.bino)
 	  	    zerocoef = c(model_zero$b0, model_zero$beta)
                     if(trace && penalty=="enet"){
                         if(dim(Z)[2]==1)
@@ -812,10 +835,39 @@ zipath <- function(formula, data, weights, subset, na.action, offset, standardiz
                     zerocoef = model_zero$coefficients
                 }
                 else{
-                    capture.output(model_zero <- glmreg_fit(Znew, probi, weights = weights, offset=offsetz, standardize=FALSE, penalty.factor=penalty.factor.zero, lambda=lambda.zero[k], alpha=alpha.zero, gamma=gamma.zero, rescale=rescale, maxit=maxit,
-### the line start= ... included 7/20/2018
+                    tmp <- .Fortran("glmreg_fit_fortran",
+                                           x=as.double(Znew),
+					   y=as.double(probi),
+					   weights=as.double(weights),
+					   n=as.integer(n),
+					   m=as.integer(kz-1),
+					   start=as.double(start$zero),
+					   etastart=as.double(g(model_zero$fitted.values, family="binomial", eps.bino=eps.bino)),
+					   mustart=as.double(model_zero$fitted.values),
+				           offset=as.double(offsetz),
+					   nlambda=as.integer(1),
+					   lambda=as.double(lambda.zero[k]),
+					   alpha=as.double(alpha.zero),
+					   gam=as.double(gamma.zero),
+					   rescale=as.integer(rescale),
+					   standardize=as.integer(0),
+					   penaltyfactor=as.double(penalty.factor.zero),
+                                           thresh=as.double(thresh),
+					   epsbino=as.double(eps.bino),
+					   maxit=as.integer(maxit),
+					   eps=as.double(.Machine$double.eps),
+					   theta=as.double(1),
+					   family=as.integer(2),
+					   penalty=as.integer(1),
+					   trace=as.integer(trace),
+					   beta=as.double(matrix(0, ncol=1, nrow=kz-1)),
+					   b0=as.double(0),
+					   yhat=as.double(rep(0, n)),
+                       PACKAGE="mpath")
+                   # capture.output(
+                                   model_zero <- glmreg_fit(Znew, probi, weights = weights, offset=offsetz, standardize=FALSE, penalty.factor=penalty.factor.zero, lambda=lambda.zero[k], alpha=alpha.zero, gamma=gamma.zero, rescale=rescale, maxit=maxit,
                                                             start=start$zero, mustart=model_zero$fitted.values, etastart=g(model_zero$fitted.values, family="binomial", eps.bino=eps.bino), 
-                                                            family = "binomial", penalty=penalty, trace=trace, eps.bino=eps.bino, ...))
+                                                            family = "binomial", penalty=penalty, trace=trace, eps.bino=eps.bino, ...)
                     if(model_zero$satu==1){
                         if(k==1){
                             model_zero <- suppressWarnings(glm.fit(Z[,1], probi, weights = weights, offset = offsetz,
@@ -1000,8 +1052,7 @@ zipath <- function(formula, data, weights, subset, na.action, offset, standardiz
                                         #      else coefz[1,] <- coefz[1,] - meanz * coefz[-1,]
         }
     }
-    #    X <- Xold; Z <- Zold  # for testing only
-    #cat("loglik value on the original scale of predictors:", loglikfun(c(coefc, coefz)), "\n")
+    cat("zipath R iteration time", proc.time()-tim2, "\n")
     if(family != "negbin")  theta <- NULL
     else names(theta) <- lambda.count
     rownames(coefc) <- names(start$count) <- colnames(X)
