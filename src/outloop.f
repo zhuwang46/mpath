@@ -1,5 +1,6 @@
 C     outer loop: sequence of lambda
 C     input:
+C     start
 C     mu: a vector
 C     output
 C     b: beta
