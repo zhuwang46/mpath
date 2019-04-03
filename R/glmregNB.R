@@ -105,8 +105,6 @@ glmregNB <- function(formula, data, weights, offset=NULL, nlambda=100, lambda=NU
         converged <- FALSE                                    
         while((iter <- iter + 1) <= maxit.theta && !converged){
             eta <- log(mu)
-	    #            fit <- glmreg_fit(x=X[,-1], y=Y, weights=w, lambda=lambda[k],alpha=alpha,gamma=gamma,rescale=rescale, standardize=standardize, penalty.factor = penalty.factor, thresh=thresh, maxit=maxit, eps=eps, family="negbin", theta=th, trace=trace, penalty=penalty)
-	    #if(maxit.theta!=2) browser()
 	    fit <- glmreg_fit(x=X[,-1], y=Y, weights=w, start = start, etastart=eta, mustart = mu, offset=offset, lambda=lambda[k],alpha=alpha,gamma=gamma,rescale=rescale, standardize=standardize, penalty.factor = penalty.factor, thresh=thresh, maxit=maxit, eps=eps, family="negbin", theta=th, trace=trace, penalty=penalty)
             t0 <- th
             mu <- fit$fitted.values
@@ -123,8 +121,7 @@ glmregNB <- function(formula, data, weights, offset=NULL, nlambda=100, lambda=NU
             Lm <- loglik(n, th, mu, Y, w) - penval
             fit$df.residual <- n - fit$df - 1
             d1 <- sqrt(2 * max(1, fit$df.residual))
-            converged <- abs((Lm0 - Lm)/d1) + abs(del/d2) < 0
-            #converged <- abs((Lm0 - Lm)/d1) + abs(del/d2) < 1e-8
+            converged <- abs((Lm0 - Lm)/d1) + abs(del/d2) < 1e-8
             if(trace) {
                 Ls <- loglik(n, th, Y, Y, w)
                 Dev <- 2 * (Ls - Lm)
