@@ -1,16 +1,17 @@
 C similar to and derived from R/glmreg_fit
-C input: start, etastart, mustart - no change
+C input: start, etastart, mustart - are these changed in outloop
+C subroutine?
 c output: yhat is the updated mustart as output
       subroutine glmreg_fit_fortran(x, y, weights, n,m,start, etastart,
-     +         mustart, offset, nlambda, lambda, alpha, 
-     +         gam, rescale, standardize, penaltyfactor,
-     +         thresh, epsbino, maxit, 
+     +         mustart, offset, nlambda, lambda, alpha, gam, rescale, 
+     +         standardize, penaltyfactor, thresh, epsbino, maxit, 
      +         eps, theta, family, penalty, trace, beta, b0, yhat)
       implicit none
       integer n,m, i,j, penalty, nlambda, family, standardize, maxit,
      +     innermaxit, trace, rescale, good,
      +     satu, convout(nlambda), startv
-      double precision, intent(in) :: etastart(n),mustart(n),start(m+1)
+C      double precision, intent(in) :: etastart(n),mustart(n),start(m+1)
+      double precision :: etastart(n),mustart(n),start(m+1)
       double precision x(n, m), y(n), weights(n), 
 Cstart(m+1),etastart(n), mustart(n), 
      +     offset(n), lambda(nlambda), lam(m, nlambda), 
@@ -23,40 +24,46 @@ Cstart(m+1),etastart(n), mustart(n),
       if(family.EQ.10)then
               call dblepr("x=", -1, x(1, 1:m), m)
               call dblepr("y", -1, y(1:5), 5)
+              call dblepr("sum(y)", -1, sum(y), 1)
               call dblepr("weights", -1, weights(1:5), 5)
+              call dblepr("sum(weights)", -1, sum(weights), 1)
+              call intpr("n", -1, n, 1)
               call intpr("m", -1, m, 1)
               call dblepr("start", -1, start, m+1)
               call dblepr("etastart", -1, etastart, 5)
+              call dblepr("sum(etastart)", -1, sum(etastart), 1)
               call dblepr("mustart", -1, mustart, 5)
+              call dblepr("sum(mustart)", -1, sum(mustart), 1)
               call dblepr("offset", -1, offset, 5)
+              call intpr("nlambda", -1, nlambda, 1)
               call dblepr("alpha", -1, alpha, 1)
               call intpr("rescale", -1, rescale, 1)
+              call intpr("standardize", -1, standardize, 1)
               call dblepr("penaltyfactor", -1, penaltyfactor, 5)
               call dblepr("thresh", -1, thresh, 1)
+              call dblepr("epsbino", -1, epsbino, 1)
               call intpr("maxit", -1, maxit, 1)
               call dblepr("eps", -1, eps, 1)
+              call dblepr("theta", -1, theta, 1)
               call intpr("family", -1, family, 1)
               call intpr("penalty", -1, penalty, 1)
+              call intpr("trace", -1, trace, 1)
               call dblepr("beta", -1, beta, m)
               call dblepr("b0", -1, b0, 1)
-              call dblepr("yhat", -1, yhat, 5)
+              call dblepr("sum(yhat)", -1, sum(yhat), 1)
       endif
 
       if(family.EQ.1) then
             rescale = 0
       endif
-C### this theta is not useful but required as input in Fortran glmlink subroutine
-      if(family .NE. 4)then
-              theta = 1
-      endif
 C      call  deveval(n, y, mustart, theta, weights, family, dev)
       startv = 1
-      do 90 j=1, nlambda
-      b0(j) = start(1)
-        do 100 i=1, m
-         beta(i, j) = start(i+1)
-100     continue 
-90    continue 
+C      do 90 j=1, nlambda
+C      b0(j) = start(1)
+C        do 100 i=1, m
+C         beta(i, j) = start(i+1)
+C100     continue 
+C90    continue 
 C    resdev <- rep(0, nlambda)
 C    yhat <- matrix(0, nobs, nlambda)
 C    penfac <- penalty.factor/sum(penalty.factor) * m
@@ -118,13 +125,11 @@ C http://www.tat.physik.uni-tuebingen.de/~kley/lehre/ftn77/tutorial/blas.html
  300      continue
          if (family .EQ. 1)then
                 meany=sum(y)/n
+                meanoffset=sum(offset)/n
             do 400 j=1, nlambda
                 b0(j)=b0(j) + meany - meanoffset
  400        continue
          endif
       endif
-C update mustart
-C      call linkinv(n, yhat, family, mustart)
-
       return
       end
