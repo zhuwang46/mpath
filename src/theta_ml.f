@@ -7,7 +7,9 @@ C input n is different from theta.ml there
       double precision a, t0, y(n), mu(n), weights(n), 
      +       eps, del, score, info
       external score, info
-
+      
+C     eps = .Machine$double.eps**0.25 
+      eps = 0.0001220703 
       a=0
       do i=1, n
        a=a+weights(i)*(y(i)/mu(i) - 1.0D0)**2
@@ -25,7 +27,7 @@ C input n is different from theta.ml there
         t0 = t0 + del
         if(trace .EQ. 1)then 
               call intpr("theta iteration", -1, it, 1)
-              call dblepr("     theta", -1, t0, 1)
+              call dblepr("        theta=", -1, t0, 1)
         endif
         it = it + 1
         goto 30
@@ -45,8 +47,8 @@ C input n is different from theta.ml there
       implicit none
       integer i, n
       double precision a, y(n), mu(n), th, w(n), rdigamma, 
-     + rtrigamma, score
-      external :: rdigamma, rtrigamma 
+     + score
+      external :: rdigamma
 
       score = 0
       do i=1, n
