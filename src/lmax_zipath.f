@@ -1,3 +1,7 @@
+C see vignettes\kkt.pdf for how to find the lambda_max for both the
+C original loss and in EM algorithm 
+C For the EM algorith, uncomment related lines with respect to derz1 and
+C derx1
       subroutine lmax_zipath(B, G, y, y1, weights, n, d1, d2, family, 
      +     coefx, coefz, alpha_count, alpha_zero, penaltyfactor_count, 
      +     penaltyfactor_zero, theta, lmax_count, lmax_zero)
@@ -7,14 +11,15 @@
      +     coefz, alpha_count, alpha_zero, penaltyfactor_zero(d1), 
      +     penaltyfactor_count(d2), lmax_count, lmax_zero, derz(d1),
      +     derx(d2), penfac_zero(d1), penfac_count(d2), sumw, sumx, 
-     +     sumz, p, derip, mu, a, c, theta, z(n), derz1(d1), derx1(d2)
+     +     sumz, p, derip, mu, a, c, theta, z(n)
+C    +     , derz1(d1), derx1(d2)
       do j=1, d1
          derz(j)=0
-         derz1(j)=0
+C         derz1(j)=0
       enddo
       do k=1, d2
          derx(k)=0
-         derx1(k)=0
+C         derx1(k)=0
       enddo
       sumw = sum(weights)
       do i=1, n
@@ -70,14 +75,14 @@ C     derivative of p
                else
                   derz(j)=derz(j)-weights(i)*derip/(1-p)
                endif
-               derz1(j)=derz1(j)+weights(i)*(z(i)*G(i,j)-p*G(i,j))
+C               derz1(j)=derz1(j)+weights(i)*(z(i)*G(i,j)-p*G(i,j))
 120        enddo
             derz(j)=dabs(derz(j))
             penfac_zero(j)=penaltyfactor_zero(j)/sumz*d1
             derz(j)=derz(j)/(penfac_zero(j)*alpha_zero)
             
-            derz1(j)=dabs(derz1(j))
-            derz1(j)=derz1(j)/(penfac_zero(j)*alpha_zero)
+C            derz1(j)=dabs(derz1(j))
+C            derz1(j)=derz1(j)/(penfac_zero(j)*alpha_zero)
 110     enddo
          do 130 j=1, d2
             do 140 i=1, n
@@ -90,22 +95,22 @@ C     derivative of mu
                   derx(j)=derx(j)+weights(i)*derip*
      +                 (y(i)/mu-(y(i)+theta)/(mu+theta))
                endif
-            derx1(j)=derx1(j)+weights(i)*(1-z(i))*derip*
-     +       (y(i)/mu-(y(i)+theta)/(mu+theta))
+C            derx1(j)=derx1(j)+weights(i)*(1-z(i))*derip*
+C     +       (y(i)/mu-(y(i)+theta)/(mu+theta))
 140        enddo
             derx(j)=dabs(derx(j))
             penfac_count(j)=penaltyfactor_count(j)/sumx*d2
             derx(j)=derx(j)/(penfac_count(j)*alpha_count)
-            derx1(j)=dabs(derx1(j))
-            derx1(j)=derx1(j)/(penfac_count(j)*alpha_count)
+C            derx1(j)=dabs(derx1(j))
+C            derx1(j)=derx1(j)/(penfac_count(j)*alpha_count)
 130     enddo
       endif
 
       lmax_count = maxval(derx)
       lmax_zero = maxval(derz)
-      call dblepr("lmax_count", -1, lmax_count, 1)
-      call dblepr("lmax_count with EM", -1, maxval(derx1), 1)
-      call dblepr("lmax_zero", -1, lmax_zero, 1)
-      call dblepr("lmax_zero with EM", -1, maxval(derz1), 1)
+C      call dblepr("lmax_count", -1, lmax_count, 1)
+C      call dblepr("lmax_count with EM", -1, maxval(derx1), 1)
+C      call dblepr("lmax_zero", -1, lmax_zero, 1)
+C      call dblepr("lmax_zero with EM", -1, maxval(derz1), 1)
       return
       end
