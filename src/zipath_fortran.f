@@ -124,7 +124,7 @@ C     outputs: coefc, coefz, thetaout
      +           1, lambda_count(i), penalty, alpha_count, gam_count, 
      +           rescale, 0, penaltyfactor_count_act, thresh,
      +           maxit_theta, maxit, eps, epsbino, start_count_act, 
-     +           etastart_count, mustart_count, thetastart, 1, 
+     +           etastart_count, mustart_count, thetastart, 0, 
      +           theta0, trace, betax, b0_x, theta, yhat)
            endif
 C            call dblepr("start_count_act=", -1, start_count_act, 
