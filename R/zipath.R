@@ -14,6 +14,11 @@ zipath <- function(formula, data, weights, subset, na.action, offset, standardiz
     if(length(gamma.count) > 1 || length(gamma.zero) > 1)
         stop("gamma.count or gamma.zero must be a scalar")
     family <- match.arg(family)
+    if(family=="geometric"){
+        family <- "negbin"
+        init.theta <- 1
+        theta.fixed <- TRUE
+    }
     penalty <- match.arg(penalty)
     link <- match.arg(link)
     type.path <- match.arg(type.path)
