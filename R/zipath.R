@@ -107,6 +107,36 @@ zipath <- function(formula, data, weights, subset, na.action, offset, standardiz
         else pen2 <- 0
         return(n*(sum(pen1) + sum(pen2)))
     }
+    ###check KKT conditions-begin (only for LASSO penalty at the moment)
+    check_kkt <- function(parms){
+    for(jj in 1:nlambda){
+        cat("lambda iteration, jj=", jj, "\n")
+        cat("count model part coefficients\n")
+    tmp1 <- gradfun(parms[,jj])
+    cat("gradients\n")
+        print(tmp1)
+    for(j in 1:(kx-1)){
+        cat("\nvariable j=", j, "lambda.count[jj]=", lambda.count[jj], "coefc[j+1,jj]=", coefc[j+1, jj], "abs(coefc[j+1],jj)=", abs(coefc[j+1,jj]), "\n")
+        if(abs(coefc[j+1, jj]) > 0)
+            cat("tmp1[j+1]-n*lambda.count[jj]*sign(coefc[j+1,jj])",
+                tmp1[j+1]-n*lambda.count[jj]*sign(coefc[j+1,jj]), "\n")
+        else
+            cat("abs(tmp1[j+1])-n*lambda.count[jj])",
+                abs(tmp1[j+1])-n*lambda.count[jj], "\n")
+    }
+        cat("\nzero model part coefficients\n")
+    for(j in 1:(kz-1)){
+        cat("\nvariable j=", j, "lambda.zero[jj]=", lambda.zero[jj], "coefz[j+1,jj]=", coefz[j+1, jj], "abs(coefz[j+1],jj)=", abs(coefz[j+1,jj]), "\n")
+        if(abs(coefz[j+1,jj]) > 0)
+            cat("tmp1[kx+j+1]-n*lambda.zero[jj]*sign(coefz[j+1,jj])",
+                tmp1[kx+j+1]-n*lambda.zero[jj]*sign(coefz[j+1,jj]), "\n")
+        else
+            cat("abs(tmp1[kx+j+1])-n*lambda.zero[jj])",
+                abs(tmp1[kx+j+1])-n*lambda.zero[jj], "\n")
+    }
+    }
+    }
+    ###check KKT conditions-end (only for count.alpha=zero.alpha=0, and LASSO penalty at the moment)
     famtype <- switch(family,
                       "gaussian"=1,
                       "binomial"=2,
@@ -528,7 +558,6 @@ zipath <- function(formula, data, weights, subset, na.action, offset, standardiz
     if(is.null(start$theta)) start$theta <- 1
     active <- 0
     cat("begin of zipath_fortran subroutine\n")
-    tim1 <- proc.time()
     #if(active == 1)
         RET1 <- .Fortran("zipath_fortran",
 		            x=as.double(Xnew), 
@@ -578,462 +607,6 @@ zipath <- function(formula, data, weights, subset, na.action, offset, standardiz
                     PACKAGE="mpath")
     coefc <- matrix(RET1$coefc, ncol=nlambda)
     coefz <- matrix(RET1$coefz, ncol=nlambda)
-    if(standardize) {
-        coefc <- as.matrix(coefc)
-        if(dim(coefc)[1] > 1){
-            coefc[-1,] <- coefc[-1,]/normx 
-            coefc[1,] <- coefc[1,] - crossprod(meanx, coefc[-1,])
-        }
-        coefz <- as.matrix(coefz)
-        if(dim(coefz)[1] > 1){
-            coefz[-1,] <- coefz[-1,]/normz
-            coefz[1,] <- coefz[1,] - crossprod(meanz, coefz[-1,])
-        }
-    }
-    cat("zipath_fortran time", proc.time()-tim1, "\n")
-    cat("coefc\n")
-    print(coefc)
-    cat("coefz\n")
-    print(coefz)
-    cat("theta=", RET1$thetaout, "\n")
-    cat("end of zipath_fortran subroutine\n")
-    k <- 1
-    tim2 <- proc.time()
-    while(k <= nlambda){
-        if(trace) {cat("\nOuter loop: Decremental lambda\n")
-            cat(" lambda iteration", k, "\n")
-        }
-        if(EM & family == "poisson") {
-            if(k==1){
-            mui <- model_count$fitted.values
-            probi <- model_zero$fitted.values
-            probi <- probi/(probi + (1-probi) * dpois(0, mui))
-            probi[Y1] <- 0
-            }
-	    if(trace && penalty=="enet"){
-### initial penalized weighted NB log-likelihood value (in the EM complete loglik) for penalty="enet" with alpha=1
-                eta <- model_zero$coef[1] + as.vector(Znew %*% coef(model_zero)[-1])
-                mu = 1.0/(1+exp(-eta))
-                w <- weights
-                ll2init <- sum(w*(probi*eta - log(1+exp(eta)))) - length(Y)*lambda.zero[k]*sum(abs(coef(model_zero)[-1]))
-            }
-            ### loglikfun should be modified to include arguments X, Y, kx, and kz. Otherwise, there are hidden inputs X, Z, but not correct if standardize=TRUE, since the inputs now should be Xold and Zold instead in the latter case. i.e., X <- Xold; Z <- Zold
-            ll_raw <- loglikfun(c(start$count, start$zero))
-            ll_new <- ll_raw - pen_zipath1(start)
-            j <- 1
-            testH1 <- testH <- rep(NA, maxit.em)
-            converged <- FALSE
-            while(j <= maxit.em && !converged) {
-                cat("EM iteration in R, j=", j, "\n")
-#                if(trace) 
-                ll_old <- ll_new
-                start_old <- start
-                if(dim(X)[2]==1){ ###intercept-only model, Todo: need to check
-                    model_count <- glm.fit(X, Y, weights = weights * (1-probi), offset = offsetx,
-                                           family = poisson(), start = start$count)
-                    countcoef = model_count$coefficients
-                }
-                else{
-                capture.output(model_count <- glmreg_fit(Xnew, Y, weights = weights * (1-probi), standardize = FALSE, offset=offsetx, penalty.factor=penalty.factor.count, lambda=lambda.count[k], alpha=alpha.count,gamma=gamma.count, rescale=rescale, maxit=maxit,
-### the line start= ... included 7/20/2018
-                                                             start=start$count, mustart=mui, etastart=g(mui, family="poisson"),  
-                                                             family = "poisson", penalty=penalty, trace=trace))
-                    countcoef = c(model_count$b0, model_count$beta)
-                    if(trace && penalty=="enet"){
-                        eta <- model_count$b0 + as.vector(Xnew %*% model_count$beta)
-                        mu <- exp(eta)
-                        w <- weights*(1-probi)/n
-                        ll1 <- sum(w*(-mu + Y*log(mu)-lgamma(Y+1))) - lambda.count[k]*sum(abs(model_count$beta))
-                        cat("penalized weighted Poisson loglik by updated parameter ll1", ll1, "\n")
-                        tmp <- which(abs(model_count$pll) > 0)
-                        cat("penalized loglik value pll", model_count$pll[tmp], "\n")
-                    }
-                }
-                if(dim(Z)[2]==1){
-                    model_zero <- suppressWarnings(glm.fit(Z, probi, weights = weights, offset = offsetz,
-                                                           family = binomial(link = linkstr), start = start$zero))
-                    zerocoef = model_zero$coefficients
-                }
-                else{
-                    #if(trace)
-                    tmp <- .Fortran("glmreg_fit_fortran",
-                                           x=as.double(Znew),
-					   y=as.double(probi),
-					   weights=as.double(weights),
-					   n=as.integer(n),
-					   m=as.integer(kz-1),
-					   start=as.double(start$zero),
-					   etastart=as.double(g(model_zero$fitted.values, family="binomial", eps.bino=eps.bino)),
-					   mustart=as.double(model_zero$fitted.values),
-				           offset=as.double(offsetz),
-					   nlambda=as.integer(1),
-					   lambda=as.double(lambda.zero[k]),
-					   alpha=as.double(alpha.zero),
-					   gam=as.double(gamma.zero),
-					   rescale=as.integer(rescale),
-					   standardize=as.integer(0),
-					   penaltyfactor=as.double(penalty.factor.zero),
-                                           thresh=as.double(thresh),
-					   epsbino=as.double(eps.bino),
-					   maxit=as.integer(maxit),
-					   eps=as.double(.Machine$double.eps),
-					   theta=as.double(1),
-					   family=as.integer(2),
-					   penalty=as.integer(1),
-					   trace=as.integer(trace),
-					   beta=as.double(matrix(0, ncol=1, nrow=kz-1)),
-					   b0=as.double(0),
-					   yhat=as.double(rep(0, n)),
-				    PACKAGE="mpath")
-                    model_zero <- glmreg_fit(Znew, probi, weights = weights, standardize=FALSE, offset=offsetz, penalty.factor=penalty.factor.zero, lambda=lambda.zero[k], alpha=alpha.zero, gamma=gamma.zero, rescale=rescale, maxit=maxit, 
-                                                            start=start$zero, mustart=model_zero$fitted.values, etastart=g(model_zero$fitted.values, family="binomial", eps.bino=eps.bino),
-                                                            family = "binomial", penalty=penalty, trace=trace, eps.bino=eps.bino)
-	  	    zerocoef = c(model_zero$b0, model_zero$beta)
-                    if(trace && penalty=="enet"){
-                        if(dim(Z)[2]==1)
-			    eta <- zerocoef
-			else eta <- model_zero$b0 + as.vector(Znew %*% model_zero$beta)
-                        mu = 1.0/(1+exp(-eta))
-                        w <- weights
-                        if(dim(Z)[2]==1)
-                            ll2 <- sum(w*(probi*eta - log(1+exp(eta))))
-			else ll2 <- sum(w*(probi*eta - log(1+exp(eta)))) - lambda.zero[k]*sum(abs(model_zero$beta))
-                        cat("penalized binomial loglik by updated parameter ll2", ll2, "\n")
-                        cat("model_zero$pll", model_zero$pll, "\n")
-                        cat("model_zero$pllres", model_zero$pllres, "\n")
-                    }
-                }
-                start <- list(count=countcoef, zero=zerocoef)
-                ll_raw <- loglikfun(c(start$count, start$zero)) 
-                ll_new <- ll_raw - pen_zipath1(start)
-                if(rescale && penalty!="enet")
-                    converged <- checkconv(start, start_old, type=convtype, thresh=reltol)
-                else converged <- (ll_old - ll_new)/ll_old <= reltol
-                probi_old <- probi
-                mui <- model_count$fitted.values
-		probi <- model_zero$fitted.values
-        probi <- probi/(probi + (1-probi) * dpois(0, mui))
-                probi[Y1] <- 0
-                if(trace){ 
-### compute H, expectation of log(f(z|gamma, beta, y)), cf Lambert(1992), page 4
-### compute expected conditional loglik H, cf: Theory of Point Estimation, 2nd edition, (4.24) page 459
-                    if(penalty=="enet"){
-                        testH1[j] <- sum(log(probi[Y0])*probi_old[Y0])
-                        testH[j] <- sum(log(probi[Y0]/probi_old[Y0])*probi_old[Y0])
-                        H <- sum(log(probi[Y0])*probi_old[Y0]+log(1-probi[Y0])*(1-probi_old[Y0]))
-                        llcc <- length(Y)*(ll1+ll2) - H
-                        cat("H=", H, "\n")
-                        cat("penalized incomplete ll1+ll2-H", llcc, "\n")
-                    }
-                    cat("penalized incomplete data ll_new=", ll_new, "\n")
-                    cat("ll_new-ll_old", ll_new-ll_old, "\n")
-                }
-                j <- j + 1
-            }
-        }
-        if(EM & family == "geometric") {
-            mui <- model_count$fitted.values
-            probi <- model_zero$fitted.values
-            probi <- probi/(probi + (1-probi) * dnbinom(0, size = 1, mu = mui))
-            probi[Y1] <- 0
-            ll_raw <- loglikfun(c(start$count, start$zero))
-            ll_new <- ll_raw - pen_zipath1(start)
-            ll_old <- ll_new
-            
-            j <- 1
-            converged <- FALSE
-            while(j <= maxit.em && !converged) {
-                ll_old <- ll_new
-                start_old <- start
-                                        #        start_old <- start
-                if(dim(X)[2]==1){ ###intercept-only model, Todo: need to check
-                    model_count <- suppressWarnings(glm.fit(X, Y, weights = weights * (1-probi),
-                                                            offset = offsetx, family = negative.binomial(1), start = start$count))
-                    countcoef = model_count$coefficients
-                }
-                else{
-                    model_count <- glmreg_fit(Xnew, Y, weights = weights * (1-probi), offset=offsetx, standardize=FALSE, penalty.factor=penalty.factor.count, lambda=lambda.count[k], alpha=alpha.count, gamma=gamma.count,rescale=rescale, maxit=maxit, start=start$count, mustart=mui, etastart=g(mui,family="negbin"),
-                                              family = "negbin", theta=1, penalty=penalty)
-                    countcoef = c(model_count$b0, model_count$beta)
-                }
-                if(dim(Z)[2]==1){ ###intercept-only model, Todo: need to check
-                    model_zero <- suppressWarnings(glm.fit(Z, probi, weights = weights,
-                                                           offset = offsetz, family = binomial(link = linkstr), start = start$zero))
-                    zerocoef = model_zero$coefficients
-                }
-                else{
-                    model_zero <- glmreg_fit(Znew, probi, weights = weights, offset=offsetz, standardize=FALSE, penalty.factor=penalty.factor.zero, lambda=lambda.zero[k], alpha=alpha.zero, gamma=gamma.zero, rescale=rescale, maxit=maxit,
-                                             start=start$zero, mustart=model_zero$fitted.values, etastart=g(model_zero$fitted.values, family="binomial", eps.bino=eps.bino),
-                                             family = "binomial", penalty=penalty, eps.bino=eps.bino)
-                    zerocoef = c(model_zero$b0, model_zero$beta)
-                }
-                start <- list(count=countcoef, zero=zerocoef)
-                                        #        start <- list(count = model_count$coefficients, zero = model_zero$coefficients)
-                ll_raw <- loglikfun(c(start$count, start$zero))
-                ll_new <- ll_raw - pen_zipath1(start)
-                if(rescale && penalty!="enet")
-                    converged <- checkconv(start, start_old, type=convtype, thresh=reltol)
-                else converged <- abs((ll_old - ll_new)/ll_old) <= reltol
-                mui <- model_count$fitted.values
-                probi <- model_zero$fitted.values
-                probi <- probi/(probi + (1-probi) * dnbinom(0, size = 1, mu = mui))
-                probi[Y1] <- 0
-                if(trace) cat("j=", j, "ll_new=", ll_new,"ll_new-ll_old=", ll_new-ll_old, "\n")
-                j <- j + 1
-            }
-        }
-
-        if(EM & family == "negbin") {
-            mui <- model_count$fitted.values
-            probi <- model_zero$fitted.values
-### initial penalized logistic log-likelihood value (in the EM complete loglik) for penalty="enet" with alpha=1
-            probi <- probi/(probi + (1-probi) * dnbinom(0, size = start$theta, mu = mui))
-            probi[Y1] <- 0
-            if(trace && penalty=="enet"){
-### initial penalized weighted NB log-likelihood value (in the EM complete loglik) for penalty="enet" with alpha=1
-                loglik1 <- (1-probi)/n*suppressWarnings(dnbinom(Y, size = start$theta, mu = mui, log = TRUE))
-                loglik1 <- sum(loglik1) - lambda.count[k]*sum(abs(start$count[-1]))
-		eta <- coef(model_zero)[1] + as.vector(Znew %*% coef(model_zero)[-1])
-                w <- weights
-                ll2init <- sum(w*(probi*eta - log(1+exp(eta)))) - length(Y)*lambda.zero[k]*sum(abs(coef(model_zero)[-1]))
-                cat("loglik1=", loglik1, "ll2init=", ll2init, "\n")
-	    }
-            ll_raw <- loglikfun(c(start$count, start$zero, log(start$theta)))
-            ll_new <- ll_raw - pen_zipath1(start)
-### intercept is not penalized      
-            ll_old <- ll_new
-            
-            ## offset handling in glm.nb is sub-optimal, hence...
-            offset <- offsetx
-            j <- 1
-            converged <- FALSE
-            while(j <= maxit.em && !converged) {
-                ll_old <- ll_new
-                if(trace) 
-                    cat("\nEM iteration", j, "ll_old", ll_old, "\n")
-                start_old <- start
-                if(dim(X)[2]==1){
-                    if(theta.fixed){
-                        model_count <- suppressWarnings(glm.fit(X, Y, weights = weights * (1-probi),
-                                                                offset = offsetx, family = negative.binomial(init.theta), start = start$count))
-                        model_count$theta <- start$theta
-                    }
-                    else model_count <- suppressWarnings(glm.nb(Y ~ 0 + X + offset(offset), weights = weights * (1-probi),
-                                                                start = start$count, init.theta = start$theta))
-                    countcoef = model_count$coefficients
-                }        else{
-                    if(theta.fixed)
-                        capture.output(model_count <- glmreg_fit(Xnew, Y, weights = weights * (1-probi), offset=offsetx, standardize=FALSE, penalty.factor=penalty.factor.count, lambda=lambda.count[k], alpha=alpha.count, gamma=gamma.count,rescale=rescale, maxit=maxit,
-                                                                 start=start$count, mustart=mui, etastart=g(mui,family="negbin"),
-                                                                 family = "negbin", theta=init.theta, penalty=penalty, trace=trace, ...))
-                    #else capture.output(model_count <- glmregNB(Y ~ X[,-1], standardize=FALSE, weights = weights/n * (1-probi), offset=offsetx, penalty.factor=penalty.factor.count, lambda=lambda.count[k], alpha=alpha.count, gamma=gamma.count, rescale=rescale, maxit.theta = maxit.theta, maxit=maxit,
-                     #                                           start=start$count, mustart=mui, etastart=g(mui,family="negbin"), 
-                     #                                           init.theta=start$theta, penalty=penalty, trace=trace, ...))
-                    else capture.output(model_count <- glmregNB(Y ~ X[,-1], standardize=FALSE, weights = weights * (1-probi), offset=offsetx, penalty.factor=penalty.factor.count, lambda=lambda.count[k], alpha=alpha.count, gamma=gamma.count, rescale=rescale, maxit.theta = maxit.theta, maxit=maxit,
-                                                                start=start$count, mustart=mui, etastart=g(mui,family="negbin"), 
-                                                                init.theta=start$theta, penalty=penalty, trace=trace, ...))
-                    countcoef = c(model_count$b0, model_count$beta)
-                }
-                if(dim(Z)[2]==1){
-                    model_zero <- suppressWarnings(glm.fit(Z, probi, weights = weights, offset = offsetz,
-                                                           family = binomial(link = linkstr), start = start$zero))
-                    zerocoef = model_zero$coefficients
-                }
-                else{
-                    tmp <- .Fortran("glmreg_fit_fortran",
-                                           x=as.double(Znew),
-					   y=as.double(probi),
-					   weights=as.double(weights),
-					   n=as.integer(n),
-					   m=as.integer(kz-1),
-					   start=as.double(start$zero),
-					   etastart=as.double(g(model_zero$fitted.values, family="binomial", eps.bino=eps.bino)),
-					   mustart=as.double(model_zero$fitted.values),
-				           offset=as.double(offsetz),
-					   nlambda=as.integer(1),
-					   lambda=as.double(lambda.zero[k]),
-					   alpha=as.double(alpha.zero),
-					   gam=as.double(gamma.zero),
-					   rescale=as.integer(rescale),
-					   standardize=as.integer(0),
-					   penaltyfactor=as.double(penalty.factor.zero),
-                                           thresh=as.double(thresh),
-					   epsbino=as.double(eps.bino),
-					   maxit=as.integer(maxit),
-					   eps=as.double(.Machine$double.eps),
-					   theta=as.double(1),
-					   family=as.integer(2),
-					   penalty=as.integer(1),
-					   trace=as.integer(trace),
-					   beta=as.double(matrix(0, ncol=1, nrow=kz-1)),
-					   b0=as.double(0),
-					   yhat=as.double(rep(0, n)),
-                       PACKAGE="mpath")
-                   # capture.output(
-                                   model_zero <- glmreg_fit(Znew, probi, weights = weights, offset=offsetz, standardize=FALSE, penalty.factor=penalty.factor.zero, lambda=lambda.zero[k], alpha=alpha.zero, gamma=gamma.zero, rescale=rescale, maxit=maxit,
-                                                            start=start$zero, mustart=model_zero$fitted.values, etastart=g(model_zero$fitted.values, family="binomial", eps.bino=eps.bino), 
-                                                            family = "binomial", penalty=penalty, trace=trace, eps.bino=eps.bino, ...)
-                    if(model_zero$satu==1){
-                        if(k==1){
-                            model_zero <- suppressWarnings(glm.fit(Z[,1], probi, weights = weights, offset = offsetz,
-                                                                   family = binomial(link = linkstr)))
-                            zerocoef = model_zero$coefficients
-                            model_zero$satu <- 1
-                            warnings("zero component model maybe too complex\n")
-                        }
-                        break
-                    }
-	            zerocoef = c(model_zero$b0, model_zero$beta)
-                }
-                if(trace && penalty=="enet"){
-                    if(dim(Z)[2]==1) eta <- zerocoef
-		    else
-                        eta <- model_zero$b0 + as.vector(Znew %*% model_zero$beta)
-                    w <- weights
-                    if(dim(Z)[2]==1)
-                        ll2 <- sum(w*(probi*eta - log(1+exp(eta))))
-		    else ll2 <- sum(w*(probi*eta - log(1+exp(eta)))) - length(Y)*lambda.zero[k]*sum(abs(model_zero$beta))
-                }
-                start <- list(count=countcoef, zero=zerocoef, theta=model_count$theta)
-                ll_raw <- loglikfun(c(start$count, start$zero, log(start$theta)))
-                ll_new <- ll_raw - pen_zipath1(start)
-                if(rescale && penalty!="enet")
-                    converged <- checkconv(start, start_old, thresh=reltol)
-                else converged <- abs((ll_old - ll_new)/ll_old) <= reltol
-                probi_old <- probi
-                mui <- model_count$fitted.values
-                probi <- model_zero$fitted.values
-                probi <- probi/(probi + (1-probi) * dnbinom(0, size = start$theta, mu = mui))
-                probi[Y1] <- 0
-                if(trace){
-                    cat("EM iteration", j, "\n")
-                    if(penalty=="enet"){
-###note: model_count$pllres is for weights (1-probi)/n, but we need (1-probi) instead
-                        ll1 <- logLik(model_count)*n - length(Y)*lambda.count[k]*sum(abs(model_count$beta))
-                        ll2 <- model_zero$pllres[length(model_zero$pllres)]
-                        cat("penalized weighted NB loglik by updated parameter ll1", ll1, "\n")
-                        cat("penalized logistic regresion loglik by updated parameter ll2", ll2, "\n")
-                        loglik1new <- (1-probi_old)*suppressWarnings(dnbinom(Y, size = start$theta, mu = mui, log = TRUE))
-                        loglik1new <- sum(loglik1new) - length(Y)*lambda.count[k]*sum(abs(model_count$beta))
-                        cat("penalized weighted NB loglik by updated parameter for weights used in the model loglik1new", loglik1new, "\n")
-                        cat("penalized weighted NB loglik by updated parameter for weights used in the model", logLik(model_count) - length(Y)*lambda.count[k]*sum(abs(model_count$beta)), "\n")
-### initial penalized logistic log-likelihood value (in the EM complete loglik) for penalty="enet" with alpha=1
-                        H <- sum(log(probi[Y0])*probi_old[Y0]+log(1-probi[Y0])*(1-probi_old[Y0]))
-                        cat("H with updated parameter", H, "\n")
-                        llcc <- ll1+ll2 - H
-                        cat("model_count$pll", model_count$pll, "\n")
-                        cat("model_zero$pll", model_zero$pll, "\n")
-                        cat("penalized incomplete ll1+ll2-H", llcc, "\n")
-                        cat("ll_old=", ll_old, "\n")
-                        cat("ll_new=", ll_new,"ll_new-ll_old=", ll_new-ll_old, "\n")
-                    }
-                }
-                j <- j + 1
-            }
-        }
-        if(is.null(model_zero$satu)) model_zero$satu <- 0
-        if(model_zero$satu==1 && k>1) break
-        ll[k] <- ll_raw
-        convout[k] <- converged
-        coefc[,k] <- start$count
-        coefz[,k] <- start$zero
-        if(family == "negbin") 
-            theta[k] <- model_count$theta
-### standard errors, experiment code, compare to sandwichreg function 
-        need.se <- FALSE
-        if(need.se){    
-            if(family!="negbin")
-                ball <- c(start$count, start$zero)
-            else ball <- c(start$count, start$zero, log(start$theta))
-### test gradient
-            eta <- as.vector(X %*% start$count)
-            mu <- exp(eta)
-            ## binary mean
-            etaz <- as.vector(Z %*% start$zero)
-            muz <- linkinv(etaz)
-            ## negbin size
-            theta <- start$theta
-            h0 <- (theta/(mu+theta))^theta
-            h1 <- (muz+(1-muz)*(theta/(mu+theta))^theta)
-            wres_count <- ifelse(Y1, Y-(Y+theta)*mu/(mu+theta),
-                                 -(1-muz)*theta^theta*(mu+theta)^(-theta)*theta*mu/(mu+theta)/h1)
-            wres_zero <- ifelse(Y1, -muz, muz*(1-muz)*(1-h0)/h1)
-            wres_theta <- ifelse(Y1, digamma(theta+Y)-digamma(theta) - Y/(mu+theta)+log(theta)+1-log(mu+theta)-theta/(mu+theta),
-            (1-muz)*h0*(log(theta)+1-log(mu+theta)-theta/(mu+theta))/h1)
-            res1 <- colSums(cbind(wres_count*X, wres_zero*Z, wres_theta)) ### this is different from gradfun w.r.t. theta because of parameterization there is log(theta)
-###res1 <- (cbind(wres_count*X, wres_zero*Z, wres_theta*theta)) ### this is different from gradfun w.r.t. theta because of parameterization there is log(theta)
-            res2 <- gradfun(ball, total=TRUE)
-### end of test gradient
-            grad <- gradfun(ball, total=FALSE)
-            tmp2 <- zeroinfl(formula, data, dist="negbin")
-            tmp <- apply(grad, 2, mean)
-            covLoglik <- 1/n*crossprod(grad)  - tmp %o% tmp 
-### numerical calculation of hessian matrix can be slow from package "numDeriv"
-            hes <- hessian(func=loglikfun, x=ball)
-### be careful with theta for family="negbin"
-            sigma <- rep(0, kx+kz+(family=="negbin"))
-            for(ss in 2:kx)
-                sigma[ss] <- pen2_eval(abs(start$count[ss]), lone=lambda.count[k]*alpha.count, ltwo=lambda.count[k]*(1-alpha.count), gamma=gamma.count, penalty=penalty)
-            for(ss in (kx+2):(kx+kz))
-                sigma[ss] <- pen2_eval(abs(start$zero[ss-kx]), lone=lambda.zero[k]*alpha.zero, ltwo=lambda.zero[k]*(1-alpha.zero), gamma=gamma.zero, penalty=penalty)
-    	    s1 <- try(-solve(hes - n*diag(sigma))*n)
-	    vcov[[k]] <- s1
-	    if(!inherits(s1, "try-error"))
-                tmp <- 1/n*s1%*%covLoglik%*%s1 
-            else next
-            tmp <- sqrt(diag(tmp))
-### coef.standardized/se.standardized = coef.unstandardized/se.unstandardized except for the intercepts
-            if(standardize){
-                tmp[2:kx] <- tmp[2:kx]/normx
-                tmp[(kx+2):(kx+kz)] <- tmp[(kx+2):(kx+kz)]/normz
-            }
-            se[,k] <- tmp
-        }
-### standard errors
-        if(model_zero$satu==1 && k>1) break
-        k <- k + 1
-    }
-    if(model_zero$satu==1){
-	nlambda <- k-1
-	coefc <- coefc[,1:nlambda]
-	coefz <- coefz[,1:nlambda]
-        if(family == "negbin")
-            theta <- theta[1:nlambda]
-        lambda.count <- lambda.count[1:nlambda]
-        lambda.zero <- lambda.zero[1:nlambda]
-        ll <- ll[1:nlambda]
-    }
-   
-    ###check KKT conditions-begin (only for LASSO penalty at the moment)
-    check_kkt <- function(parms){
-    for(jj in 1:nlambda){
-        cat("lambda iteration, jj=", jj, "\n")
-        cat("count model part coefficients\n")
-    tmp1 <- gradfun(parms[,jj])
-    cat("gradients\n")
-        print(tmp1)
-    for(j in 1:(kx-1)){
-        cat("\nvariable j=", j, "lambda.count[jj]=", lambda.count[jj], "coefc[j+1,jj]=", coefc[j+1, jj], "abs(coefc[j+1],jj)=", abs(coefc[j+1,jj]), "\n")
-        if(abs(coefc[j+1, jj]) > 0)
-            cat("tmp1[j+1]-n*lambda.count[jj]*sign(coefc[j+1,jj])",
-                tmp1[j+1]-n*lambda.count[jj]*sign(coefc[j+1,jj]), "\n")
-        else
-            cat("abs(tmp1[j+1])-n*lambda.count[jj])",
-                abs(tmp1[j+1])-n*lambda.count[jj], "\n")
-    }
-        cat("\nzero model part coefficients\n")
-    for(j in 1:(kz-1)){
-        cat("\nvariable j=", j, "lambda.zero[jj]=", lambda.zero[jj], "coefz[j+1,jj]=", coefz[j+1, jj], "abs(coefz[j+1],jj)=", abs(coefz[j+1,jj]), "\n")
-        if(abs(coefz[j+1,jj]) > 0)
-            cat("tmp1[kx+j+1]-n*lambda.zero[jj]*sign(coefz[j+1,jj])",
-                tmp1[kx+j+1]-n*lambda.zero[jj]*sign(coefz[j+1,jj]), "\n")
-        else
-            cat("abs(tmp1[kx+j+1])-n*lambda.zero[jj])",
-                abs(tmp1[kx+j+1])-n*lambda.zero[jj], "\n")
-    }
-    }
-    }
-    ###check KKT conditions-end (only for count.alpha=zero.alpha=0, and LASSO penalty at the moment)
     if(trace && penalty=="enet" && alpha.count==1 && alpha.zero==1){
         if(family=="poisson")
             tmp <- rbind(coefc, coefz)
@@ -1041,23 +614,27 @@ zipath <- function(formula, data, weights, subset, na.action, offset, standardiz
             tmp <- rbind(coefc, coefz, matrix(log(theta),nrow=1))
         check_kkt(tmp)
     }
+    theta <- RET1$thetaout
+    for(k in 1:nlambda)
+        ll[k] <- loglikfun(c(coefc[,k], coefz[,k], log(theta[k])))
     if(standardize) {
         coefc <- as.matrix(coefc)
         if(dim(coefc)[1] > 1){
             coefc[-1,] <- coefc[-1,]/normx 
-                                        #      if(dim(coefc)[1] > 2)
             coefc[1,] <- coefc[1,] - crossprod(meanx, coefc[-1,])
-                                        #      else coefc[1,] <- coefc[1,] - meanx * coefc[-1,] ### check
         }
         coefz <- as.matrix(coefz)
         if(dim(coefz)[1] > 1){
             coefz[-1,] <- coefz[-1,]/normz
-                                        #      if(dim(coefz)[1] > 2)
             coefz[1,] <- coefz[1,] - crossprod(meanz, coefz[-1,])
-                                        #      else coefz[1,] <- coefz[1,] - meanz * coefz[-1,]
         }
     }
-    cat("zipath R iteration time", proc.time()-tim2, "\n")
+    cat("coefc\n")
+    print(coefc)
+    cat("coefz\n")
+    print(coefz)
+    cat("theta=", theta, "\n")
+    cat("end of zipath_fortran subroutine\n")
     if(family != "negbin")  theta <- NULL
     else names(theta) <- lambda.count
     rownames(coefc) <- names(start$count) <- colnames(X)
