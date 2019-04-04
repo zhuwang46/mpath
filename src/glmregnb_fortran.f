@@ -1,14 +1,14 @@
 C###Adapted from file MASS/R/glmregNB.R
-C input: theta0 is useful if theta_est=0, in which case theta0 is a 
+C input: theta0 is useful if theta_fixed=1, in which case theta0 is a 
 C  vector of length nlambda
       subroutine glmregnb_fortran(x, y, weights, n, m, offset, nlambda,
      +    lambda, penalty, alpha, gam, rescale, standardize, 
      +    penaltyfactor, thresh, maxit_theta, maxit, eps,epsbino,start, 
-     +    etastart, mustart, thetastart, theta_est, theta0, trace,
+     +    etastart, mustart, thetastart, theta_fixed, theta0, trace,
      +    beta, b0, tht, yhat)
       implicit none
       integer k, i, j, n, m, trace, nlambda, penalty, maxit_theta, 
-     +  maxit, rescale, standardize, iter, theta_est
+     +  maxit, rescale, standardize, iter, theta_fixed
       double precision x(n, m), y(n), lambda(nlambda), weights(n),
      +  offset(n), start(m+1), etastart(n), mustart(n), thetastart, 
      +  del, epsbino, theta0(nlambda), d, tht(nlambda), eps, thresh, 
@@ -22,7 +22,7 @@ C      convout <- twologlik <- rep(NA, nlambda)
         if(trace .EQ.1 )then
             call intpr("loop in lambda:", -1,  k, 1)
         endif
-        if(theta_est .EQ. 0)then
+        if(theta_fixed .EQ. 1)then
             thetastart = theta0(k)
         endif
         iter = 0
@@ -37,7 +37,7 @@ C      convout <- twologlik <- rep(NA, nlambda)
             do i=1, n
             etastart(i) = dlog(mustart(i))
             enddo
-            if(theta_est .EQ. 1)then
+            if(theta_fixed .EQ. 0)then
                 call theta_ml(y, mustart, n, weights, 10,
      +           eps**0.25, thetastart, trace)
             endif
