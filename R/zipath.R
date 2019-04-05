@@ -557,7 +557,6 @@ zipath <- function(formula, data, weights, subset, na.action, offset, standardiz
     }
     if(is.null(start$theta)) start$theta <- 1
     active <- 0
-    cat("begin of zipath_fortran subroutine\n")
     #if(active == 1)
         RET1 <- .Fortran("zipath_fortran",
 		            x=as.double(Xnew), 
@@ -617,6 +616,7 @@ zipath <- function(formula, data, weights, subset, na.action, offset, standardiz
     theta <- RET1$thetaout
     for(k in 1:nlambda)
         ll[k] <- loglikfun(c(coefc[,k], coefz[,k], log(theta[k])))
+    ll <- sumw*ll
     if(standardize) {
         coefc <- as.matrix(coefc)
         if(dim(coefc)[1] > 1){
@@ -629,12 +629,6 @@ zipath <- function(formula, data, weights, subset, na.action, offset, standardiz
             coefz[1,] <- coefz[1,] - crossprod(meanz, coefz[-1,])
         }
     }
-    cat("coefc\n")
-    print(coefc)
-    cat("coefz\n")
-    print(coefz)
-    cat("theta=", theta, "\n")
-    cat("end of zipath_fortran subroutine\n")
     if(family != "negbin")  theta <- NULL
     else names(theta) <- lambda.count
     rownames(coefc) <- names(start$count) <- colnames(X)
@@ -659,7 +653,6 @@ zipath <- function(formula, data, weights, subset, na.action, offset, standardiz
     dfz <- apply(abs(coefz) > 0, 2, sum) 
     aic <- -2*ll + 2*(dfc+dfz)
     bic <- -2*ll + log(n)*(dfc+dfz)
-    #if(!need.se) covLoglik <- hes <- se <- vcov <- NA
     if(shortlist)
         rval <- list(coefficients = list(count = coefc, zero = coefz),
                      lambda.count = lambda.count,
@@ -668,7 +661,7 @@ zipath <- function(formula, data, weights, subset, na.action, offset, standardiz
                      alpha.zero = alpha.zero,
                      gamma.count = gamma.count,
                      gamma.zero = gamma.zero,
-                     loglik = sumw*ll,
+                     loglik = ll,
                      aic = aic,
                      bic = bic,                        
                      family = family,
@@ -678,7 +671,7 @@ zipath <- function(formula, data, weights, subset, na.action, offset, standardiz
         rval <- list(coefficients = list(count = coefc, zero = coefz),
                      residuals = res,
                      fitted.values = Yhat,
-                     satu = model_zero$satu,
+                     #satu = model_zero$satu,
                      nlambda=nlambda,
                      lambda.count = lambda.count,
                      lambda.zero = lambda.zero,
@@ -687,7 +680,8 @@ zipath <- function(formula, data, weights, subset, na.action, offset, standardiz
                      gamma.count = gamma.count,
                      gamma.zero = gamma.zero,
                      start = start,
-                     weights = if(identical(as.vector(weights), rep.int(1L, n))) NULL else weights,
+                     #weights = if(identical(as.vector(weights), rep.int(1L, n))) NULL else weights,
+                     weights = weights*sumw,
                      offset = list(count = if(identical(offsetx, rep.int(0, n))) NULL else offsetx,
                                    zero = if(identical(offsetz, rep.int(0, n))) NULL else offsetz),
                      n = nobs,
@@ -696,14 +690,15 @@ zipath <- function(formula, data, weights, subset, na.action, offset, standardiz
                      terms = list(count = mtX, zero = mtZ, full = mt),
                      theta = theta,
                      theta.fixed = theta.fixed,
-                     loglik = sumw*ll,
+                     loglik = ll,
                      aic = aic,
                      bic = bic,                         
                      family = family,
+                     theta.fixed=theta.fixed,
                      penalty=penalty,
                      link = linkstr,
                      linkinv = linkinv,
-                     converged = convout,
+                     #converged = convout,
                      call = cl,
                      formula = ff,
                      levels = .getXlevels(mt, mf),
@@ -778,7 +773,7 @@ print.summary.zipath <- function(x, digits = max(3, getOption("digits") - 3), ..
     if(x$family == "negbin"){
         cat("\nTheta:", round(x$theta, digits),"\n")} else cat("\n")
     cat("Log-likelihood:", formatC(x$loglik, digits = digits), "\n")
-    cat("Converged:", x$converged, "\n")
+    #cat("Converged:", x$converged, "\n")
     
     invisible(x)
 }
@@ -1235,10 +1230,31 @@ se <- function(x, which, log=TRUE, ...)
     UseMethod("se")
 
 se.zipath <- function(x, which, log=TRUE, ...){
+    if(x$family=="poisson"){
+        ###use a large theta of negbin distribution to approximate poisson distribution
+        x$family <- "negbin"
+        x$theta.fixed <- TRUE
+        x$theta <- rep(10000, x$nlambda)
+    }
+    if(identical(as.vector(x$weights), rep.int(1L, x$n))) NULL 
+      else if(all(diff(x$weights)==0)) x$weights <- rep.int(1L, x$n) 
+      else stop("The results may be incorrect if weights are different\n")
     if(is.null(which)) stop("which has no numerical value\n")
     if(length(which) > 1) stop("which is an integer value\n")
     tmp <- sandwichReg(x, which=which, log=log)
-    sqrt(diag(tmp[[which]]))
+    tmp0 <- sqrt(diag(tmp[[which]]))
+    varcount <- which(abs(coef(x)$count[,which]) > 0)
+    varzero <- which(abs(coef(x)$zero[,which]) > 0)
+    tmp1 <- rownames(x$coefficient$count)[varcount]
+    kx <- length(tmp1)
+    tmp2 <- rownames(x$coefficient$zero)[varzero]
+    kz <- length(tmp2)
+    res <- list(count=tmp0[1:kx],zero=tmp0[(kx+1):(kx+kz)])
+    names(res$count) <- tmp1
+    names(res$zero) <- tmp2
+    if(x$family=="negbin" & !x$theta.fixed)
+    res$theta <- tmp0[length(tmp0)]
+    res
 }
 
 
