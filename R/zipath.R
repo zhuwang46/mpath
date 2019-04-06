@@ -441,16 +441,12 @@ zipath <- function(formula, data, weights, subset, na.action, offset, standardiz
     ll <- rep(NA, nlambda)
     convout <- rep(NA, nlambda)
     ### How to incorporate offset here?
-    fit0 <- zeroinfl(Y~1|1, weights=weights, dist=family)
+    fit0 <- zeroinfl(Y~1|1, weights=weights*sumw, dist=family)
     ### find solution of intercept model with family = negbin and fixed theta parameter, and replace the estimates for fit0
     ## ML estimation of theta
     if(family=="negbin" && theta.fixed) {
         if(is.null(init.theta)){
-### this may not work when a model is complex, i.e., solve(fit) may not be stable in zeroinfl...
-### ff is the original "formula"
-            init.theta <- try(do.call("zeroinfl", list(ff, data, weights=weights, dist="negbin"))$theta)
-            if(inherits(init.theta, "try-error"))
-                init.theta <- do.call("glm.nb", list(formula=Y ~ X[,-1], data, weights=weights))$theta
+             init.theta <- fit0$theta
         }
         Xtmp <- X
         Ztmp <- Z
@@ -479,8 +475,8 @@ zipath <- function(formula, data, weights, subset, na.action, offset, standardiz
         penalty.factor.zero <- rep(1, dim(Znew)[2])
         lambda.zero <- rep(0, nlambda)
     }
-    #for poisson family or negbin with fixed theta, using KKT conditions to compute lambda_count and lambda_zero values
-    if(trace)
+    #for poisson family or negbin using KKT conditions to compute lambda_count and lambda_zero values
+    if(is.null(lambda.count) || is.null(lambda.zero)){
     lmax <- .Fortran("lmax_zipath",
                           B=as.double(Xnew),
                           G=as.double(Znew),
@@ -502,50 +498,11 @@ zipath <- function(formula, data, weights, subset, na.action, offset, standardiz
                           lmax_zero=as.double(1),
                           PACKAGE="mpath")
     #cat("with Fortran KKT conditions, lmax$lmax_count=", lmax$lmax_count, "lmax_zero=", lmax$lmax_zero, "\n")
-    #lpath <- seq(log(lmax$lmax_count), log(lambda.min.ratio * lmax$lmax_count), length.out=nlambda)
-    #lambda.count <- exp(lpath)
-    #lpath <- seq(log(lmax$lmax_zero), log(lambda.min.ratio * lmax$lmax_zero), length.out=nlambda)
-    #lambda.zero <- exp(lpath)
-
-### get lambda -begin
-    if(is.null(lambda.count) || is.null(lambda.zero)){
-                                        #if(is.null(lambda.count) && is.null(lambda.zero)){
-        mui <- predict(fit0, type="count")
-        probi <- predict(fit0, type="zero")
-        probi <- switch(family,
-                        "poisson" = probi/(probi + (1-probi) * dpois(0, mui)),
-                        "geometric" = probi/(probi + (1-probi) * dnbinom(0, size = 1, mu = mui)),
-                        "negbin"= probi/(probi + (1-probi) * dnbinom(0, size = fit0$theta, mu = mui))
-                        )
-        probi[Y1] <- 0
-        if(dim(Xnew)[2] > 1 && is.null(lambda.count)){
-            if(family=="poisson"){
-                lambda.count <- glmreg_fit(Xnew, Y, weights=weights*(1-probi), family="poisson", offset=offsetx, penalty.factor=penalty.factor.count, nlambda=nlambda, lambda.min.ratio = lambda.min.ratio, alpha=alpha.count, maxit=1, standardize=FALSE, ...)$lambda
-            }
-            else if(family=="geometric"){
-                lambda.count <- glmreg_fit(Xnew, Y, weights=weights*(1-probi), family="negbin", offset=offsetx, penalty.factor=penalty.factor.count, nlambda=nlambda, lambda.min.ratio=lambda.min.ratio,alpha=alpha.count, theta=1, maxit=1, standardize=FALSE, ...)$lambda
-                theta <- 1
-            }   else if(family=="negbin"){
-                if(theta.fixed){
-                    lambda.count <- glmreg_fit(Xnew, Y, weights=weights*(1-probi), family="negbin", offset=offsetx, penalty.factor=penalty.factor.count, theta=init.theta, nlambda=nlambda, lambda.min.ratio=lambda.min.ratio, alpha=alpha.count, maxit=1, standardize=FALSE, ...)$lambda
-                }
-                else{
-                    lambda.count <- glmregNB(Y~Xnew, weights=weights*(1-probi), offset=offsetx, penalty.factor=penalty.factor.count, nlambda=nlambda, lambda.min.ratio=lambda.min.ratio, alpha=alpha.count, rescale=FALSE, standardize=FALSE, maxit=1, maxit.theta=maxit.theta, ...)$lambda
-                }
-            }
-        }
-        else lambda.count <- rep(0, nlambda)
-        if(dim(Znew)[2] > 1 && is.null(lambda.zero)){
-            lambda.zero <- glmreg_fit(Znew, probi, weights=weights, family="binomial", offset=offsetz, penalty=penalty, penalty.factor=penalty.factor.zero, rescale=rescale, nlambda=nlambda, lambda.min.ratio=lambda.zero.min.ratio, alpha=alpha.zero, maxit=1, standardize=FALSE, eps.bino=eps.bino, ...)$lambda ### 
-### it is possible that the length of lambda.zero < lambda.count (and vice versa), for instance, a saturated model returns ealier
-            if(length(lambda.zero) < nlambda)
-		lambda.zero <- rep_len(lambda.zero, nlambda)
-        }    else lambda.zero <- rep(0, nlambda)
+    lpath <- seq(log(lmax$lmax_count), log(lambda.count.min.ratio * lmax$lmax_count), length.out=nlambda)
+    lambda.count <- exp(lpath)
+    lpath <- seq(log(lmax$lmax_zero), log(lambda.zero.min.ratio * lmax$lmax_zero), length.out=nlambda)
+    lambda.zero <- exp(lpath)
     }
-    else if(length(lambda.count) != length(lambda.zero))
-        stop("length of lambda.count must be the same as lambda.zero\n")
-    else nlambda <- length(lambda.count) 
-### get lambda -end
     model_count <- list(coefficients = c(fit0$coefficients$count, rep(0, dim(Xnew)[2])), fitted.values=predict(fit0, type="count"))
     model_zero <- list(coefficients = c(fit0$coefficients$zero, rep(0, dim(Znew)[2])), fitted.values=predict(fit0, type="zero"))
     start <- list(count = model_count$coefficients, zero = model_zero$coefficients)
@@ -557,7 +514,6 @@ zipath <- function(formula, data, weights, subset, na.action, offset, standardiz
     }
     if(is.null(start$theta)) start$theta <- 1
     active <- 0
-    #if(active == 1)
         RET1 <- .Fortran("zipath_fortran",
 		            x=as.double(Xnew), 
                     z=as.double(Znew), 
