@@ -4,7 +4,8 @@ zipath <- function(formula, data, weights, subset, na.action, offset, standardiz
                    penalty = c("enet", "mnet", "snet"),
                    start = NULL, model = TRUE, y = TRUE, x = FALSE, nlambda=100, lambda.count=NULL, lambda.zero=NULL, 
 	           type.path=c("active", "naive"),
-		   penalty.factor.count=NULL, penalty.factor.zero=NULL, lambda.count.min.ratio=.0001, lambda.zero.min.ratio=1e-3, alpha.count=1, alpha.zero=alpha.count, gamma.count=3, gamma.zero=gamma.count, rescale=FALSE, init.theta=1, theta.fixed=FALSE, EM=TRUE, maxit.em=200, convtype=c("count", "both"), maxit= 1000, maxit.theta =10, reltol = 1e-5, thresh=1e-6, eps.bino=1e-5, shortlist=FALSE, trace=FALSE, ...)
+		   penalty.factor.count=NULL, penalty.factor.zero=NULL, 
+           lambda.count.min.ratio=.0001, lambda.zero.min.ratio=.1, alpha.count=1, alpha.zero=alpha.count, gamma.count=3, gamma.zero=gamma.count, rescale=FALSE, init.theta=1, theta.fixed=FALSE, EM=TRUE, maxit.em=200, convtype=c("count", "both"), maxit= 1000, maxit.theta =10, reltol = 1e-5, thresh=1e-6, eps.bino=1e-5, shortlist=FALSE, trace=FALSE, ...)
 {
 
     if(is.null(init.theta) && family=="negbin" && theta.fixed)
@@ -25,7 +26,7 @@ zipath <- function(formula, data, weights, subset, na.action, offset, standardiz
     if(type.path=="active")
 	 active <- 1
     else active <- 0
-    lambda.min.ratio <- lambda.count.min.ratio
+    #lambda.min.ratio <- lambda.count.min.ratio
     ## set up likelihood
     ziPoisson <- function(parms) {
         ## count mean
@@ -358,9 +359,9 @@ zipath <- function(formula, data, weights, subset, na.action, offset, standardiz
     n <- length(Y)
     kx <- NCOL(X)
     kz <- NCOL(Z)
+    nobs <- n
     Y0 <- Y <= 0
     Y1 <- Y > 0
-
     ## weights and offset
     weights <- model.weights(mf)
     if(is.null(weights)) weights <- 1
@@ -441,7 +442,9 @@ zipath <- function(formula, data, weights, subset, na.action, offset, standardiz
     ll <- rep(NA, nlambda)
     convout <- rep(NA, nlambda)
     ### How to incorporate offset here?
-    fit0 <- zeroinfl(Y~1|1, weights=weights*sumw, dist=family)
+    if(all(diff(weights)==0)) weightsnow <- rep.int(1L, n) 
+    else weightsnow <- weights
+    fit0 <- zeroinfl(Y~1|1, weights=weightsnow, dist=family)
     ### find solution of intercept model with family = negbin and fixed theta parameter, and replace the estimates for fit0
     ## ML estimation of theta
     if(family=="negbin" && theta.fixed) {
@@ -477,7 +480,13 @@ zipath <- function(formula, data, weights, subset, na.action, offset, standardiz
     }
     #for poisson family or negbin using KKT conditions to compute lambda_count and lambda_zero values
     if(is.null(lambda.count) || is.null(lambda.zero)){
-    lmax <- .Fortran("lmax_zipath",
+        if(family=="poisson") thetanow <- 10000
+        else
+          if(family=="negbin")
+            if(theta.fixed) thetanow <- init.theta
+            else thetanow <- fit0$theta
+browser() ## why change init.theta to thetanow makes different results but also change the time of running quite substantially? 
+            lmax <- .Fortran("lmax_zipath",
                           B=as.double(Xnew),
                           G=as.double(Znew),
                           y=as.double(Y),
@@ -493,7 +502,7 @@ zipath <- function(formula, data, weights, subset, na.action, offset, standardiz
                           alpha_zero=as.double(alpha.zero),
                           penaltyfactor_count=as.double(penalty.factor.count),
                           penaltyfactor_zero=as.double(penalty.factor.zero),
-                          theta=as.double(init.theta),
+                          theta=as.double(thetanow),
                           lmax_count=as.double(1),
                           lmax_zero=as.double(1),
                           PACKAGE="mpath")
