@@ -5,7 +5,7 @@ zipath <- function(formula, data, weights, subset, na.action, offset, standardiz
                    start = NULL, model = TRUE, y = TRUE, x = FALSE, nlambda=100, lambda.count=NULL, lambda.zero=NULL, 
 	           type.path=c("active", "naive"),
 		   penalty.factor.count=NULL, penalty.factor.zero=NULL, 
-           lambda.count.min.ratio=.0001, lambda.zero.min.ratio=.1, alpha.count=1, alpha.zero=alpha.count, gamma.count=3, gamma.zero=gamma.count, rescale=FALSE, init.theta=1, theta.fixed=FALSE, EM=TRUE, maxit.em=200, convtype=c("count", "both"), maxit= 1000, maxit.theta =10, reltol = 1e-5, thresh=1e-6, eps.bino=1e-5, shortlist=FALSE, trace=FALSE, ...)
+                   lambda.count.min.ratio=.0001, lambda.zero.min.ratio=.1, alpha.count=1, alpha.zero=alpha.count, gamma.count=3, gamma.zero=gamma.count, rescale=FALSE, init.theta=1, theta.fixed=FALSE, EM=TRUE, maxit.em=200, convtype=c("count", "both"), maxit= 1000, maxit.theta =10, reltol = 1e-5, thresh=1e-6, eps.bino=1e-5, shortlist=FALSE, trace=FALSE, ...)
 {
 
     if(is.null(init.theta) && family=="negbin" && theta.fixed)
@@ -24,9 +24,9 @@ zipath <- function(formula, data, weights, subset, na.action, offset, standardiz
     link <- match.arg(link)
     type.path <- match.arg(type.path)
     if(type.path=="active")
-	 active <- 1
+        active <- 1
     else active <- 0
-    #lambda.min.ratio <- lambda.count.min.ratio
+                                        #lambda.min.ratio <- lambda.count.min.ratio
     ## set up likelihood
     ziPoisson <- function(parms) {
         ## count mean
@@ -108,36 +108,36 @@ zipath <- function(formula, data, weights, subset, na.action, offset, standardiz
         else pen2 <- 0
         return(n*(sum(pen1) + sum(pen2)))
     }
-    ###check KKT conditions-begin (only for LASSO penalty at the moment)
+###check KKT conditions-begin (only for LASSO penalty at the moment)
     check_kkt <- function(parms){
-    for(jj in 1:nlambda){
-        cat("lambda iteration, jj=", jj, "\n")
-        cat("count model part coefficients\n")
-    tmp1 <- gradfun(parms[,jj])
-    cat("gradients\n")
-        print(tmp1)
-    for(j in 1:(kx-1)){
-        cat("\nvariable j=", j, "lambda.count[jj]=", lambda.count[jj], "coefc[j+1,jj]=", coefc[j+1, jj], "abs(coefc[j+1],jj)=", abs(coefc[j+1,jj]), "\n")
-        if(abs(coefc[j+1, jj]) > 0)
-            cat("tmp1[j+1]-n*lambda.count[jj]*sign(coefc[j+1,jj])",
-                tmp1[j+1]-n*lambda.count[jj]*sign(coefc[j+1,jj]), "\n")
-        else
-            cat("abs(tmp1[j+1])-n*lambda.count[jj])",
-                abs(tmp1[j+1])-n*lambda.count[jj], "\n")
+        for(jj in 1:nlambda){
+            cat("lambda iteration, jj=", jj, "\n")
+            cat("count model part coefficients\n")
+            tmp1 <- gradfun(parms[,jj])
+            cat("gradients\n")
+            print(tmp1)
+            for(j in 1:(kx-1)){
+                cat("\nvariable j=", j, "lambda.count[jj]=", lambda.count[jj], "coefc[j+1,jj]=", coefc[j+1, jj], "abs(coefc[j+1],jj)=", abs(coefc[j+1,jj]), "\n")
+                if(abs(coefc[j+1, jj]) > 0)
+                    cat("tmp1[j+1]-n*lambda.count[jj]*sign(coefc[j+1,jj])",
+                        tmp1[j+1]-n*lambda.count[jj]*sign(coefc[j+1,jj]), "\n")
+                else
+                    cat("abs(tmp1[j+1])-n*lambda.count[jj])",
+                        abs(tmp1[j+1])-n*lambda.count[jj], "\n")
+            }
+            cat("\nzero model part coefficients\n")
+            for(j in 1:(kz-1)){
+                cat("\nvariable j=", j, "lambda.zero[jj]=", lambda.zero[jj], "coefz[j+1,jj]=", coefz[j+1, jj], "abs(coefz[j+1],jj)=", abs(coefz[j+1,jj]), "\n")
+                if(abs(coefz[j+1,jj]) > 0)
+                    cat("tmp1[kx+j+1]-n*lambda.zero[jj]*sign(coefz[j+1,jj])",
+                        tmp1[kx+j+1]-n*lambda.zero[jj]*sign(coefz[j+1,jj]), "\n")
+                else
+                    cat("abs(tmp1[kx+j+1])-n*lambda.zero[jj])",
+                        abs(tmp1[kx+j+1])-n*lambda.zero[jj], "\n")
+            }
+        }
     }
-        cat("\nzero model part coefficients\n")
-    for(j in 1:(kz-1)){
-        cat("\nvariable j=", j, "lambda.zero[jj]=", lambda.zero[jj], "coefz[j+1,jj]=", coefz[j+1, jj], "abs(coefz[j+1],jj)=", abs(coefz[j+1,jj]), "\n")
-        if(abs(coefz[j+1,jj]) > 0)
-            cat("tmp1[kx+j+1]-n*lambda.zero[jj]*sign(coefz[j+1,jj])",
-                tmp1[kx+j+1]-n*lambda.zero[jj]*sign(coefz[j+1,jj]), "\n")
-        else
-            cat("abs(tmp1[kx+j+1])-n*lambda.zero[jj])",
-                abs(tmp1[kx+j+1])-n*lambda.zero[jj], "\n")
-    }
-    }
-    }
-    ###check KKT conditions-end (only for count.alpha=zero.alpha=0, and LASSO penalty at the moment)
+###check KKT conditions-end (only for count.alpha=zero.alpha=0, and LASSO penalty at the moment)
     famtype <- switch(family,
                       "gaussian"=1,
                       "binomial"=2,
@@ -441,15 +441,15 @@ zipath <- function(formula, data, weights, subset, na.action, offset, standardiz
     se <- matrix(NA, nrow=dim(X)[2]+dim(Z)[2]+(family=="negbin"), ncol=nlambda) 
     ll <- rep(NA, nlambda)
     convout <- rep(NA, nlambda)
-    ### How to incorporate offset here?
+### How to incorporate offset here?
     if(all(diff(weights)==0)) weightsnow <- rep.int(1L, n) 
     else weightsnow <- weights
     fit0 <- zeroinfl(Y~1|1, weights=weightsnow, dist=family)
-    ### find solution of intercept model with family = negbin and fixed theta parameter, and replace the estimates for fit0
+### find solution of intercept model with family = negbin and fixed theta parameter, and replace the estimates for fit0
     ## ML estimation of theta
     if(family=="negbin" && theta.fixed) {
         if(is.null(init.theta)){
-             init.theta <- fit0$theta
+            init.theta <- fit0$theta
         }
         Xtmp <- X
         Ztmp <- Z
@@ -478,39 +478,37 @@ zipath <- function(formula, data, weights, subset, na.action, offset, standardiz
         penalty.factor.zero <- rep(1, dim(Znew)[2])
         lambda.zero <- rep(0, nlambda)
     }
-    #for poisson family or negbin using KKT conditions to compute lambda_count and lambda_zero values
+                                        #for poisson family or negbin using KKT conditions to compute lambda_count and lambda_zero values
     if(is.null(lambda.count) || is.null(lambda.zero)){
         if(family=="poisson") thetanow <- 10000
         else
-          if(family=="negbin")
-            if(theta.fixed) thetanow <- init.theta
-            else thetanow <- fit0$theta
-browser() ## why change init.theta to thetanow makes different results but also change the time of running quite substantially? 
-            lmax <- .Fortran("lmax_zipath",
-                          B=as.double(Xnew),
-                          G=as.double(Znew),
-                          y=as.double(Y),
-                          y1=as.integer(Y1),
-                          weights=as.double(weights), 
-                          n=as.integer(n), 
-                          d1=as.integer(kz-1),
-                          d2=as.integer(kx-1),
-                          family=as.integer(famtype),
-                          coefx=as.double(fit0$coefficients$count),
-                          coefz=as.double(fit0$coefficients$zero),
-                          alpha_count=as.double(alpha.count),
-                          alpha_zero=as.double(alpha.zero),
-                          penaltyfactor_count=as.double(penalty.factor.count),
-                          penaltyfactor_zero=as.double(penalty.factor.zero),
-                          theta=as.double(thetanow),
-                          lmax_count=as.double(1),
-                          lmax_zero=as.double(1),
-                          PACKAGE="mpath")
-    #cat("with Fortran KKT conditions, lmax$lmax_count=", lmax$lmax_count, "lmax_zero=", lmax$lmax_zero, "\n")
-    lpath <- seq(log(lmax$lmax_count), log(lambda.count.min.ratio * lmax$lmax_count), length.out=nlambda)
-    lambda.count <- exp(lpath)
-    lpath <- seq(log(lmax$lmax_zero), log(lambda.zero.min.ratio * lmax$lmax_zero), length.out=nlambda)
-    lambda.zero <- exp(lpath)
+            if(family=="negbin")
+                if(theta.fixed) thetanow <- init.theta
+                else thetanow <- fit0$theta
+        lmax <- .Fortran("lmax_zipath",
+                         B=as.double(Xnew),
+                         G=as.double(Znew),
+                         y=as.double(Y),
+                         y1=as.integer(Y1),
+                         weights=as.double(weights), 
+                         n=as.integer(n), 
+                         d1=as.integer(kz-1),
+                         d2=as.integer(kx-1),
+                         family=as.integer(famtype),
+                         coefx=as.double(fit0$coefficients$count),
+                         coefz=as.double(fit0$coefficients$zero),
+                         alpha_count=as.double(alpha.count),
+                         alpha_zero=as.double(alpha.zero),
+                         penaltyfactor_count=as.double(penalty.factor.count),
+                         penaltyfactor_zero=as.double(penalty.factor.zero),
+                         theta=as.double(thetanow),
+                         lmax_count=as.double(1),
+                         lmax_zero=as.double(1),
+                         PACKAGE="mpath")
+        lpath <- seq(log(lmax$lmax_count), log(lambda.count.min.ratio * lmax$lmax_count), length.out=nlambda)
+        lambda.count <- exp(lpath)
+        lpath <- seq(log(lmax$lmax_zero), log(lambda.zero.min.ratio * lmax$lmax_zero), length.out=nlambda)
+        lambda.zero <- exp(lpath)
     }
     model_count <- list(coefficients = c(fit0$coefficients$count, rep(0, dim(Xnew)[2])), fitted.values=predict(fit0, type="count"))
     model_zero <- list(coefficients = c(fit0$coefficients$zero, rep(0, dim(Znew)[2])), fitted.values=predict(fit0, type="zero"))
@@ -523,52 +521,52 @@ browser() ## why change init.theta to thetanow makes different results but also 
     }
     if(is.null(start$theta)) start$theta <- 1
     active <- 0
-        RET1 <- .Fortran("zipath_fortran",
-		            x=as.double(Xnew), 
-                    z=as.double(Znew), 
-                    y=as.double(Y), 
-                    y1=as.integer(Y1), 
-                    weights=as.double(weights/sum(weights)), 
-                    n=as.integer(n), 
-                    kx=as.integer(kx-1), 
-                    kz=as.integer(kz-1),
-                    start_count=as.double(model_count$coefficients),
-                    start_zero=as.double(model_zero$coefficients),
-                    mustart_count=as.double(model_count$fitted.values), 
-                    mustart_zero=as.double(model_zero$fitted.values), 
-                    offsetx=as.double(offsetx), 
-                    offsetz=as.double(offsetz), 
-                    nlambda=as.integer(nlambda), 
-                    lambda_count=as.double(lambda.count),
-                    lambda_zero=as.double(lambda.zero),
-                    alpha_count=as.double(alpha.count),
-                    alpha_zero=as.double(alpha.zero),
-                    gam_count=as.double(gamma.count),
-                    gam_zero=as.double(gamma.zero),
-                    standardize=as.integer(standardize), 
-                    penaltyfactor_count=as.double(penalty.factor.count),
-                    penaltyfactor_zero=as.double(penalty.factor.zero),
-                    maxit=as.integer(maxit), 
-                    eps=as.double(.Machine$double.eps), 
-                    family=as.integer(famtype),
-                    penalty=as.integer(pentype), 
-                    trace=as.integer(trace), 
-                    coefc=as.double(matrix(0, kx, nlambda)), 
-                    coefz=as.double(matrix(0, kz, nlambda)), 
-                    yhat=as.double(rep(0, n)), 
-                    iter=as.integer(maxit.em),
-                    del=as.double(reltol), 
-                    los=as.double(rep(0, nlambda)), 
-                    pll=as.double(rep(0, nlambda)), 
-                    rescale=as.integer(rescale), 
-                    thresh=as.double(thresh),
-                    epsbino=as.double(eps.bino),
-                    theta_fixed=as.integer(theta.fixed), 
-                    maxit_theta=as.integer(maxit.theta), 
-                    theta=as.double(start$theta), 
-                    thetaout=as.double(rep(start$theta, nlambda)), 
-                    active=as.integer(active),
-                    PACKAGE="mpath")
+    RET1 <- .Fortran("zipath_fortran",
+                     x=as.double(Xnew), 
+                     z=as.double(Znew), 
+                     y=as.double(Y), 
+                     y1=as.integer(Y1), 
+                     weights=as.double(weights/sum(weights)), 
+                     n=as.integer(n), 
+                     kx=as.integer(kx-1), 
+                     kz=as.integer(kz-1),
+                     start_count=as.double(model_count$coefficients),
+                     start_zero=as.double(model_zero$coefficients),
+                     mustart_count=as.double(model_count$fitted.values), 
+                     mustart_zero=as.double(model_zero$fitted.values), 
+                     offsetx=as.double(offsetx), 
+                     offsetz=as.double(offsetz), 
+                     nlambda=as.integer(nlambda), 
+                     lambda_count=as.double(lambda.count),
+                     lambda_zero=as.double(lambda.zero),
+                     alpha_count=as.double(alpha.count),
+                     alpha_zero=as.double(alpha.zero),
+                     gam_count=as.double(gamma.count),
+                     gam_zero=as.double(gamma.zero),
+                     standardize=as.integer(standardize), 
+                     penaltyfactor_count=as.double(penalty.factor.count),
+                     penaltyfactor_zero=as.double(penalty.factor.zero),
+                     maxit=as.integer(maxit), 
+                     eps=as.double(.Machine$double.eps), 
+                     family=as.integer(famtype),
+                     penalty=as.integer(pentype), 
+                     trace=as.integer(trace), 
+                     coefc=as.double(matrix(0, kx, nlambda)), 
+                     coefz=as.double(matrix(0, kz, nlambda)), 
+                     yhat=as.double(rep(0, n)), 
+                     iter=as.integer(maxit.em),
+                     del=as.double(reltol), 
+                     los=as.double(rep(0, nlambda)), 
+                     pll=as.double(rep(0, nlambda)), 
+                     rescale=as.integer(rescale), 
+                     thresh=as.double(thresh),
+                     epsbino=as.double(eps.bino),
+                     theta_fixed=as.integer(theta.fixed), 
+                     maxit_theta=as.integer(maxit.theta), 
+                     theta=as.double(start$theta), 
+                     thetaout=as.double(rep(start$theta, nlambda)), 
+                     active=as.integer(active),
+                     PACKAGE="mpath")
     coefc <- matrix(RET1$coefc, ncol=nlambda)
     coefz <- matrix(RET1$coefz, ncol=nlambda)
     if(trace && penalty=="enet" && alpha.count==1 && alpha.zero==1){
@@ -636,7 +634,7 @@ browser() ## why change init.theta to thetanow makes different results but also 
         rval <- list(coefficients = list(count = coefc, zero = coefz),
                      residuals = res,
                      fitted.values = Yhat,
-                     #satu = model_zero$satu,
+                                        #satu = model_zero$satu,
                      nlambda=nlambda,
                      lambda.count = lambda.count,
                      lambda.zero = lambda.zero,
@@ -645,7 +643,7 @@ browser() ## why change init.theta to thetanow makes different results but also 
                      gamma.count = gamma.count,
                      gamma.zero = gamma.zero,
                      start = start,
-                     #weights = if(identical(as.vector(weights), rep.int(1L, n))) NULL else weights,
+                                        #weights = if(identical(as.vector(weights), rep.int(1L, n))) NULL else weights,
                      weights = weights*sumw,
                      offset = list(count = if(identical(offsetx, rep.int(0, n))) NULL else offsetx,
                                    zero = if(identical(offsetz, rep.int(0, n))) NULL else offsetz),
@@ -663,7 +661,7 @@ browser() ## why change init.theta to thetanow makes different results but also 
                      penalty=penalty,
                      link = linkstr,
                      linkinv = linkinv,
-                     #converged = convout,
+                                        #converged = convout,
                      call = cl,
                      formula = ff,
                      levels = .getXlevels(mt, mf),
@@ -738,7 +736,7 @@ print.summary.zipath <- function(x, digits = max(3, getOption("digits") - 3), ..
     if(x$family == "negbin"){
         cat("\nTheta:", round(x$theta, digits),"\n")} else cat("\n")
     cat("Log-likelihood:", formatC(x$loglik, digits = digits), "\n")
-    #cat("Converged:", x$converged, "\n")
+                                        #cat("Converged:", x$converged, "\n")
     
     invisible(x)
 }
@@ -1196,14 +1194,14 @@ se <- function(x, which, log=TRUE, ...)
 
 se.zipath <- function(x, which, log=TRUE, ...){
     if(x$family=="poisson"){
-        ###use a large theta of negbin distribution to approximate poisson distribution
+###use a large theta of negbin distribution to approximate poisson distribution
         x$family <- "negbin"
         x$theta.fixed <- TRUE
         x$theta <- rep(10000, x$nlambda)
     }
     if(identical(as.vector(x$weights), rep.int(1L, x$n))) NULL 
-      else if(all(diff(x$weights)==0)) x$weights <- rep.int(1L, x$n) 
-      else stop("The results may be incorrect if weights are different\n")
+    else if(all(diff(x$weights)==0)) x$weights <- rep.int(1L, x$n) 
+    else stop("The results may be incorrect if weights are different\n")
     if(is.null(which)) stop("which has no numerical value\n")
     if(length(which) > 1) stop("which is an integer value\n")
     tmp <- sandwichReg(x, which=which, log=log)
@@ -1218,7 +1216,7 @@ se.zipath <- function(x, which, log=TRUE, ...){
     names(res$count) <- tmp1
     names(res$zero) <- tmp2
     if(x$family=="negbin" & !x$theta.fixed)
-    res$theta <- tmp0[length(tmp0)]
+        res$theta <- tmp0[length(tmp0)]
     res
 }
 
