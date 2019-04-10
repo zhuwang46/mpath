@@ -23,7 +23,7 @@ Cstart(m+1),etastart(n), mustart(n),
     
       if(family.EQ.10)then
               call dblepr("x=", -1, x(1, 1:m), m)
-              call dblepr("y", -1, y(1:5), 5)
+              call dblepr("y", -1, y, 5)
               call dblepr("sum(y)", -1, sum(y), 1)
               call dblepr("weights", -1, weights(1:5), 5)
               call dblepr("sum(weights)", -1, sum(weights), 1)
@@ -39,7 +39,7 @@ Cstart(m+1),etastart(n), mustart(n),
               call dblepr("alpha", -1, alpha, 1)
               call intpr("rescale", -1, rescale, 1)
               call intpr("standardize", -1, standardize, 1)
-              call dblepr("penaltyfactor", -1, penaltyfactor, 5)
+              call dblepr("penaltyfactor", -1, penaltyfactor, m)
               call dblepr("thresh", -1, thresh, 1)
               call dblepr("epsbino", -1, epsbino, 1)
               call intpr("maxit", -1, maxit, 1)
@@ -56,18 +56,8 @@ Cstart(m+1),etastart(n), mustart(n),
       if(family.EQ.1) then
             rescale = 0
       endif
-C      call  deveval(n, y, mustart, theta, weights, family, dev)
+      call  deveval(n, y, mustart, theta, weights, family, nulldev)
       startv = 1
-C      do 90 j=1, nlambda
-C      b0(j) = start(1)
-C        do 100 i=1, m
-C         beta(i, j) = start(i+1)
-C100     continue 
-C90    continue 
-C    resdev <- rep(0, nlambda)
-C    yhat <- matrix(0, nobs, nlambda)
-C    penfac <- penalty.factor/sum(penalty.factor) * m
-C    lam <- penfac %o% lambda
       sumpen = sum(penaltyfactor)
       do 110 i=1, m
       penfac(i) = penaltyfactor(i)/sumpen * m
