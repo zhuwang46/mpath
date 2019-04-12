@@ -39,6 +39,7 @@ extern void F77_NAME(pnorm_fortran)(void *);
 extern void F77_NAME(pred)(void *, void *, void *, void *, void *, void *, void *, void *, void *);
 extern void F77_NAME(theta_ml)(void *, void *, void *, void *, void *, void *, void *, void *);
 extern void F77_NAME(zeval)(void *, void *, void *, void *, void *, void *, void *);
+extern void F77_NAME(zi)(void *, void *, void *, void *, void *, void *, void*, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
 extern void F77_NAME(zipath_fortran)(void *, void *, void *, void *, void *, void *, void*, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
 
 static const R_FortranMethodDef FortranEntries[] = {
@@ -65,6 +66,7 @@ static const R_FortranMethodDef FortranEntries[] = {
 	    {"pred",                       (DL_FUNC) &F77_NAME(pred),                9},
 	    {"theta_ml",                   (DL_FUNC) &F77_NAME(theta_ml),            8},
 	    {"zeval",                      (DL_FUNC) &F77_NAME(zeval),               7},
+	    {"zi",                         (DL_FUNC) &F77_NAME(zi),                 44},
 	    {"zipath_fortran",             (DL_FUNC) &F77_NAME(zipath_fortran),     44},
 					        {NULL, NULL, 0}
 };
