@@ -98,9 +98,10 @@ C     +              dev,1)
 C               call dblepr("saturated model, null deviance = ", -1, 
 C     +              nulldev, 1)
 C               call intpr("family", -1, family, 1)
-                call rwarn("saturated model for family='binomial', exiti
-     +ng coordinate descent iteration. Consider decreasing lambda.zero.m
-     +in.ratio if zipath is called.") 
+C                call rwarn("saturated model for family='binomial', exiti
+C     +ng coordinate descent iteration. Consider decreasing lambda.zero.m
+C     +in.ratio if zipath is called. This may be caused by larger maxit.em
+C     in zipath!") 
                 satu = 1
 C               call DCOPY(m, betaold, 1, beta, 1)
 C               b0 = b0old
