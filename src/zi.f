@@ -4,7 +4,7 @@ C     inputs: family: 3 (poisson), 4 (negbin)
 C       theta
 C       m_count_act: number of count model variables of x having no intercept column
 C       m_zero_act: number of zero model variables of z having no intercept column
-C     outputs: betax, b0_x, betaz, b0z
+C     outputs: betax, b0_x, betaz, b0z, theta
       subroutine zi(x_act, z_act, y, y1, probi, weights, n, m_count_act,
      +     m_zero_act, start_count_act, start_zero_act,mustart_count, 
      +     mustart_zero, offsetx, offsetz, lambda_count,
@@ -15,10 +15,9 @@ C     outputs: betax, b0_x, betaz, b0z
      +     epsbino, theta_fixed, maxit_theta, theta, 
      +     betax, b0_x, betaz, b0z)
       implicit none
-      integer n,m,i,ii,k,j,jj,kx, kz, penalty, family, 
-     +     standardize, maxit, y1(n), trace, iter, rfamily, 
-     +     rescale, jk_count, jk_zero, active, 
-     +     stopit,m_count_act, maxit_theta,
+      integer n,m,i,ii,k,j,jj,penalty, family, 
+     +     standardize, maxit, y1(n), trace, iter, 
+     +     rescale, stopit,m_count_act, maxit_theta,
      +     m_zero_act, theta_fixed
       double precision weights(n), dpois, dnbinom, 
      +     etastart_count(n), etastart_zero(n),
@@ -67,8 +66,6 @@ C     outputs: betax, b0_x, betaz, b0z
      +              etastart_count, mustart_count, thetastart, 0, 
      +              theta0, trace, betax, b0_x, theta, yhat)
             endif
-C     call dblepr("start_count_act=", -1, start_count_act, 
-C     +        m_count_act+1)
 C     yhat: the fitted mean values, obtained by transforming the
 C     linear predictors by the inverse of the link function.
             call dcopy(n, yhat, 1, mustart_count, 1)
@@ -78,7 +75,7 @@ C     mean values by the link function.
             d = 0
             d=d+(start_count_act(1) - b0_x)**2
             start_count_act(1) = b0_x
-            if(jk_count .GT. 0)then
+            if(m_count_act .GT. 0)then
                do 100 j=1, m_count_act
                   d=d+(start_count_act(j+1) - betax(j))**2
                   start_count_act(j+1)=betax(j)
@@ -93,11 +90,6 @@ C     mean values by the link function.
      +           0, penaltyfactor_zero_act, thresh,
      +           epsbino, maxit, eps, theta, 2,  
      +           penalty, 0, betaz, b0z, yhat)
-C            call dblepr("lambda_zero=", -1, lambda_zero, 1)
-C            call dblepr("start_zero_act=", -1, start_zero_act,
-C     +       m_zero_act)
-C            call dblepr("betaz=", -1, betaz, m_zero_act)
-C            call dblepr("b0z=", -1, b0z, 1)
             call dcopy(n, yhat, 1, mustart_zero, 1)
             call gfunc(mustart_zero, n, 2, epsbino, etastart_zero)
             do ii=1, n
@@ -115,7 +107,7 @@ C            call dblepr("b0z=", -1, b0z, 1)
             
             d=d+(start_zero_act(1) - b0z)**2
             start_zero_act(1) = b0z
-            if(jk_zero .GT. 0)then
+            if(m_zero_act .GT. 0)then
                do 1100 j=1, m_zero_act
                   d=d+(start_zero_act(j+1) - betaz(j))**2
                   start_zero_act(j+1)=betaz(j)
@@ -134,12 +126,6 @@ C                  pll(k)=los(k) + penval
 C               endif
             endif
             k = k + 1
-C            if(i==10)then
-C            call intpr("k=", -1, k, 1)
-C            call dblepr("d=", -1, d, 1)
-C            call dblepr("del=", -1, del, 1)
-C            call intpr("iter=", -1, iter, 1)
-C            endif
             goto 500
             endif
 
