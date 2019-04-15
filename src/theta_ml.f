@@ -46,7 +46,7 @@ C     eps = .Machine$double.eps**0.25
       function score(n, th, mu, y, w)
       implicit none
       integer i, n
-      double precision a, y(n), mu(n), th, w(n), rdigamma, 
+      double precision y(n), mu(n), th, w(n), rdigamma, 
      + score
       external :: rdigamma
 
@@ -62,7 +62,7 @@ C     eps = .Machine$double.eps**0.25
       function info(n, th, mu, y, w)
       implicit none
       integer i, n
-      double precision a, y(n), mu(n), th, w(n), info, 
+      double precision y(n), mu(n), th, w(n), info, 
      + rtrigamma
       external :: rtrigamma 
       
