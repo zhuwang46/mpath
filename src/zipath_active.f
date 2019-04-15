@@ -11,11 +11,11 @@ C     outputs: coefc, coefz, thetaout
      +     gam_count, gam_zero, standardize, penaltyfactor_count, 
      +     penaltyfactor_zero, maxit, eps, family,
      +     penalty, trace, coefc, coefz, yhat, iter,
-     +     del, los, pll, rescale, thresh, epsbino, 
+     +     del, rescale, thresh, epsbino, 
      +     theta_fixed, maxit_theta, theta, thetaout)
       implicit none
-      integer n,m,i,ii,k,j,jj,kx, kz, penalty,nlambda,family, 
-     +     standardize, maxit, y1(n), trace, iter, rfamily, 
+      integer n,i,ii,j,jj,kx, kz, penalty,nlambda,family, 
+     +     standardize, maxit, y1(n), trace, iter, 
      +     rescale, jk_count, jk_zero, activeset_count(kx), 
      +     activeset_count_old(kx), activeset_zero(kz),
      +     activeset_zero_old(kz), stopit,m_count_act, maxit_theta,
@@ -25,13 +25,12 @@ C     outputs: coefc, coefz, thetaout
      +     start_count(kx+1), dpois, dnbinom, b0_xall, b0zall, 
      +     start_zero(kz+1), etastart_count(n), etastart_zero(n),
      +     mustart_count(n), mustart_zero(n), offsetx(n), offsetz(n), 
-     +     lambda_count(nlambda), thetastart, thetaout(nlambda),
+     +     lambda_count(nlambda), thetaout(nlambda),
      +     lambda_zero(nlambda), alpha_count, alpha_zero, gam_count, 
      +     gam_zero, eps, penaltyfactor_count(kx), y(n),
-     +     penaltyfactor_zero(kz), wt(n), probi(n), thresh, epsbino, 
+     +     penaltyfactor_zero(kz), probi(n), thresh, epsbino, 
      +     theta, coefc(kx+1, nlambda), coefz(kz+1, nlambda), b0_x, b0z,
-     +     yhat(n), d, del, los(iter,nlambda), theta0(nlambda),
-     +     pll(iter, nlambda), penval, betaxall(kx), betazall(kz)
+     +     yhat(n), del, betaxall(kx), betazall(kz)
       double precision, dimension(:, :), allocatable :: x_act, z_act
       double precision, dimension(:), allocatable :: start_count_act,
      +     start_zero_act, betax, betaz,
@@ -137,7 +136,7 @@ C     When all coef are zero except intercept, choose a predictor
      +           alpha_zero, gam_count, gam_zero, standardize, 
      +           penaltyfactor_count_act, penaltyfactor_zero_act,
      +           maxit, eps, family, penalty, trace, yhat, iter, del,
-     +           los, pll, rescale, thresh, epsbino, theta_fixed, 
+     +           rescale, thresh, epsbino, theta_fixed, 
      +           maxit_theta, theta, betax, b0_x, betaz, b0z)
 C     update start_count with start_count_act, start_zero with
 C     start_zero_act
@@ -156,7 +155,7 @@ C     start_zero_act
      +           lambda_zero(i), alpha_count, alpha_zero, gam_count,
      +           gam_zero, standardize, penaltyfactor_count, 
      +           penaltyfactor_zero, maxit, eps, family, penalty, 
-     +           trace, yhat, 1, del, los, pll, rescale, thresh, 
+     +           trace, yhat, 1, del, rescale, thresh, 
      +           epsbino, theta_fixed, maxit_theta, theta, betaxall, 
      +           b0_xall, betazall, b0zall)
              call find_activeset(kx, betaxall, eps, activeset_count
