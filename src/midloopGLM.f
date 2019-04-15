@@ -26,21 +26,20 @@ C     b0
 C     yhat
 C     dev
 
-      subroutine midloopGLM(n,m,x,y,xold,yold,weights, mu, eta, offset,
-     +     family,
-     +     penalty,lamk, 
+      subroutine midloopGLM(n,m,x,y,yold,weights, mu, eta, offset,
+     +     family, penalty,lamk, 
      +     alpha, gam, theta, rescale, standardize,eps,innermaxit,
      +     maxit, thresh, nulldev, wt, beta, b0,yhat,dev,trace,convmid, 
-     +     satu, ep, pll, normx, xd, avg, activeset, jk)
+     +     satu, ep, pll, activeset, jk)
       
       implicit none
       integer standardize, trace, penalty, maxit, i, j, jj, nmid, n, 
      +     family, innermaxit, m,converged,convmid, satu,
      +     rescale,activeset(m), jk, ii
       double precision x(n,m),y(n), mu(n), z(n), eta(n), wt(n), w(n), 
-     +     del,olddev,weights(n),xold(n,m), yold(n),normx(m),xd(m), 
+     +     del,olddev,weights(n),yold(n), 
      +     thresh, nulldev, dev, theta, thetaold, wtw(n),lamk(m),alpha, 
-     +     gam, eps, beta(m), betaold(m), b0, b0old, yhat(n),avg, ep, 
+     +     gam, eps, beta(m), betaold(m), b0, b0old, yhat(n), ep, 
      +     pll(maxit), offset(n)
 
       innermaxit = 1
