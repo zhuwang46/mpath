@@ -40,8 +40,8 @@ extern void F77_NAME(pred)(void *, void *, void *, void *, void *, void *, void 
 extern void F77_NAME(theta_ml)(void *, void *, void *, void *, void *, void *, void *, void *);
 extern void F77_NAME(zeval)(void *, void *, void *, void *, void *, void *, void *);
 extern void F77_NAME(zi)(void *, void *, void *, void *, void *, void *, void*, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
-extern void F77_NAME(zipath_active)(void *, void *, void *, void *, void *, void*, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
-extern void F77_NAME(zipath_nonactive)(void *, void *, void *, void *, void *, void*, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
+extern void F77_NAME(zipath_active)(void *, void *, void *, void*, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
+extern void F77_NAME(zipath_nonactive)(void *, void *, void *, void*, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
 
 static const R_FortranMethodDef FortranEntries[] = {
 	    {"checkconvergence",           (DL_FUNC) &F77_NAME(checkconvergence),    7},
@@ -68,8 +68,8 @@ static const R_FortranMethodDef FortranEntries[] = {
 	    {"theta_ml",                   (DL_FUNC) &F77_NAME(theta_ml),            8},
 	    {"zeval",                      (DL_FUNC) &F77_NAME(zeval),               7},
 	    {"zi",                         (DL_FUNC) &F77_NAME(zi),                 44},
-	    {"zipath_active",              (DL_FUNC) &F77_NAME(zipath_active),      43},
-	    {"zipath_nonactive",           (DL_FUNC) &F77_NAME(zipath_nonactive),   43},
+	    {"zipath_active",              (DL_FUNC) &F77_NAME(zipath_active),      41},
+	    {"zipath_nonactive",           (DL_FUNC) &F77_NAME(zipath_nonactive),   41},
 					        {NULL, NULL, 0}
 };
 
