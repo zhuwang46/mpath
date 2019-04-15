@@ -11,11 +11,11 @@ C     outputs: betax, b0_x, betaz, b0z, theta
      +     lambda_zero, alpha_count, alpha_zero,  
      +     gam_count, gam_zero, standardize, penaltyfactor_count_act, 
      +     penaltyfactor_zero_act, maxit, eps, family,
-     +     penalty, trace, yhat, iter, del, los, pll, rescale, thresh, 
+     +     penalty, trace, yhat, iter, del, rescale, thresh, 
      +     epsbino, theta_fixed, maxit_theta, theta, 
      +     betax, b0_x, betaz, b0z)
       implicit none
-      integer n,m,i,ii,k,j,jj,penalty, family, 
+      integer n,ii,k,j,penalty, family, 
      +     standardize, maxit, y1(n), trace, iter, 
      +     rescale, stopit,m_count_act, maxit_theta,
      +     m_zero_act, theta_fixed
@@ -26,8 +26,8 @@ C     outputs: betax, b0_x, betaz, b0z, theta
      +     lambda_zero, alpha_count, alpha_zero, gam_count, 
      +     gam_zero, eps, penaltyfactor_count_act(m_count_act), y(n),
      +     penaltyfactor_zero_act(m_zero_act), wt(n), probi(n), thresh, 
-     +     epsbino, theta, b0_x, b0z,yhat(n), d, del, los(iter), theta0,
-     +     pll(iter), penval, x_act(n, m_count_act), 
+     +     epsbino, theta, b0_x, b0z,yhat(n), d, del, theta0,
+     +     penval, x_act(n, m_count_act), 
      +     z_act(n, m_zero_act), 
      +     start_count_act(m_count_act+1), start_zero_act(m_zero_act+1),
      +     betax(m_count_act), betaz(m_zero_act)
@@ -119,11 +119,11 @@ C     mean values by the link function.
      +              lambda_count*penaltyfactor_count_act, 
      +              alpha_count, gam_count, penalty, penval)
 C               missing computing los
-C               if(standardize .EQ. 1)then
+               if(standardize .EQ. 1)then
 C                  pll(k)=los(k) + n*penval
 C               else 
 C                  pll(k)=los(k) + penval
-C               endif
+               endif
             endif
             k = k + 1
             goto 500
