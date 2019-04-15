@@ -17,7 +17,7 @@ Cstart(m+1),etastart(n), mustart(n),
      +     offset(n), lambda(nlambda), lam(m, nlambda), 
      +     alpha, gam, thresh, epsbino, eps, theta, penaltyfactor(m),
      +     beta(m, nlambda), b0(nlambda), sumpen, outpll(maxit,nlambda),
-     +     wt(n),eta(n), dev, meanx(m), normx(m),xd(m), nulldev,
+     +     wt(n), meanx(m), normx(m),xd(m), nulldev,
      +     penfac(m), resdev(nlambda), yhat(n), mu(n), sumwt,
      +     crossprod_beta(nlambda), meany, meanoffset
     
