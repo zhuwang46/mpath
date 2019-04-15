@@ -1,6 +1,6 @@
 C### eta is the estimated beta_0 in the intercept-only model, derived
 Cfrom ../R/init function
-      subroutine init(wt, y, offset, family, mu, eta)
+      subroutine init(n, wt, y, offset, family, mu, eta)
       implicit none
       integer i, n, family
       double precision wt(n), y(n), offset(n), mu1, mu(n), eta(n), ddot
@@ -14,9 +14,9 @@ C compute weighted means sum(wt_i * y_i)
       if(family.EQ.1)then
               eta(i)=mu(i)
         else if(family.EQ.2)then
-              eta(i)=dlog(mu(i)/(1-mu(i)))
+              eta(i)=dlog(mu(i)/(1.0D0-mu(i)))
         else if(family.EQ.3 .OR. family.EQ.4)then
-              eta(i)=dlog(DMAX1(1.0, mu(i)))
+              eta(i)=dlog(DMAX1(1.0D0, mu(i)))
       endif
  30   continue
  
