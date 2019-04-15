@@ -9,27 +9,26 @@ C     outputs: coefc, coefz, thetaout
      +     gam_count, gam_zero, standardize, penaltyfactor_count, 
      +     penaltyfactor_zero, maxit, eps, family,
      +     penalty, trace, coefc, coefz, yhat, iter,
-     +     del, los, pll, rescale, thresh, epsbino, 
+     +     del, rescale, thresh, epsbino, 
      +     theta_fixed, maxit_theta, theta, thetaout)
       implicit none
-      integer n,m,i,ii,k,j,jj,kx, kz, penalty,nlambda,family, 
-     +     standardize, maxit, y1(n), trace, iter, rfamily, 
-     +     rescale, jk_count, jk_zero, active, activeset_count(kx), 
+      integer n,i,ii,j,kx, kz, penalty,nlambda,family, 
+     +     standardize, maxit, y1(n), trace, iter, 
+     +     rescale, jk_count, jk_zero, activeset_count(kx), 
      +     activeset_zero(kz), stopit,m_count_act, maxit_theta,
-     +     m_zero_act, AllocateStatus, DeAllocateStatus, 
+     +     m_zero_act, AllocateStatus, 
      +     varsel_count(kx), varsel_count_old(kx),
      +     varsel_zero(kz), varsel_zero_old(kz), theta_fixed
       double precision x(n, kx), z(n, kz), weights(n), 
      +     start_count(kx+1), dpois, dnbinom, 
      +     start_zero(kz+1), etastart_count(n), etastart_zero(n),
      +     mustart_count(n), mustart_zero(n), offsetx(n), offsetz(n), 
-     +     lambda_count(nlambda), thetastart, thetaout(nlambda),
+     +     lambda_count(nlambda), thetaout(nlambda),
      +     lambda_zero(nlambda), alpha_count, alpha_zero, gam_count, 
      +     gam_zero, eps, penaltyfactor_count(kx), y(n),
-     +     penaltyfactor_zero(kz), wt(n), probi(n), thresh, epsbino, 
+     +     penaltyfactor_zero(kz), probi(n), thresh, epsbino, 
      +     theta, coefc(kx+1, nlambda), coefz(kz+1, nlambda), b0_x, b0z,
-     +     yhat(n), d, del, los(iter,nlambda), theta0(nlambda),
-     +     pll(iter, nlambda), penval
+     +     yhat(n), del
       double precision, dimension(:, :), allocatable :: x_act, z_act
       double precision, dimension(:), allocatable :: start_count_act,
      +     start_zero_act, betax, betaz,
@@ -104,7 +103,7 @@ C     outputs: coefc, coefz, thetaout
      +           alpha_zero, gam_count, gam_zero, standardize,
      +           penaltyfactor_count_act, penaltyfactor_zero_act,
      +           maxit, eps, family, penalty, trace, yhat, iter, del,
-     +           los, pll, rescale, thresh, epsbino, theta_fixed,
+     +           rescale, thresh, epsbino, theta_fixed,
      +           maxit_theta, theta, betax, b0_x, betaz, b0z)
          coefc(1, i) = b0_x
          if(jk_count .GT. 0)then
