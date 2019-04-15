@@ -14,7 +14,7 @@ C     used in nclreg.R
      +     mustart(n), offset(n), lambda(nlambda), alpha, gam, eps, 
      +     penaltyfactor(m), thresh, epsbino,  theta, beta(m, nlambda), 
      +     b0(nlambda), b0_1, yhat(n), d, del, lambda_i, fk_old(n), s, 
-     +     B, h(n), fk(n), los(iter,nlambda), pll(iter, nlambda), cost, 
+     +     B, h(n), fk(n), los(nlambda), pll(nlambda), cost, 
      +     penval
       double precision, dimension(:, :), allocatable :: x_act
       double precision, dimension(:), allocatable :: start_act, beta_1,
@@ -83,32 +83,29 @@ C     check if h has NAN value
      +           penalty, trace, beta_1, b0_1, yhat)
             call dcopy(n, yhat, 1, fk, 1)
             call dcopy(n, yhat, 1, mustart, 1)
-C            call dcopy(n, yhat, 1, etastart, 1): this is not needed for
-C            the above glmref_fit call since family=1.
+C     call dcopy(n, yhat, 1, etastart, 1): this is not needed for
+C     the above glmref_fit call (that calls zeval) since family=1.
             start_act(1) = b0_1
+            d = 0
+            d=d+(start_act(1)-b0_1)**2
             if(jk .GT. 0)then
                do 100 j=1, m_act
+                  d=d+(start_act(j+1)-beta_1(j))**2
                   start_act(j+1)=beta_1(j)
  100           continue
             endif
 
-            if(trace .EQ. 1)then
-               call loss(n, y, fk, cost, rfamily, s, los(k, i))
-               penval = 0.d0
-               call penGLM(beta_1, m_act, lambda_i*penaltyfactor_act, 
-     +              alpha, gam, penalty, penval)
-               if(standardize .EQ. 1)then
-                  pll(k, i)=los(k, i) + n*penval
-               else 
-                  pll(k, i)=los(k, i) + penval
-               endif
-            endif
-            d = 0
-            do 120 ii=1, n
-               d=d+(fk_old(i) - fk(i))**2
- 120        continue
             k = k + 1
             goto 500
+         endif
+         call loss(n, y, fk, cost, rfamily, s, los(i))
+         penval = 0.d0
+         call penGLM(beta_1, m_act, lambda_i*penaltyfactor_act, 
+     +        alpha, gam, penalty, penval)
+         if(standardize .EQ. 1)then
+            pll(i)=los(i) + n*penval
+         else 
+            pll(i)=los(i) + penval
          endif
          b0(i) = b0_1
          if(jk .GT. 0)then
