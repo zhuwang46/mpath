@@ -12,7 +12,7 @@ C  vector of length nlambda
       double precision x(n, m), y(n), lambda(nlambda), weights(n),
      +  offset(n), start(m+1), etastart(n), mustart(n), thetastart, 
      +  del, epsbino, theta0(nlambda), d, tht(nlambda), eps, thresh, 
-     +  alpha, gam, t0, penaltyfactor, beta_1(m, 1), b0_1, 
+     +  alpha, gam, penaltyfactor, beta_1(m, 1), b0_1, 
      +  beta(m, nlambda), b0(nlambda), yhat(n)
       
       k = 1
