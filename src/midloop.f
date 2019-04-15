@@ -29,16 +29,16 @@ C     dev
      +     penalty,lamk, 
      +     alpha, gam, theta, rescale, standardize,eps,innermaxit,
      +     maxit, thresh, nulldev, wt, beta, b0,yhat,dev,trace,convmid, 
-     +     satu, ep, pll, normx, xd, avg, activeset, jk, fullset)
+     +     ep, normx, xd, avg, activeset, jk, fullset)
       
       implicit none
-      integer standardize, trace, penalty, maxit, i, j, jj, nmid, n, 
+      integer standardize, trace, penalty, maxit, i, j, nmid, n, 
      +     family, innermaxit, m,converged,convmid, satu, rescale,
      +     fullset(m),activeset(m), jk
       double precision x(n,m),y(n), mu(n), z(n), eta(n), wt(n), w(n), 
      +     del,olddev,weights(n),xold(n,m), yold(n),normx(m),xd(m), 
      +     thresh, nulldev, dev, theta, wtw(n),lamk(m),alpha, 
-     +     gam, eps, beta(m), betaold(m), b0, b0old, yhat(n),avg, ep, 
+     +     gam, eps, beta(m), b0, yhat(n),avg, ep, 
      +     pll(maxit), offset(n)
 
 C      innermaxit = maxit
