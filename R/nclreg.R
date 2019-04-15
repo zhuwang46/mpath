@@ -80,7 +80,7 @@ compute.2d <- function(y, f, s, family=c("clossR", "closs", "gloss", "qloss")){
         sqrt(2/pi)*u/s^3*exp(-u^2/(2*s^2))
 }
 
-nclreg_fit <- function(x,y, weights, offset=NULL, cost=0.5, rfamily=c("clossR", "closs", "gloss", "qloss"), s=NULL, fk=NULL, iter=10, del=1e-10, penalty=c("enet","mnet","snet"), nlambda=100, lambda=NULL, type.path=c("active", "naive", "onestep"), decreasing=FALSE, lambda.min.ratio=ifelse(nobs<nvars,.05, .001),alpha=1, gamma=3, standardize=TRUE, penalty.factor = NULL, maxit=1000, type.init="bst", mstop.init=10, nu.init=0.1, eps=.Machine$double.eps, thresh=1e-6, trace=FALSE){
+nclreg_fit <- function(x,y, weights, offset=NULL, cost=0.5, rfamily=c("clossR", "closs", "gloss", "qloss"), s=NULL, fk=NULL, iter=10, del=1e-10, penalty=c("enet","mnet","snet"), nlambda=100, lambda=NULL, type.path=c("active", "nonactive", "onestep"), decreasing=FALSE, lambda.min.ratio=ifelse(nobs<nvars,.05, .001),alpha=1, gamma=3, standardize=TRUE, penalty.factor = NULL, maxit=1000, type.init="bst", mstop.init=10, nu.init=0.1, eps=.Machine$double.eps, thresh=1e-6, trace=FALSE){
 ### compute h value
     compute.h <- function(rfamily, y, fk_old, s, B){
         if(rfamily=="clossR")
@@ -99,18 +99,19 @@ nclreg_fit <- function(x,y, weights, offset=NULL, cost=0.5, rfamily=c("clossR", 
     if (!is.null(lambda) && length(lambda) > 1 && all(lambda == cummin(lambda))){
 	    decreasing <- TRUE
 	    if(type.path=="active")
-	      warnings("choose type.path='naive' with increasing sequence of lambda, or let lambda=rev(lambda) as computed below\n")
+	      warnings("choose type.path='nonactive' with increasing sequence of lambda, or let lambda=rev(lambda) as computed below\n")
 	    lambda <- rev(lambda)
     }
     else if(!is.null(lambda) && length(lambda) > 1 && all(lambda == cummax(lambda)))
 	    decreasing <- FALSE
     else if(is.null(lambda) && decreasing && type.path=="active")
-	    stop("set decreasing=FALSE or type.path='naive'")
+	    stop("set decreasing=FALSE or type.path='nonactive'")
     if(rfamily %in% c("closs", "gloss", "qloss"))
         if(!all(names(table(y)) %in% c(1, -1)))
             stop("response variable must be 1/-1 for family ", rfamily, "\n")
     nm <- dim(x)
     nobs <- n <- nm[1]
+    if(length(y)!=n) stop("length of y is different from row of x\n")
     nvars <- m <- nm[2]
     B <- bfunc(family=rfamily, s=s)
     if(missing(weights)) weights=rep(1,nobs)
@@ -472,8 +473,8 @@ if(any(is.na(RET$beta))){
 			    rfamily=as.integer(rfamilytype),
 			    B=as.double(B), 
 			    s=as.double(s),
-			    los=as.double(matrix(0, nrow=iter, ncol=nlambda)),
-			    pll=as.double(matrix(0, nrow=iter, ncol=nlambda)),
+			    los=as.double(rep(0, nlambda)),
+			    pll=as.double(rep(0, nlambda)),
 			    rescale=as.integer(0),
 			    thresh=as.double(thresh),
 			    epsbino=as.double(0),
@@ -481,13 +482,7 @@ if(any(is.na(RET$beta))){
 			    cost=as.double(cost),
 			    active=as.integer(active),
 			    PACKAGE="mpath")
-	    if(trace){
-		    risk <- matrix(RET$los, nlambda)
-	            pll <- matrix(RET$pll, nlambda)
-	    }
-	    else 
-		    risk <- pll <- NULL
-       	    list(beta=matrix(RET$beta, ncol=nlambda), b0=RET$b0, RET=RET, risk=risk, pll=pll)
+       	    list(beta=matrix(RET$beta, ncol=nlambda), b0=RET$b0, RET=RET, risk=RET$los, pll=RET$pll)
     }
 ### update for one element of lambda depending on increasing sequence of lambda (last element of lambda) or decreasing sequence of lambda (then first element of lambda) in each MM iteration, and iterate until convergency of prediction. Then fit a solution path based on the sequence of lambda. Experiment code. Argument direction has been removed.
     typeC <- function(beta, b0){
@@ -536,9 +531,9 @@ if(any(is.na(RET$beta))){
     }
 #    if(type.path=="active") tmp <- typeB(beta, b0)
 # typeA and typeB are combined into typeBB
-    if(type.path=="active" || type.path=="naive") tmp <- typeBB(beta, b0)
+    if(type.path=="active" || type.path=="nonactive") tmp <- typeBB(beta, b0)
 #    if(type.path=="active") tmp <- typeBB(beta, b0)
-#    else if(type.path=="naive") tmp <- typeA(beta, b0)
+#    else if(type.path=="nonactive") tmp <- typeA(beta, b0)
     else if(type.path=="onestep") tmp <- typeC(beta, b0)
     beta <- tmp$beta
     b0 <- tmp$b0
