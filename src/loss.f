@@ -22,7 +22,7 @@ C output: los is the average loss
       los = 0.d0
       do 20 i=1, n
         if(family .EQ. 1)then
-          los = los + 1/2*(y(i) - f(i))**2
+          los = los + 0.5D0*(y(i) - f(i))**2
         else if(family .EQ. 2)then
           los =  los + ly(i)*dlog(1+dexp(-y(i)*f(i))) 
         else if(family .EQ. 11)then
@@ -47,8 +47,8 @@ C family
 C   clossR: 11, closs: 12, gloss: 13, qloss: 14
       subroutine nonconvexloss(family, u, s, los)
        implicit none
-       integer family, i
-       double precision cval, y, f, u, s, los
+       integer family
+       double precision cval, u, s, los
      
        if(family .EQ. 11)then
         los=1-1/dexp(u**2/(2*s**2))
