@@ -93,8 +93,8 @@ C                                                    -> loop_gaussian
             call midloop(n,m,x,y, xold,yold,weights,mu, eta, offset,
      +           family, penalty,lamk,alpha,gam,theta,rescale,
      +           standardize, eps,innermaxit, maxit, thresh, nulldev, 
-     +           wt, beta, b0, yhat, dev, trace, convmid,satu,ep,
-     +           pll,normx,xd,avg, activeset, jk, fullset)
+     +           wt, beta, b0, yhat, dev, trace, convmid, ep,
+     +           normx,xd,avg, activeset, jk, fullset)
          else 
 C     active set applies for family!=1. 
             convact=0
@@ -102,11 +102,11 @@ C     some loop, if no change to the active set, stop
             kk = 1
             do 2000 while (kk .LT. 100 .AND. convact .EQ. 0)
 C     now cycle through only the active set
-               call midloopGLM(n,m,x,y,xold,yold,weights,mu,eta,offset,
+               call midloopGLM(n,m,x,y,yold,weights,mu,eta,offset,
      +              family, 
      +              penalty,lamk,alpha,gam,theta,rescale,standardize,
      +              eps,innermaxit,maxit,thresh,nulldev,wt,beta,b0,yhat,
-     +              dev,trace,convmid,satu,ep,pll,normx,xd,avg,
+     +              dev,trace,convmid,satu,ep,pll,
      +              activeset, jk)
 C     update the active set with only non-zero coefficients 
               call find_activeset(m, beta, eps, activeset, jk)
@@ -114,11 +114,11 @@ C     update the active set with only non-zero coefficients
                   activesetold(j)=activeset(j)
  501           continue
 C     set maxit=1, and have a complete cycle through all the variables
-               call midloopGLM(n,m,x,y,xold,yold,weights,mu,eta,offset,
+               call midloopGLM(n,m,x,y,yold,weights,mu,eta,offset,
      +              family, 
      +              penalty,lamk,alpha,gam,theta,rescale,standardize,
      +              eps,innermaxit,1,thresh,nulldev,wt,beta,b0,yhat, 
-     +              dev,trace,convmid,satu,ep,pll,normx,xd,avg,fullset,
+     +              dev,trace,convmid,satu,ep,pll,fullset,
      +              m)
 C     update the active set with only non-zero coefficients 
               call find_activeset(m, beta, eps, activeset, jk)
