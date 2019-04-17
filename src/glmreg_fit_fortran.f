@@ -53,9 +53,9 @@ Cstart(m+1),etastart(n), mustart(n),
               call dblepr("sum(yhat)", -1, sum(yhat), 1)
       endif
 
-      if(family.EQ.1) then
-            rescale = 0
-      endif
+C      if(family.EQ.1)then
+C            rescale = 0
+C      endif
       call  deveval(n, y, mustart, theta, weights, family, nulldev)
       startv = 1
       sumpen = sum(penaltyfactor)
