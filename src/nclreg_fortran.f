@@ -8,20 +8,18 @@ C     used in nclreg.R
       implicit none
       integer n,m,i,ii,k,j,jj,penalty,nlambda,family,standardize, maxit,
      +     trace, iter, rfamily, rescale, jk, active, activeset(m), 
-     +     stopit,m_act,
+     +     m_act,
      +     AllocateStatus, DeAllocateStatus, varsel(m), varsel_old(m)
       double precision x(n, m), y(n), weights(n),start(m+1),etastart(n),
      +     mustart(n), offset(n), lambda(nlambda), alpha, gam, eps, 
      +     penaltyfactor(m), thresh, epsbino,  theta, beta(m, nlambda), 
      +     b0(nlambda), b0_1, yhat(n), d, del, lambda_i, fk_old(n), s, 
-     +     B, h(n), fk(n), los(nlambda), pll(nlambda), cost, 
-     +     penval
+     +     B, h(n), fk(n), los(nlambda), pll(nlambda), cost, penval
       double precision, dimension(:, :), allocatable :: x_act
       double precision, dimension(:), allocatable :: start_act, beta_1,
      +     penaltyfactor_act
 
       b0_1=0
-      stopit = 0
       m_act = m
       jk = m
       allocate(start_act(m_act+1), stat=AllocateStatus)
@@ -53,51 +51,11 @@ C     used in nclreg.R
          if(trace .EQ. 1)then
             call intpr("i=", -1, i, 1)
          endif
-         k = 1
-         d = 10
- 500     if(d .GT. del .AND. k .LE. iter)then
-            if(trace .EQ. 1)then
-               call intpr("  k=", -1, k, 1)
-               call intpr("  activeset", -1, activeset, jk)
-               call dblepr("     d=", -1, d, 1)
-            endif
-            call dcopy(n, yhat, 1, fk_old, 1)
-            call compute_h(rfamily, n, y, fk_old, s, B, h)
-C     check if h has NAN value
-            do 30 ii=1, n
-               if(h(ii) .NE. h(ii))then
-                  call intpr("i=", -1, i, 1)
-                  call intpr("  k=", -1, k, 1)
-                  call intpr("    ii=", -1, ii, 1)
-                  call dblepr("     h(ii)", -1, h(ii), 1)
-                  call dblepr("     fk_old(ii)", -1, fk_old(ii), 1)
-                  stopit = 1
-                  exit
-               endif
- 30         continue
-            lambda_i = lambda(i)/B
-            call glmreg_fit_fortran(x_act, h,weights,n,m_act,start_act, 
-     +           etastart, mustart, offset, 1, lambda_i, alpha,
-     +           gam, rescale, standardize, penaltyfactor_act, thresh,
-     +           epsbino, maxit, eps, theta, family,  
-     +           penalty, trace, beta_1, b0_1, yhat)
-            call dcopy(n, yhat, 1, fk, 1)
-            call dcopy(n, yhat, 1, mustart, 1)
-C     call dcopy(n, yhat, 1, etastart, 1): this is not needed for
-C     the above glmref_fit call (that calls zeval) since family=1.
-            start_act(1) = b0_1
-            d = 0
-            d=d+(start_act(1)-b0_1)**2
-            if(jk .GT. 0)then
-               do 100 j=1, m_act
-                  d=d+(start_act(j+1)-beta_1(j))**2
-                  start_act(j+1)=beta_1(j)
- 100           continue
-            endif
-
-            k = k + 1
-            goto 500
-         endif
+         lambda_i=lambda(i)/B
+         call nclreg_onelambda(x_act, y,weights, n,m_act,start_act,
+     +     etastart, mustart, offset, lambda_i, alpha, gam, 
+     +     penaltyfactor_act, maxit, eps, penalty, trace, iter,
+     +     del, rfamily, B, s, thresh, beta_1, b0_1, fk)
          call loss(n, y, fk, cost, rfamily, s, los(i))
          penval = 0.d0
          call penGLM(beta_1, m_act, lambda_i*penaltyfactor_act, 
