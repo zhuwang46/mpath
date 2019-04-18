@@ -8,7 +8,7 @@ C     used in nclreg.R
       implicit none
       integer n,m,i,ii,k,j,jj,penalty,nlambda,family,standardize, maxit,
      +     trace, iter, rfamily, rescale, jk, active, activeset(m), 
-     +     m_act,
+     +     m_act, recycle,
      +     AllocateStatus, DeAllocateStatus, varsel(m), varsel_old(m)
       double precision x(n, m), y(n), weights(n),start(m+1),etastart(n),
      +     mustart(n), offset(n), lambda(nlambda), alpha, gam, eps, 
@@ -47,31 +47,43 @@ C     used in nclreg.R
          varsel(j)=j
  101  continue
       i=1
+      recycle=0
  10   if(i .LE. nlambda)then
          if(trace .EQ. 1)then
             call intpr("i=", -1, i, 1)
          endif
          lambda_i=lambda(i)/B
          call nclreg_onelambda(x_act, y,weights, n,m_act,start_act,
-     +     etastart, mustart, offset, lambda_i, alpha, gam, 
-     +     penaltyfactor_act, maxit, eps, penalty, trace, iter,
-     +     del, rfamily, B, s, thresh, beta_1, b0_1, fk)
+     +        etastart, mustart, yhat, offset, lambda_i, alpha, gam, 
+     +        penaltyfactor_act, maxit, eps, penalty, trace, iter,
+     +        del, rfamily, B, s, thresh, beta_1, b0_1, fk)
          call loss(n, y, fk, cost, rfamily, s, los(i))
-         penval = 0.d0
-         call penGLM(beta_1, m_act, lambda_i*penaltyfactor_act, 
-     +        alpha, gam, penalty, penval)
-         if(standardize .EQ. 1)then
-            pll(i)=los(i) + n*penval
-         else 
-            pll(i)=los(i) + penval
+C         if(i > 1)then
+C            if(abs(los(i)-los(i-1))/los(i) > 0.2)then
+C        redo (i-1)-lambda estimates with the current start_act for the
+C        i-th lambda. Note, i=i-2 not i-1 will do this since i=i+1 is
+C        computed before the end of the loop.
+C               i = i - 2
+C               recycle = 1
+C            endif
+C         endif
+C     penval = 0.d0
+         if(recycle==0)then
+            call penGLM(beta_1, m_act, lambda_i*penaltyfactor_act, 
+     +           alpha, gam, penalty, penval)
+            if(standardize .EQ. 1)then
+               pll(i)=los(i) + n*penval
+            else 
+               pll(i)=los(i) + penval
+            endif
+            b0(i) = b0_1
+            if(jk .GT. 0)then
+               do 200 ii = 1, m_act
+                  beta(varsel(ii), i) = beta_1(ii)
+ 200           continue
+            endif
          endif
-         b0(i) = b0_1
-         if(jk .GT. 0)then
-            do 200 ii = 1, m_act
-               beta(varsel(ii), i) = beta_1(ii)
- 200        continue
-         endif
-         if(active .EQ. 1)then
+         if(recycle==0 .AND. active .EQ. 1)then
             call find_activeset(m_act, beta_1, eps, activeset, jk)
 C     this activeset is relative to the current x_act, but how about
 C     relative to x instead? compute varsel for true index in x
