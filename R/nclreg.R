@@ -98,9 +98,11 @@ nclreg_fit <- function(x,y, weights, offset=NULL, cost=0.5, rfamily=c("clossR", 
     else active <- 0
     if (!is.null(lambda) && length(lambda) > 1 && all(lambda == cummin(lambda))){
 	    decreasing <- TRUE
-	    if(type.path=="active")
+	    if(type.path=="active"){
+	    decreasing <- FALSE
 	      warnings("choose type.path='nonactive' with increasing sequence of lambda, or let lambda=rev(lambda) as computed below\n")
-	    lambda <- rev(lambda)
+	    lambda <- rev(lambda) 
+       }
     }
     else if(!is.null(lambda) && length(lambda) > 1 && all(lambda == cummax(lambda)))
 	    decreasing <- FALSE
