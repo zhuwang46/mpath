@@ -80,7 +80,7 @@ compute.2d <- function(y, f, s, family=c("clossR", "closs", "gloss", "qloss")){
         sqrt(2/pi)*u/s^3*exp(-u^2/(2*s^2))
 }
 
-nclreg_fit <- function(x,y, weights, offset=NULL, cost=0.5, rfamily=c("clossR", "closs", "gloss", "qloss"), s=NULL, fk=NULL, iter=10, del=1e-10, penalty=c("enet","mnet","snet"), nlambda=100, lambda=NULL, type.path=c("active", "nonactive", "onestep"), decreasing=FALSE, lambda.min.ratio=ifelse(nobs<nvars,.05, .001),alpha=1, gamma=3, standardize=TRUE, penalty.factor = NULL, maxit=1000, type.init="bst", mstop.init=10, nu.init=0.1, eps=.Machine$double.eps, thresh=1e-6, trace=FALSE){
+nclreg_fit <- function(x,y, weights, offset=NULL, cost=0.5, rfamily=c("clossR", "closs", "gloss", "qloss"), s=NULL, fk=NULL, iter=10, del=1e-10, penalty=c("enet","mnet","snet"), nlambda=100, lambda=NULL, type.path=c("active", "nonactive", "onestep"), decreasing=FALSE, lambda.min.ratio=ifelse(nobs<nvars,.05, .001),alpha=1, gamma=3, standardize=TRUE, penalty.factor = NULL, maxit=1000, type.init="bst", mstop.init=10, nu.init=0.1, eps=.Machine$double.eps, epscycle=0.2, thresh=1e-6, trace=FALSE){
 ### compute h value
     compute.h <- function(rfamily, y, fk_old, s, B){
         if(rfamily=="clossR")
@@ -98,16 +98,16 @@ nclreg_fit <- function(x,y, weights, offset=NULL, cost=0.5, rfamily=c("clossR", 
     else active <- 0
     if (!is.null(lambda) && length(lambda) > 1 && all(lambda == cummin(lambda))){
 	    decreasing <- TRUE
-	    if(type.path=="active"){
-	    decreasing <- FALSE
-	      warnings("choose type.path='nonactive' with increasing sequence of lambda, or let lambda=rev(lambda) as computed below\n")
-	    lambda <- rev(lambda) 
-       }
+#	    if(type.path=="active"){
+#	    decreasing <- FALSE
+#	      warnings("choose type.path='nonactive' with increasing sequence of lambda, or let lambda=rev(lambda) as computed below\n")
+#	    lambda <- rev(lambda) 
+#       }
     }
     else if(!is.null(lambda) && length(lambda) > 1 && all(lambda == cummax(lambda)))
 	    decreasing <- FALSE
-    else if(is.null(lambda) && decreasing && type.path=="active")
-	    stop("set decreasing=FALSE or type.path='nonactive'")
+#    else if(is.null(lambda) && decreasing && type.path=="active")
+#	    stop("set decreasing=FALSE or type.path='nonactive'")
     if(rfamily %in% c("closs", "gloss", "qloss"))
         if(!all(names(table(y)) %in% c(1, -1)))
             stop("response variable must be 1/-1 for family ", rfamily, "\n")
@@ -219,10 +219,10 @@ nclreg_fit <- function(x,y, weights, offset=NULL, cost=0.5, rfamily=c("clossR", 
 ### method A, to obtain lambda values from fitting the penalized regression. 
         lambda <- glmreg_fit(x=x*sqrt(B), y=h*sqrt(B), weights=weights, offset=offset, lambda.min.ratio=lambda.min.ratio, nlambda=nlambda, alpha=alpha,gamma=gamma, rescale=FALSE, standardize=FALSE, penalty.factor = penalty.factor, maxit=1, eps=eps, family="gaussian", penalty=penalty)$lambda
 ### with type.init, add two different lambda sequences and make lambda values flexible to have different solution paths
-        if(type.init %in% c("bst", "heu")){
+        #if(type.init %in% c("bst", "heu")){
             if(!decreasing)#{### solution path backward direction
                 lambda <- rev(lambda)
-        }
+        #}
                                         #cat("lambda in method A", lambda[1], "\n")
 ### method B is the same as method A to obtain lmax 
                                         #w <- weights/sum(weights)
@@ -446,6 +446,47 @@ if(any(is.na(RET$beta))){
                     "qloss"=14
                     )
     typeBB <- function(beta, b0){
+        if(active && decreasing)
+	    RET <- .Fortran("nclreg_ad",
+			    x=as.double(x), 
+			    y=as.double(y),
+			    weights=as.double(weights),
+			    n=as.integer(n),
+			    m=as.integer(m),
+			    start=as.double(start), 
+			    etastart=as.double(etastart),
+			    mustart=as.double(mustart),
+			    offset=as.double(offset),
+			    iter=as.integer(iter),
+			    nlambda=as.integer(nlambda), 
+			    lambda=as.double(lambda), 
+			    alpha=as.double(alpha),
+		        gam=as.double(gamma), 
+			    standardize=as.integer(0), 
+			    penaltyfactor=as.double(penalty.factor),
+			    maxit=as.integer(maxit), 
+			    eps=as.double(eps), 
+			    epscycle=as.double(epscycle), 
+			    family=as.integer(1), 
+			    penalty=as.integer(pentype), 
+			    trace=as.integer(trace), 
+			    del=as.double(del), 
+			    rfamily=as.integer(rfamilytype),
+			    B=as.double(B), 
+			    s=as.double(s),
+			    rescale=as.integer(0),
+			    thresh=as.double(thresh),
+			    cost=as.double(cost),
+			    decreasing=as.integer(decreasing),
+			    active=as.integer(active),
+			    beta=as.double(beta),
+		        b0=as.double(b0), 
+			    yhat=as.double(RET$fitted.values), 
+			    los=as.double(rep(0, nlambda)),
+			    pll=as.double(rep(0, nlambda)),
+			    nlambdacal=as.integer(0),
+			    PACKAGE="mpath")
+    else
 	    RET <- .Fortran("nclreg_fortran",
 			    x=as.double(x), 
 			    y=as.double(y),
@@ -456,35 +497,36 @@ if(any(is.na(RET$beta))){
 			    etastart=as.double(etastart),
 			    mustart=as.double(mustart),
 			    offset=as.double(offset),
+			    iter=as.integer(iter),
 			    nlambda=as.integer(nlambda), 
 			    lambda=as.double(lambda), 
 			    alpha=as.double(alpha),
-		            gam=as.double(gamma), 
+		        gam=as.double(gamma), 
 			    standardize=as.integer(0), 
 			    penaltyfactor=as.double(penalty.factor),
 			    maxit=as.integer(maxit), 
 			    eps=as.double(eps), 
+			    epscycle=as.double(epscycle), 
 			    family=as.integer(1), 
 			    penalty=as.integer(pentype), 
 			    trace=as.integer(trace), 
-			    beta=as.double(beta),
-		            b0=as.double(b0), 
-			    yhat=as.double(RET$fitted.values), 
-			    iter=as.integer(iter),
 			    del=as.double(del), 
 			    rfamily=as.integer(rfamilytype),
 			    B=as.double(B), 
 			    s=as.double(s),
-			    los=as.double(rep(0, nlambda)),
-			    pll=as.double(rep(0, nlambda)),
 			    rescale=as.integer(0),
 			    thresh=as.double(thresh),
-			    epsbino=as.double(0),
-			    theta=as.double(0),
 			    cost=as.double(cost),
+			    decreasing=as.integer(decreasing),
 			    active=as.integer(active),
+			    beta=as.double(beta),
+		        b0=as.double(b0), 
+			    yhat=as.double(RET$fitted.values), 
+			    los=as.double(rep(0, nlambda)),
+			    pll=as.double(rep(0, nlambda)),
+			    nlambdacal=as.integer(0),
 			    PACKAGE="mpath")
-       	    list(beta=matrix(RET$beta, ncol=nlambda), b0=RET$b0, RET=RET, risk=RET$los, pll=RET$pll)
+       	    list(beta=matrix(RET$beta, ncol=nlambda), b0=RET$b0, RET=RET, risk=RET$los, pll=RET$pll, nlambdacal=RET$nlambdacal)
     }
 ### update for one element of lambda depending on increasing sequence of lambda (last element of lambda) or decreasing sequence of lambda (then first element of lambda) in each MM iteration, and iterate until convergency of prediction. Then fit a solution path based on the sequence of lambda. Experiment code. Argument direction has been removed.
     typeC <- function(beta, b0){
@@ -560,6 +602,7 @@ if(any(is.na(RET$beta))){
     RET$s <- s
     RET$risk <- tmp$risk
     RET$pll <- tmp$pll
+    RET$nlambdacal <- tmp$nlambdacal
     RET$rfamily <- RET$family <- rfamily
     RET$type.init <- type.init
     RET$mstop.init <- mstop.init
