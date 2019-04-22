@@ -3,12 +3,12 @@ C     output: nlambdacal: number of lambda actually computed including
 C     repeated ones
       subroutine nclreg_fortran(x, y, weights, n,m,start, etastart,
      +     mustart, offset, iter, nlambda, lambda, alpha, gam, 
-     +     standardize, penaltyfactor, maxit, eps, epscycle, family,
-     +     penalty, trace, del,rfamily, B, s, rescale, thresh, cost, 
+     +     standardize, penaltyfactor, maxit, eps, epscycle, 
+     +     penalty, trace, del,rfamily, B, s, thresh, cost, 
      +     decreasing, active, beta, b0, yhat, los, pll, nlambdacal)
       implicit none
-      integer n,m,i,ii,k,j,jj,penalty,nlambda,family,standardize, maxit,
-     +     trace, iter, rfamily, rescale, jk, active, activeset(m), 
+      integer n,m,i,ii,k,j,jj,penalty,nlambda, standardize, maxit,
+     +     trace, iter, rfamily, jk, active, activeset(m), 
      +     m_act, nlambdacal, uturn, decreasing, cutpoint, 
      +     AllocateStatus, DeAllocateStatus, varsel(m), varsel_old(m)
       double precision x(n, m), y(n), weights(n),start(m+1),etastart(n),
@@ -52,7 +52,7 @@ C     repeated ones
       cutpoint=1
  10   if(i .LE. nlambda)then
          if(trace .EQ. 1)then
-            call intpr("i=", -1, i, 1)
+            call intpr("lambda iteration", -1, i, 1)
          endif
          lambda_i=lambda(i)/B
          call nclreg_onelambda(x_act, y,weights, n,m_act,start_act,
