@@ -18,7 +18,7 @@ C     outputs: coefc, coefz, thetaout
      +     standardize, maxit, y1(n), trace, iter, 
      +     rescale, jk_count, jk_zero, activeset_count(kx), 
      +     activeset_count_old(kx), activeset_zero(kz),
-     +     activeset_zero_old(kz), stopit,m_count_act, maxit_theta,
+     +     activeset_zero_old(kz), m_count_act, maxit_theta,
      +     m_zero_act, AllocateStatus, DeAllocateStatus, jc, jz, 
      +     nact, conv, theta_fixed
       double precision x(n, kx), z(n, kz), weights(n), 
@@ -37,9 +37,6 @@ C     outputs: coefc, coefz, thetaout
      +     penaltyfactor_count_act, penaltyfactor_zero_act
       external :: dpois, dnbinom, gfunc
 
-      b0_x=0
-      b0z=0
-      stopit = 0
 C     find current active set
       call find_activeset(kx, start_count(2: (kx+1)), eps, 
      +     activeset_count, jk_count)
