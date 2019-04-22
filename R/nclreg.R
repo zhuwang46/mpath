@@ -446,7 +446,7 @@ if(any(is.na(RET$beta))){
                     "qloss"=14
                     )
     typeBB <- function(beta, b0){
-        if(active && decreasing)
+        if(type.path=="active" && decreasing)
 	    RET <- .Fortran("nclreg_ad",
 			    x=as.double(x), 
 			    y=as.double(y),
@@ -467,14 +467,12 @@ if(any(is.na(RET$beta))){
 			    maxit=as.integer(maxit), 
 			    eps=as.double(eps), 
 			    epscycle=as.double(epscycle), 
-			    family=as.integer(1), 
 			    penalty=as.integer(pentype), 
 			    trace=as.integer(trace), 
 			    del=as.double(del), 
 			    rfamily=as.integer(rfamilytype),
 			    B=as.double(B), 
 			    s=as.double(s),
-			    rescale=as.integer(0),
 			    thresh=as.double(thresh),
 			    cost=as.double(cost),
 			    decreasing=as.integer(decreasing),
@@ -507,14 +505,12 @@ if(any(is.na(RET$beta))){
 			    maxit=as.integer(maxit), 
 			    eps=as.double(eps), 
 			    epscycle=as.double(epscycle), 
-			    family=as.integer(1), 
 			    penalty=as.integer(pentype), 
 			    trace=as.integer(trace), 
 			    del=as.double(del), 
 			    rfamily=as.integer(rfamilytype),
 			    B=as.double(B), 
 			    s=as.double(s),
-			    rescale=as.integer(0),
 			    thresh=as.double(thresh),
 			    cost=as.double(cost),
 			    decreasing=as.integer(decreasing),
