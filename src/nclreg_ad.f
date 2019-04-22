@@ -4,12 +4,12 @@ C     repeated ones
 C     
       subroutine nclreg_ad(x, y, weights, n,m,start, etastart,
      +     mustart, offset, iter, nlambda, lambda, alpha, gam, 
-     +     standardize, penaltyfactor, maxit, eps, epscycle, family,
-     +     penalty, trace, del,rfamily, B, s, rescale, thresh, cost, 
+     +     standardize, penaltyfactor, maxit, eps, epscycle, 
+     +     penalty, trace, del,rfamily, B, s, thresh, cost, 
      +     decreasing, active, beta, b0, yhat, los, pll, nlambdacal)
       implicit none
-      integer n,m,i,ii,k,j,jj,penalty,nlambda,family,standardize, maxit,
-     +     trace, iter, rfamily, rescale, jk, active, activeset(m), 
+      integer n,m,i,ii,k,j,jj,penalty,nlambda, standardize, maxit,
+     +     trace, iter, rfamily, jk, active, activeset(m), 
      +     activeset_old(m), m_act, nlambdacal, uturn, decreasing, 
      +     cutpoint, nact, conv, jc, 
      +     AllocateStatus, DeAllocateStatus, varsel(m), varsel_old(m)
@@ -60,7 +60,7 @@ C
       cutpoint=1
  10   if(i .LE. nlambda)then
          if(trace .EQ. 1)then
-            call intpr("i=", -1, i, 1)
+            call intpr("lambda iteration", -1, i, 1)
          endif
          lambda_i=lambda(i)/B
          j=1
@@ -78,7 +78,7 @@ C
             if(j .NE. nact)then
                call nclreg_onelambda(x, y,weights, n,m,start, etastart,
      +              mustart, yhat, offset, lambda_i, alpha, gam, 
-     +              penaltyfactor, maxit, eps, penalty, trace, iter,
+     +              penaltyfactor, maxit, eps, penalty, trace, 1,
      +              del, rfamily, B, s, thresh, betaall, b0all, fk)
                call find_activeset(m, betaall, eps, activeset, jk)
                if(jk==0)then
@@ -96,9 +96,11 @@ C
                conv=1
             endif
             if(jk .NE. jc)then
-               deallocate(start_act, penaltyfactor_act)
+               deallocate(beta_1, start_act, penaltyfactor_act, x_act)
+               allocate(beta_1(jk), stat=AllocateStatus)
                allocate(start_act(jk+1), stat=AllocateStatus)
-               allocate(penaltyfactor_act(jk+1), stat=AllocateStatus)
+               allocate(penaltyfactor_act(jk), stat=AllocateStatus)
+               allocate(x_act(n, jk), stat=AllocateStatus)
                start_act(1)=b0all
                do 11135 ii=1, jk
                   start_act(ii+1)=betaall(activeset(ii))
@@ -155,6 +157,5 @@ C     computed before the end of the loop.
          goto 10
       endif
       deallocate(beta_1, start_act, x_act, penaltyfactor_act)
-
       return
       end
