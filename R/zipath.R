@@ -505,10 +505,16 @@ zipath <- function(formula, data, weights, subset, na.action, offset, standardiz
                          lmax_count=as.double(1),
                          lmax_zero=as.double(1),
                          PACKAGE="mpath")
-        lpath <- seq(log(lmax$lmax_count), log(lambda.count.min.ratio * lmax$lmax_count), length.out=nlambda)
-        lambda.count <- exp(lpath)
-        lpath <- seq(log(lmax$lmax_zero), log(lambda.zero.min.ratio * lmax$lmax_zero), length.out=nlambda)
-        lambda.zero <- exp(lpath)
+        if(kx > 1){
+            lpath <- seq(log(lmax$lmax_count), log(lambda.count.min.ratio * lmax$lmax_count), length.out=nlambda)
+            lambda.count <- exp(lpath)
+        }
+        else lambda.count <- rep(0, nlambda)
+        if(kz > 1){
+            lpath <- seq(log(lmax$lmax_zero), log(lambda.zero.min.ratio * lmax$lmax_zero), length.out=nlambda)
+            lambda.zero <- exp(lpath)
+        }
+        else lambda.zero <- rep(0, nlambda)
     }
     model_count <- list(coefficients = c(fit0$coefficients$count, rep(0, dim(Xnew)[2])), fitted.values=predict(fit0, type="count"))
     model_zero <- list(coefficients = c(fit0$coefficients$zero, rep(0, dim(Znew)[2])), fitted.values=predict(fit0, type="zero"))
