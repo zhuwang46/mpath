@@ -6,8 +6,8 @@
 \description{Does k-fold cross-validation for zipath, produces a plot,
   and returns cross-validated log-likelihood values for \code{lambda}}
 \usage{
-cv.zipath(formula, data, weights, nlambda=100, lambda.count=NULL, 
-lambda.zero=NULL, nfolds=10, foldid, plot.it=TRUE, se=TRUE, n.cores=2, ...)
+cv.zipath(formula, data, weights, nlambda=100, lambda.count=NULL, lambda.zero=NULL,
+nfolds=10, foldid, plot.it=TRUE, se=TRUE, n.cores=2, trace=FALSE, parallel=TRUE, ...)
 \method{predict}{cv.zipath}(object, newdata, \dots)
 \method{coef}{cv.zipath}(object, which=object$lambda.which, model = c("full", "count", "zero"), \dots)
 }
@@ -37,6 +37,8 @@ lambda.zero=NULL, nfolds=10, foldid, plot.it=TRUE, se=TRUE, n.cores=2, ...)
     estimates are extracted.  By default, the one which generates the optimal cross-validation value.}
  \item{model}{character specifying for which component of the model the
     estimated coefficients should be extracted.}
+\item{trace}{ a logical value, print progress of cross-validation or not }
+ \item{parallel}{ a logical value, parallel computing or not}
 }
 \details{The function runs \code{zipath} \code{nfolds}+1 times; the
   first to compute the \code{(lambda.count, lambda.zero)} sequence, and then to
