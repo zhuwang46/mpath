@@ -3,18 +3,16 @@
 \alias{glmregNegbin}
 \title{fit a negative binomial model with lasso (or elastic net), snet and mnet regularization}
 \description{
-    Fit a negative binomial linear model via penalized maximum likelihood. The
-  regularization path is computed for the lasso (or elastic net penalty), snet and mnet penalty, at a grid
-  of values for the regularization parameter lambda. 
-  }
+    Fit a negative binomial linear model via penalized maximum likelihood. The regularization path is computed for the lasso (or elastic net penalty), snet and mnet penalty, at a grid of values for the regularization parameter lambda. }
 \usage{
 glmregNB(formula, data, weights, offset=NULL, nlambda = 100, lambda=NULL, 
 lambda.min.ratio = ifelse(nobs<nvars,0.05,0.001), alpha=1, gamma=3, rescale=TRUE, 
-standardize = TRUE, penalty.factor = rep(1, nvars), thresh = 0.001, maxit.theta = 25, 
-maxit=1000, eps=.Machine$double.eps, eps.bino=1e-5, trace=FALSE, start = NULL, 
-etastart = NULL, mustart = NULL, theta.est=TRUE, theta0=NULL, 
-init.theta=ifelse(theta.est, theta0[1],NULL), link=log, penalty=c("enet","mnet","snet"), 
-method="glmreg_fit", model=TRUE, x.keep=FALSE, y.keep=TRUE, contrasts=NULL, convex=FALSE, ...)
+standardize = TRUE, penalty.factor = rep(1, nvars), thresh = 0.001, maxit.theta = 10, 
+maxit=1000, eps=.Machine$double.eps, trace=FALSE, start = NULL, 
+etastart = NULL, mustart = NULL, theta.fixed=FALSE, theta0=NULL, 
+init.theta=ifelse(!theta.fixed, theta0[1],NULL), link=log, 
+penalty=c("enet","mnet","snet"), method="glmreg_fit", model=TRUE, 
+x.keep=FALSE, y.keep=TRUE, contrasts=NULL, convex=FALSE, ...)
 }
 
 \arguments{
@@ -50,12 +48,11 @@ method="glmreg_fit", model=TRUE, x.keep=FALSE, y.keep=TRUE, contrasts=NULL, conv
   \item{maxit.theta}{Maximum number of iterations for estimating \code{theta} scaling parameter}
 \item{maxit}{Maximum number of coordinate descent iterations for each \code{lambda} value; default is 1000.}
   \item{eps}{If a number is less than \code{eps} in magnitude, then this number is considered as 0}
-\item{eps.bino}{a lower bound of probabilities to be truncated.}
   \item{trace}{If \code{TRUE}, fitting progress is reported}
  \item{start, etastart, mustart, \dots}{ arguments for the \code{link{glmreg}} function}
  \item{init.theta}{ initial scaling parameter \code{theta}}
- \item{theta.est}{Estimate scale parameter theta? Default is TRUE. Note, the algorithm may become slow. In this case, one may use \code{glmreg} function with \code{family="negbin"}, and a fixed \code{theta}}.
- \item{theta0}{initial scale parameter vector theta, with length \code{nlambda} if \code{theta.est=FALSE}. Default is NULL}
+ \item{theta.fixed}{Estimate scale parameter theta? Default is FALSE. Note, the algorithm may become slow. In this case, one may use \code{glmreg} function with \code{family="negbin"}, and a fixed \code{theta}}.
+ \item{theta0}{initial scale parameter vector theta, with length \code{nlambda} if \code{theta.fixed=TRUE}. Default is NULL}
 \item{convex}{Calculate index for which objective function ceases to
     be locally convex? Default is FALSE and only useful if \code{penalty="mnet" or "snet"}.}
  \item{link}{link function, default is \code{log}}
@@ -90,12 +87,7 @@ An object with S3 class \code{"glmreg", "glmregNB"} for the various types of mod
   intercept model.}
   \item{nobs}{number of observations}
 }
-\references{                                                                                              
-Breheny, P. and Huang, J. (2011) \emph{Coordinate descent
-  algorithms for nonconvex penalized regression, with applications to
-  biological feature selection}. \emph{Ann. Appl. Statist.}, \bold{5}: 232-253.
-
-Zhu Wang, Shuangge Ma, Michael Zappitelli, Chirag Parikh, Ching-Yun Wang and Prasad Devarajan (2014)      \emph{Penalized Count Data Regression with Application to Hospital Stay after Pediatric Cardiac Surgery}, \emph{Statistical Methods in Medical Research}. 2014 Apr 17. [Epub ahead of print]
+\references{                                                                          Zhu Wang, Shuangge Ma, Michael Zappitelli, Chirag Parikh, Ching-Yun Wang and Prasad Devarajan (2014)      \emph{Penalized Count Data Regression with Application to Hospital Stay after Pediatric Cardiac Surgery}, \emph{Statistical Methods in Medical Research}. 2014 Apr 17. [Epub ahead of print]
 }
 
 \author{Zhu Wang <wangz1@uthscsa.edu>}
