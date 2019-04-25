@@ -51,8 +51,14 @@ C     repeated ones
       uturn=0
       cutpoint=1
  10   if(i .LE. nlambda)then
+         if(cutpoint > 1 .AND. uturn==0 .AND. i < cutpoint)then
+            i = cutpoint + 1
+         endif
          if(trace .EQ. 1)then
-            call intpr("lambda iteration", -1, i, 1)
+            call intpr("nclreg_fortran lambda iteration", -1, i, 1)
+            if(uturn==1)then
+               call intpr("uturn=1", -1, 1, 1)
+            endif
          endif
          lambda_i=lambda(i)/B
          call nclreg_onelambda(x_act, y,weights, n,m_act,start_act,
@@ -106,25 +112,20 @@ C     update x_act matrix
 C     redo (i-1)-lambda estimates with the current start_act for the
 C     i-th lambda. Note, i=i-2 not i-1 will do this since i=i+1 is
 C     computed before the end of the loop.
-         if(decreasing==1)then
-            if(i > 1)then
-               if(abs(los(i)-los(i-1))/los(i) > epscycle)then
-                  if(cutpoint==1)then
-                     cutpoint = i
-                  endif
-                  i = i - 2
-                  uturn=1
-               else 
-                  uturn=0
-               endif
-            endif
-         endif
-         if(cutpoint > 1 .AND. uturn==0)then
-            i = cutpoint
-            cutpoint = 1
-         endif
-         i = i + 1
-         goto 10
+      if(i > 1 .AND. decreasing==1 .AND. uturn==0 .AND. cutpoint==1)then
+          if(abs(los(i)-los(i-1))/los(i) > epscycle)then
+            cutpoint = i
+            uturn=1
+          endif
+      endif
+      if(uturn==1)then
+         i = i - 2
+      endif
+      if(i==0 .AND. uturn==1)then
+         uturn=0
+      endif
+      i = i + 1
+      goto 10
       endif
       deallocate(beta_1, start_act, x_act, penaltyfactor_act)
 
