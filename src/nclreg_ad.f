@@ -11,7 +11,7 @@ C
       integer n,m,i,ii,k,j,jj,penalty,nlambda, standardize, maxit,
      +     trace, iter, rfamily, jk, active, activeset(m), 
      +     activeset_old(m), m_act, nlambdacal, uturn, decreasing, 
-     +     cutpoint, nact, conv, jc, 
+     +     cutpoint, nact, conv, jc, fakejk,
      +     AllocateStatus, DeAllocateStatus, varsel(m), varsel_old(m)
       double precision x(n, m), y(n), weights(n),start(m+1),etastart(n),
      +     mustart(n), offset(n), lambda(nlambda), alpha, gam, eps, 
@@ -23,12 +23,21 @@ C
       double precision, dimension(:), allocatable :: start_act, beta_1,
      +     penaltyfactor_act
 
+
+      do ii=1, m
+         activeset(ii)=ii
+         activeset_old(ii)=ii
+      enddo
       call find_activeset(m, start(2:(m+1)), eps, activeset, jk)
+      fakejk=0
       if(jk==0)then
          jk=1
-         activeset_old(1)=1
          activeset(1)=1
+         fakejk=1
       endif
+      do ii=1, jk
+         activeset_old(ii)=activeset(ii)
+      enddo
       m_act = jk
       allocate(start_act(m_act+1), stat=AllocateStatus)
       if(AllocateStatus .NE. 0)then
@@ -60,13 +69,16 @@ C
       cutpoint=1
  10   if(i .LE. nlambda)then
          if(trace .EQ. 1)then
-            call intpr("lambda iteration", -1, i, 1)
+            call intpr("nclreg_ad lambda iteration", -1, i, 1)
          endif
          lambda_i=lambda(i)/B
          j=1
          nact=2
          conv=0
 13000    if(j <= nact .AND. conv==0)then
+            if(trace .EQ. 1)then
+               call intpr("begin activeset nclreg_onelambda", -1, 1, 1)
+            endif
             call nclreg_onelambda(x_act, y,weights, n,m_act,start_act,
      +           etastart, mustart, yhat, offset, lambda_i, alpha, gam, 
      +           penaltyfactor_act, maxit, eps, penalty, trace, iter,
@@ -76,6 +88,12 @@ C
                start(activeset(ii)+1)=beta_1(ii)
             enddo
             if(j .NE. nact)then
+               if(trace .EQ. 1)then
+                  call dblepr("b0_1=", -1, b0_1, 1)
+                  call dblepr("beta_1=", -1, beta_1, m_act)
+                  call intpr("begin fullset nclreg_onelambda", -1, 1, 1)
+                  call dblepr("start=", -1, start, m+1)
+               endif
                call nclreg_onelambda(x, y,weights, n,m,start, etastart,
      +              mustart, yhat, offset, lambda_i, alpha, gam, 
      +              penaltyfactor, maxit, eps, penalty, trace, 1,
@@ -84,10 +102,11 @@ C
                if(jk==0)then
                   jk=1
                   activeset(1)=1
+                  fakejk=1
                endif
             endif
             jc=0
-            do ii=1, jk
+            do ii=1, max(jk, m_act)
                if(activeset(ii)==activeset_old(ii))then
                   jc=jc+1
                endif
@@ -113,6 +132,11 @@ C
 11145             continue
 11155          continue
                m_act = jk
+            else 
+               if(fakejk==1)then
+                  start_act(1)=b0all
+                  start_act(2)=betaall(1)
+               endif
             endif
             j=j+1
             goto 13000
@@ -120,10 +144,10 @@ C
          nlambdacal=nlambdacal+1
          b0(i)=b0_1
          if(jk .GT. 0)then
-             do ii=1, m_act
-              beta(activeset(ii), i)=beta_1(ii)
-              enddo
-          endif
+            do ii=1, m_act
+               beta(activeset(ii), i)=beta_1(ii)
+            enddo
+         endif
 
          call loss(n, y, fk, cost, rfamily, s, los(i))
          call penGLM(beta_1, m_act, lambda_i*penaltyfactor_act, 
