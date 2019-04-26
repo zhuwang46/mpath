@@ -3,7 +3,7 @@ C     inputs: family: 3 (poisson), 4 (negbin)
 C     theta
 C     kx: number of variables of x having no intercept column
 C     kz: number of variables of z having no intercept column
-C     outputs: coefc, coefz, thetaout
+C     outputs: coefc, coefz, theta, thetaout
       subroutine zipath_active(x, z, y, y1, weights, n, kx, kz, 
      +     start_count, start_zero, mustart_count, mustart_zero, 
      +     offsetx, offsetz, nlambda, lambda_count,
@@ -20,7 +20,7 @@ C     outputs: coefc, coefz, thetaout
      +     activeset_count_old(kx), activeset_zero(kz),
      +     activeset_zero_old(kz), m_count_act, maxit_theta,
      +     m_zero_act, AllocateStatus, DeAllocateStatus, jc, jz, 
-     +     nact, conv, theta_fixed
+     +     nact, conv, theta_fixed, fakec, fakez
       double precision x(n, kx), z(n, kz), weights(n), 
      +     start_count(kx+1), dpois, dnbinom, b0_xall, b0zall, 
      +     start_zero(kz+1), etastart_count(n), etastart_zero(n),
@@ -29,30 +29,50 @@ C     outputs: coefc, coefz, thetaout
      +     lambda_zero(nlambda), alpha_count, alpha_zero, gam_count, 
      +     gam_zero, eps, penaltyfactor_count(kx), y(n),
      +     penaltyfactor_zero(kz), probi(n), thresh, epsbino, 
-     +     theta, coefc(kx+1, nlambda), coefz(kz+1, nlambda), b0_x, b0z,
-     +     yhat(n), del, betaxall(kx), betazall(kz)
+     +     theta, thetaall, coefc(kx+1, nlambda), coefz(kz+1, nlambda),
+     +     b0_x, b0z, yhat(n), del, betaxall(kx), betazall(kz)
       double precision, dimension(:, :), allocatable :: x_act, z_act
       double precision, dimension(:), allocatable :: start_count_act,
      +     start_zero_act, betax, betaz,
      +     penaltyfactor_count_act, penaltyfactor_zero_act
       external :: dpois, dnbinom, gfunc
 
+      if(kx==0 .OR. kz==0)then
+          return
+      endif
+      do ii=1, kx
+         activeset_count(ii)=ii
+         activeset_count_old(ii)=ii
+      enddo
+      do ii=1, kz
+         activeset_zero(ii)=ii
+         activeset_zero_old(ii)=ii
+      enddo
 C     find current active set
       call find_activeset(kx, start_count(2: (kx+1)), eps, 
      +     activeset_count, jk_count)
       call find_activeset(kz, start_zero(2: (kz+1)), eps, 
      +     activeset_zero, jk_zero)
 C     When all coef are zero except intercept, choose a predictor
+      fakec=0
+      fakez=0
       if(jk_count==0)then
          jk_count = 1
-         activeset_count_old(1)=1
          activeset_count(1)=1
+         fakec=1
       endif
       if(jk_zero==0)then
          jk_zero = 1
-         activeset_zero_old(1)=1
          activeset_zero(1)=1
+         fakez=1
       endif
+      do ii=1, jk_count
+         activeset_count_old(ii)=activeset_count(ii)
+      enddo
+      do ii=1, jk_zero
+         activeset_zero_old(ii)=activeset_zero(ii)
+      enddo
+      
       m_count_act = jk_count
       m_zero_act = jk_zero
 
@@ -83,7 +103,7 @@ C     When all coef are zero except intercept, choose a predictor
          enddo
       enddo
       do 5 j=1, jk_count
-         betax(j)=0
+C        betax(j)=0
          start_count_act(j+1)=start_count(1+activeset_count(j))
          penaltyfactor_count_act(j)=
      +        penaltyfactor_count(activeset_count(j))
@@ -100,15 +120,17 @@ C     When all coef are zero except intercept, choose a predictor
          enddo
       enddo
       do 105 j=1, jk_zero
-         betaz(j)=0
+C         betaz(j)=0
          start_zero_act(j+1)=start_zero(1+activeset_zero(j))
          penaltyfactor_zero_act(j)=
      +        penaltyfactor_zero(activeset_zero(j))
  105  continue
       i=1
  10   if(i .LE. nlambda)then
-         if(trace .EQ. 1)then
+        if(trace .EQ. 1)then
             call intpr("Fortran lambda iteration i=", -1, i, 1)
+            call intpr("kx=", -1, kx, 1)
+            call intpr("kz=", -1, kz, 1)
             call intpr("m_count_act", -1, m_count_act, 1)
             call intpr("m_zero_act", -1, m_zero_act, 1)
             call dblepr("start_count_act", -1, start_count_act,
@@ -123,13 +145,13 @@ C     When all coef are zero except intercept, choose a predictor
          conv=0
 13000    if(j <= nact .AND. conv==0)then
             if(trace==1)then
-            call intpr("active set iteration, j=", -1, j, 1)
-            call intpr("cycling through only active sets", -1, 1, 1)
+               call intpr("active set iteration, j=", -1, j, 1)
+               call intpr("cycling through only active sets", -1, 1, 1)
             endif
-            call zi(x_act, z_act, y, y1, probi, weights, n, m_count_act,
-     +           m_zero_act, start_count_act, start_zero_act, 
-     +           mustart_count, mustart_zero, offsetx, offsetz, 
-     +           lambda_count(i), lambda_zero(i), alpha_count, 
+            call zi_onelambda(x_act, z_act, y, y1, probi, weights, n, 
+     +           m_count_act, m_zero_act, start_count_act, 
+     +           start_zero_act, mustart_count, mustart_zero, offsetx, 
+     +           offsetz, lambda_count(i), lambda_zero(i), alpha_count, 
      +           alpha_zero, gam_count, gam_zero, standardize, 
      +           penaltyfactor_count_act, penaltyfactor_zero_act,
      +           maxit, eps, family, penalty, trace, yhat, iter, del,
@@ -137,58 +159,61 @@ C     When all coef are zero except intercept, choose a predictor
      +           maxit_theta, theta, betax, b0_x, betaz, b0z)
 C     update start_count with start_count_act, start_zero with
 C     start_zero_act
-               start_count(1)=b0_x
+            start_count(1)=b0_x
             do ii=1, jk_count
                start_count(activeset_count(ii)+1)=betax(ii)
             enddo
-               start_zero(1)=b0z
+            start_zero(1)=b0z
             do ii=1, jk_zero
                start_zero(activeset_zero(ii)+1)=betaz(ii)
             enddo
             if(j .NE. nact)then
-             call zi(x, z, y, y1, probi, weights, n, kx,
-     +           kz, start_count, start_zero, mustart_count, 
-     +           mustart_zero, offsetx, offsetz, lambda_count(i), 
-     +           lambda_zero(i), alpha_count, alpha_zero, gam_count,
-     +           gam_zero, standardize, penaltyfactor_count, 
-     +           penaltyfactor_zero, maxit, eps, family, penalty, 
-     +           trace, yhat, 1, del, rescale, thresh, 
-     +           epsbino, theta_fixed, maxit_theta, theta, betaxall, 
-     +           b0_xall, betazall, b0zall)
-             call find_activeset(kx, betaxall, eps, activeset_count
-     +           , jk_count)
-             if(jk_count==0)then
-               jk_count = 1
-               activeset_count(1)=1
-             endif
-             call find_activeset(kz, betazall, eps, activeset_zero
-     +           , jk_zero)
-             if(jk_zero==0)then
-               jk_zero = 1
-               activeset_zero(1)=1
-             endif
+                thetaall = theta
+               call zi_onelambda(x, z, y, y1, probi, weights, n, kx,
+     +              kz, start_count, start_zero, mustart_count, 
+     +              mustart_zero, offsetx, offsetz, lambda_count(i), 
+     +              lambda_zero(i), alpha_count, alpha_zero, gam_count,
+     +              gam_zero, standardize, penaltyfactor_count, 
+     +              penaltyfactor_zero, maxit, eps, family, penalty, 
+     +              trace, yhat, 1, del, rescale, thresh, epsbino,
+     +              theta_fixed, maxit_theta, thetaall, betaxall, 
+     +              b0_xall, betazall, b0zall)
+               call find_activeset(kx, betaxall, eps, activeset_count
+     +              , jk_count)
+               if(jk_count==0)then
+                  jk_count = 1
+                  activeset_count(1)=1
+                  fakec=1
+               endif
+               call find_activeset(kz, betazall, eps, activeset_zero
+     +              , jk_zero)
+               if(jk_zero==0)then
+                  jk_zero = 1
+                  activeset_zero(1)=1
+                  fakez=1
+               endif
             endif
 C     check if converged here!
             if(trace==1)then
-            call intpr("activeset_count", -1, activeset_count, jk_count)
-            call intpr("activeset_count_old",
-     +           -1,activeset_count_old,m_count_act)
-            call intpr("activeset_zero", -1, activeset_zero, jk_zero)
-            call intpr("activeset_zero_old", -1,activeset_zero_old,
-     +           m_zero_act)
-            call intpr("jk_count=", -1, jk_count, 1)
-            call intpr("m_count_act=", -1, m_count_act, 1)
-            call intpr("jk_zero=", -1, jk_zero, 1)
-            call intpr("m_zero_act=", -1, m_zero_act, 1)
+               call intpr("activeset_count",-1,activeset_count,jk_count)
+               call intpr("activeset_count_old",
+     +              -1,activeset_count_old,m_count_act)
+               call intpr("activeset_zero", -1, activeset_zero, jk_zero)
+               call intpr("activeset_zero_old", -1,activeset_zero_old,
+     +              m_zero_act)
+               call intpr("jk_count=", -1, jk_count, 1)
+               call intpr("m_count_act=", -1, m_count_act, 1)
+               call intpr("jk_zero=", -1, jk_zero, 1)
+               call intpr("m_zero_act=", -1, m_zero_act, 1)
             endif
             jc=0
-            do ii=1, jk_count
+            do ii=1, max(jk_count, m_count_act)
                if(activeset_count(ii)==activeset_count_old(ii))then
                   jc=jc+1
                endif
             enddo
             jz=0
-            do ii=1, jk_zero
+            do ii=1, max(jk_zero, m_zero_act)
                if(activeset_zero(ii)==activeset_zero_old(ii))then
                   jz=jz+1
                endif
@@ -197,9 +222,10 @@ C     check if converged here!
                conv=1
             endif
             if(jk_count .NE. jc)then
-               deallocate(start_count_act, stat=DeAllocateStatus)
+               theta = thetaall
+               deallocate(betax, start_count_act, 
+     +                    penaltyfactor_count_act, x_act)
                allocate(start_count_act(jk_count+1),stat=AllocateStatus)
-               deallocate(penaltyfactor_count_act,stat=DeAllocateStatus)
                allocate(penaltyfactor_count_act(jk_count),stat=
      +              AllocateStatus)
                start_count_act(1) = b0_xall
@@ -209,9 +235,7 @@ C     check if converged here!
                   penaltyfactor_count_act(ii)=
      +                 penaltyfactor_count(activeset_count(ii))
 11135          continue
-               deallocate(betax, stat=DeAllocateStatus) 
                allocate(betax(jk_count), stat=AllocateStatus)
-               deallocate(x_act, stat=DeAllocateStatus)
                allocate(x_act(n, jk_count), stat=AllocateStatus)
 C     update x_act matrix
                do 11155 jj=1, n
@@ -220,11 +244,16 @@ C     update x_act matrix
 11145             continue
 11155          continue
                m_count_act = jk_count
+            else
+               if(fakec==1)then
+                  start_count_act(1)=b0_xall
+                  start_count_act(2)=betaxall(1)
+               endif
             endif
             if(jk_zero .NE. jz)then
-               deallocate(start_zero_act, stat=DeAllocateStatus)
+               deallocate(betaz, start_zero_act, 
+     +                    penaltyfactor_zero_act, z_act)
                allocate(start_zero_act(jk_zero+1),stat=AllocateStatus)
-               deallocate(penaltyfactor_zero_act,stat=DeAllocateStatus)
                allocate(penaltyfactor_zero_act(jk_zero),stat=
      +              AllocateStatus)
                start_zero_act(1) = b0zall
@@ -234,9 +263,7 @@ C     update x_act matrix
                   penaltyfactor_zero_act(ii)=
      +                 penaltyfactor_zero(activeset_zero(ii))
 12135          continue
-               deallocate(betaz, stat=DeAllocateStatus) 
                allocate(betaz(jk_zero), stat=AllocateStatus)
-               deallocate(z_act, stat=DeAllocateStatus)
                allocate(z_act(n, jk_zero), stat=AllocateStatus)
                do 12155 jj=1, n
                   do 12145 ii=1, jk_zero
@@ -244,6 +271,11 @@ C     update x_act matrix
 12145             continue
 12155          continue
                m_zero_act = jk_zero
+            else
+               if(fakez==1)then
+                  start_zero_act(1)=b0zall
+                  start_zero_act(2)=betazall(1)
+               endif
             endif
             j=j+1
             goto 13000
