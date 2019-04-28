@@ -13,8 +13,8 @@ C function
 
       p = size_n/(size_n+mu)
       if(log_true==0)then
-      dnbinom = dexp(rlgamma(x+size_n)-rlgamma(size_n))/Factorial(x)
-     +*p**size_n*(1-p)**x
+      dnbinom=dexp(rlgamma(x*1.0D0+size_n)-rlgamma(size_n))/Factorial(x)
+     +        *p**size_n*(1-p)**x
       else
         res=0 
         if(x > 0)then
@@ -22,8 +22,8 @@ C function
             res=res+dlog(j*1.0D0)
             enddo
         endif
-        dnbinom = rlgamma(x+size_n)-rlgamma(size_n) - res
-     + size_n*dlog(p)+x*dlog(1-p) 
+        dnbinom = rlgamma(x*1.0D0+size_n)-rlgamma(size_n) - res
+     +  +size_n*dlog(p)+x*1.0D0*dlog(1-p) 
       endif
 
       return
