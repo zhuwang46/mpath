@@ -35,8 +35,6 @@ C     outputs: coefc, coefz, thetaout
      +     penaltyfactor_count_act, penaltyfactor_zero_act
       external :: dpois, dnbinom, gfunc
 
-      b0_x=0
-      b0z=0
       stopit = 0
       m_count_act = kx
       m_zero_act = kz
@@ -52,10 +50,10 @@ C     outputs: coefc, coefz, thetaout
               probi(ii)=mustart_zero(ii) 
               if(family .EQ. 3)then
               probi(ii)=probi(ii)/(probi(ii)+(1-probi(ii))*dpois(0,
-     +                  mustart_count(ii)))
+     +                  mustart_count(ii), 0))
               else if(family .EQ. 4)then
               probi(ii)=probi(ii)/(probi(ii)+(1-probi(ii))*dnbinom(0,
-     +                  theta, mustart_count(ii)))
+     +                  theta, mustart_count(ii), 0))
               endif
             endif
       enddo
@@ -96,10 +94,10 @@ C     outputs: coefc, coefz, thetaout
         if(trace .EQ. 1)then
             call intpr("Fortran lambda iteration i=", -1, i, 1)
         endif
-        call zi(x_act, z_act, y, y1, probi, weights, n, m_count_act,
-     +           m_zero_act, start_count_act, start_zero_act,
-     +           mustart_count, mustart_zero, offsetx, offsetz,
-     +           lambda_count(i), lambda_zero(i), alpha_count,
+        call zi_onelambda(x_act, z_act, y, y1, probi, weights, n, 
+     +           m_count_act, m_zero_act, start_count_act, 
+     +           start_zero_act, mustart_count, mustart_zero, offsetx, 
+     +           offsetz, lambda_count(i), lambda_zero(i), alpha_count,
      +           alpha_zero, gam_count, gam_zero, standardize,
      +           penaltyfactor_count_act, penaltyfactor_zero_act,
      +           maxit, eps, family, penalty, trace, yhat, iter, del,
