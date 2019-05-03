@@ -38,13 +38,15 @@ C     outputs: coefc, coefz, theta, thetaout
       external :: dpois, dnbinom, gfunc
 
       if(kx==0 .OR. kz==0)then
-          return
+         return
       endif
       do ii=1, kx
+         betaxall(ii)=0
          activeset_count(ii)=ii
          activeset_count_old(ii)=ii
       enddo
       do ii=1, kz
+         betazall(ii)=0
          activeset_zero(ii)=ii
          activeset_zero_old(ii)=ii
       enddo
@@ -85,10 +87,10 @@ C     When all coef are zero except intercept, choose a predictor
             probi(ii)=mustart_zero(ii) 
             if(family .EQ. 3)then
                probi(ii)=probi(ii)/(probi(ii)+(1-probi(ii))*dpois(0,
-     +              mustart_count(ii)))
+     +              mustart_count(ii), 0))
             else if(family .EQ. 4)then
                probi(ii)=probi(ii)/(probi(ii)+(1-probi(ii))*dnbinom(0,
-     +              theta, mustart_count(ii)))
+     +              theta, mustart_count(ii), 0))
             endif
          endif
       enddo
@@ -103,7 +105,7 @@ C     When all coef are zero except intercept, choose a predictor
          enddo
       enddo
       do 5 j=1, jk_count
-C        betax(j)=0
+         betax(j)=0
          start_count_act(j+1)=start_count(1+activeset_count(j))
          penaltyfactor_count_act(j)=
      +        penaltyfactor_count(activeset_count(j))
@@ -120,14 +122,14 @@ C        betax(j)=0
          enddo
       enddo
       do 105 j=1, jk_zero
-C         betaz(j)=0
+         betaz(j)=0
          start_zero_act(j+1)=start_zero(1+activeset_zero(j))
          penaltyfactor_zero_act(j)=
      +        penaltyfactor_zero(activeset_zero(j))
  105  continue
       i=1
  10   if(i .LE. nlambda)then
-        if(trace .EQ. 1)then
+         if(trace .EQ. 1)then
             call intpr("Fortran lambda iteration i=", -1, i, 1)
             call intpr("kx=", -1, kx, 1)
             call intpr("kz=", -1, kz, 1)
@@ -155,8 +157,8 @@ C         betaz(j)=0
      +           alpha_zero, gam_count, gam_zero, standardize, 
      +           penaltyfactor_count_act, penaltyfactor_zero_act,
      +           maxit, eps, family, penalty, trace, yhat, iter, del,
-     +           rescale, thresh, epsbino, theta_fixed, 
-     +           maxit_theta, theta, betax, b0_x, betaz, b0z)
+     +           rescale, thresh, epsbino, theta_fixed, maxit_theta, 
+     +           theta, betax, b0_x, betaz, b0z)
 C     update start_count with start_count_act, start_zero with
 C     start_zero_act
             start_count(1)=b0_x
@@ -168,14 +170,14 @@ C     start_zero_act
                start_zero(activeset_zero(ii)+1)=betaz(ii)
             enddo
             if(j .NE. nact)then
-                thetaall = theta
+               thetaall = theta
                call zi_onelambda(x, z, y, y1, probi, weights, n, kx,
      +              kz, start_count, start_zero, mustart_count, 
      +              mustart_zero, offsetx, offsetz, lambda_count(i), 
      +              lambda_zero(i), alpha_count, alpha_zero, gam_count,
      +              gam_zero, standardize, penaltyfactor_count, 
      +              penaltyfactor_zero, maxit, eps, family, penalty, 
-     +              trace, yhat, 1, del, rescale, thresh, epsbino,
+     +              trace, yhat, 2, del, rescale, thresh, epsbino,
      +              theta_fixed, maxit_theta, thetaall, betaxall, 
      +              b0_xall, betazall, b0zall)
                call find_activeset(kx, betaxall, eps, activeset_count
@@ -224,18 +226,19 @@ C     check if converged here!
             if(jk_count .NE. jc)then
                theta = thetaall
                deallocate(betax, start_count_act, 
-     +                    penaltyfactor_count_act, x_act)
+     +              penaltyfactor_count_act, x_act)
+               allocate(betax(jk_count), stat=AllocateStatus)
                allocate(start_count_act(jk_count+1),stat=AllocateStatus)
                allocate(penaltyfactor_count_act(jk_count),stat=
      +              AllocateStatus)
                start_count_act(1) = b0_xall
                do 11135 ii=1, jk_count
+                  betax(ii)=0
                   start_count_act(ii+1)=betaxall(activeset_count(ii))
                   activeset_count_old(ii)=activeset_count(ii)
                   penaltyfactor_count_act(ii)=
      +                 penaltyfactor_count(activeset_count(ii))
 11135          continue
-               allocate(betax(jk_count), stat=AllocateStatus)
                allocate(x_act(n, jk_count), stat=AllocateStatus)
 C     update x_act matrix
                do 11155 jj=1, n
@@ -252,18 +255,19 @@ C     update x_act matrix
             endif
             if(jk_zero .NE. jz)then
                deallocate(betaz, start_zero_act, 
-     +                    penaltyfactor_zero_act, z_act)
+     +              penaltyfactor_zero_act, z_act)
+               allocate(betaz(jk_zero), stat=AllocateStatus)
                allocate(start_zero_act(jk_zero+1),stat=AllocateStatus)
                allocate(penaltyfactor_zero_act(jk_zero),stat=
      +              AllocateStatus)
                start_zero_act(1) = b0zall
                do 12135 ii=1, jk_zero
+                  betaz(ii)=0
                   start_zero_act(ii+1)=betazall(activeset_zero(ii))
                   activeset_zero_old(ii)=activeset_zero(ii)
                   penaltyfactor_zero_act(ii)=
      +                 penaltyfactor_zero(activeset_zero(ii))
 12135          continue
-               allocate(betaz(jk_zero), stat=AllocateStatus)
                allocate(z_act(n, jk_zero), stat=AllocateStatus)
                do 12155 jj=1, n
                   do 12145 ii=1, jk_zero
@@ -282,14 +286,14 @@ C     update x_act matrix
          endif
          coefc(1, i) = b0_x
          if(jk_count .GT. 0)then
-            do 200 ii = 1, m_count_act
+            do 200 ii = 1, jk_count
                coefc(1+activeset_count(ii), i) = betax(ii)
  200        continue
          endif
          thetaout(i)=theta
          coefz(1, i) = b0z
          if(jk_zero .GT. 0)then
-            do 210 ii = 1, m_zero_act
+            do 210 ii = 1, jk_zero
                coefz(1+activeset_zero(ii), i) = betaz(ii)
  210        continue
          endif
