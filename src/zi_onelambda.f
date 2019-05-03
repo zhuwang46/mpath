@@ -36,7 +36,7 @@ C     outputs: betax, b0_x, betaz, b0z, theta
       stopit = 0
       k = 1
       d = 10
-      call dblepr("weights=", -1, weights, 5)
+C      b0z = 0
       call gfunc(mustart_count, n, family,epsbino,etastart_count)
       call gfunc(mustart_zero, n, 2, epsbino, etastart_zero)
       call ziloss(n, y, weights, etastart_count,
@@ -54,10 +54,10 @@ C      else
          pll_old=pll_old + penval
 C      endif
  500  if(d .GT. del .AND. k .LE. iter)then
-C         if(trace .EQ. 1)then
+         if(trace .EQ. 1)then
             call intpr("  EM algorithm iteration k=", -1, k, 1)
             call dblepr("     d=", -1, d, 1)
-C         endif
+         endif
          do 30 ii=1, n
             wt(ii)=weights(ii)*(1-probi(ii)) 
  30      continue
@@ -135,11 +135,11 @@ C               pll=los + penval
 C            endif
          pll=pll + penval
          if(k>1)then
+C             d=abs((los-los_old)/los_old)
+C             los_old=los
              d=abs((pll-pll_old)/pll_old)
              pll_old = pll
          endif
-         call dblepr("los=", -1, los, 1)
-         call dblepr("pll=", -1, pll, 1)
          k = k + 1
          goto 500
       endif
