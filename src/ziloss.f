@@ -16,18 +16,19 @@ C     output: los is the average loss
             mu=dexp(fc(i))
             call linkinv(1, fz(i), 2, phi)
             if(y(i) < 1)then
-               los=los+weights(i)*dlog(phi+dexp(dlog(1.0-phi)-mu))
+               los=los+weights(i)*dlog(phi+dexp(dlog(1.0D0-phi)-mu))
             else
-               los=los+weights(i)*(dlog(1-phi)+dpois(int(y(i)), mu, 1))
+               los=los+weights(i)*(dlog(1.0D0-phi)
+     +          +dpois(int(y(i)), mu, 1))
             endif
          else if(family .EQ. 4)then
             mu=dexp(fc(i))
             call linkinv(1, fz(i), 2, phi)
             if(y(i) < 1)then
-               los=los+weights(i)*dlog(phi+dexp(dlog(1.0-phi)+
+               los=los+weights(i)*dlog(phi+dexp(dlog(1.0D0-phi)+
      +                 dnbinom(0, theta, mu, 1)))
             else
-               los=los+weights(i)*(dlog(1-phi)+
+               los=los+weights(i)*(dlog(1.0D0-phi)+
      +          dnbinom(int(y(i)),theta,mu,1))
             endif
          endif
