@@ -1,5 +1,5 @@
 cv.glmregNB <- function(formula, data, weights, offset=NULL, 
-lambda=NULL, nfolds=10, foldid, plot.it=TRUE, se=TRUE, n.cores=2, trace=FALSE, parallel=TRUE, 
+lambda=NULL, nfolds=10, foldid, plot.it=TRUE, se=TRUE, n.cores=2, trace=FALSE, parallel=FALSE, 
 ...){
     call <- match.call()
  mf <- Call <- match.call()
