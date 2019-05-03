@@ -112,11 +112,9 @@ Y <- y
     mu <- as.vector(exp(X %*% parms[1:kx] + offsetx))
     ## binary mean
     phi <- as.vector(linkinv(Z %*% parms[(kx+1):(kx+kz)] + offsetz))
-
     ## log-likelihood for y = 0 and y >= 1
     loglik0 <- log( phi + exp( log(1-phi) - mu ) ) ## -mu = dpois(0, lambda = mu, log = TRUE)
     loglik1 <- log(1-phi) + dpois(Y, lambda = mu, log = TRUE)
-
     ## collect and return
     loglik <- sum(weights[Y0] * loglik0[Y0]) + sum(weights[Y1] * loglik1[Y1])
     loglik
@@ -154,10 +152,15 @@ nlambda <- object$nlambda
                       "negbin" = ziNegBin)
 
 ll <- rep(NA, nlambda)
- mf <- model.frame(delete.response(object$terms$full), newdata, na.action = na.action, xlev = object$levels)
+if(!is.null(object$terms)){
+mf <- model.frame(delete.response(object$terms$full), newdata, na.action = na.action, xlev = object$levels)
     X <- model.matrix(delete.response(object$terms$count), mf, contrasts = object$contrasts$count)
     Z <- model.matrix(delete.response(object$terms$zero),  mf, contrasts = object$contrasts$zero)
-if(missing(weights)) weights <- rep(1, length(y))
+}
+else
+    if(is.null(X) || is.null(Z))
+        stop("X and Z must be provided\n")
+    if(missing(weights)) weights <- rep(1, length(y))
 w <- weights
 if(family == "negbin")
 parms <- rbind(object$coefficients$count, object$coefficients$zero, log(object$theta))
