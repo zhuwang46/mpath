@@ -1,17 +1,83 @@
-zipath <- function(formula, data, weights, subset, na.action, offset, standardize=TRUE, 
-                   family = c("poisson", "negbin", "geometric"),
-                   link = c("logit", "probit", "cloglog", "cauchit", "log"),
-                   penalty = c("enet", "mnet", "snet"),
-                   start = NULL, model = TRUE, y = TRUE, x = FALSE, nlambda=100, lambda.count=NULL, lambda.zero=NULL, 
-	           type.path=c("nonactive", "active"),
-		   penalty.factor.count=NULL, penalty.factor.zero=NULL, 
-                   lambda.count.min.ratio=.0001, lambda.zero.min.ratio=.1, alpha.count=1, alpha.zero=alpha.count, gamma.count=3, gamma.zero=gamma.count, rescale=FALSE, init.theta=1, theta.fixed=FALSE, EM=TRUE, maxit.em=200, convtype=c("count", "both"), maxit= 1000, maxit.theta =10, reltol = 1e-5, thresh=1e-6, eps.bino=1e-5, shortlist=FALSE, trace=FALSE, ...)
-{
+zipath <- function(x, ...) UseMethod("zipath")
 
-    if(is.null(init.theta) && family=="negbin" && theta.fixed)
-        stop("missing argument init.theta while family=='negbin' and theta.fixed is TRUE\n")
+zipath.default <- function(x, ...) {
+    if (extends(class(x), "Matrix"))
+        return(zipath.matrix(x=x, ...))
+    stop("no method for objects of class ", sQuote(class(x)),
+         " implemented")
+}
+
+zipath.formula <- function(formula, data, weights, offset=NULL, contrast=NULL, ...){
+    ## call and formula
+    cl <- match.call()
     if(!attr(terms(formula), "intercept"))
         stop("non-intercept model is not implemented")
+    if(missing(data)) data <- environment(formula)
+    mf <- match.call(expand.dots = FALSE)
+    m <- match(c("formula", "data", "na.action", "weights", "offset"), names(mf), 0)
+    mf <- mf[c(1, m)]
+    mf$drop.unused.levels <- TRUE
+    
+    ## extended formula processing
+    if(length(formula[[3]]) > 1 && identical(formula[[3]][[1]], as.name("|")))
+    {
+        ff <- formula
+        formula[[3]][1] <- call("+")
+        mf$formula <- formula
+        ffc <- . ~ .
+        ffz <- ~ .
+        ffc[[2]] <- ff[[2]]
+        ffc[[3]] <- ff[[3]][[2]]
+        ffz[[3]] <- ff[[3]][[3]]
+        ffz[[2]] <- NULL
+    } else {
+        ffz <- ffc <- ff <- formula
+        ffz[[2]] <- NULL
+    }
+    if(inherits(try(terms(ffz), silent = TRUE), "try-error")) {
+        ffz <- eval(parse(text = sprintf( paste("%s -", deparse(ffc[[2]])), deparse(ffz) )))
+    }
+
+    ## call model.frame()
+    mf[[1]] <- as.name("model.frame")
+    mf <- eval(mf, parent.frame())
+    
+    ## extract terms, model matrices, response
+    mt <- attr(mf, "terms")
+    mtX <- terms(ffc, data = data)
+    X <- model.matrix(mtX, mf)
+    Xold <- X
+### This means X possibly has intercept (1st) column depending on the specifications 
+    mtZ <- terms(ffz, data = data)
+    mtZ <- terms(update(mtZ, ~ .), data = data)
+    Z <- model.matrix(mtZ, mf)
+    Zold <- Z
+    Y <- model.response(mf, "numeric")
+    ## weights and offset
+    weights <- model.weights(mf)
+    offsetx <- model_offset_2(mf, terms = mtX, offset = TRUE)
+    offsetz <- model_offset_2(mf, terms = mtZ, offset = FALSE)
+
+    RET <- zipath_fit(X, Z, Y, weights=weights, offsetx=offsetx, offsetz=offsetz, ...)
+    RET$call <- match.call()
+    class(RET) <- "zipath"
+    RET$terms = list(count = mtX, zero = mtZ, full = mt)
+    RET$call = cl
+    RET$formula = ff
+    RET$levels = .getXlevels(mt, mf)
+    RET$contrasts = list(count = attr(X, "contrasts"), zero = attr(Z, "contrasts"))
+    RET$model <- mf
+    RET
+}
+zipath.matrix <- function(X, Z, Y, weights, offsetx=NULL, offsetz=NULL, ...){
+    RET <- zipath_fit(X, Z, Y, weights, offsetx=offsetx, offsetz=offsetz, ...)
+    RET$call <- match.call()
+    return(RET)
+}
+zipath_fit <- function(X, Z, Y, weights, offsetx, offsetz, na.action, standardize=TRUE, family = c("poisson", "negbin", "geometric"), link = c("logit", "probit", "cloglog", "cauchit", "log"), penalty = c("enet", "mnet", "snet"), start = NULL, y = TRUE, x = FALSE, nlambda=100, lambda.count=NULL, lambda.zero=NULL, type.path=c("active", "nonactive"), penalty.factor.count=NULL, penalty.factor.zero=NULL, lambda.count.min.ratio=.0001, lambda.zero.min.ratio=.1, alpha.count=1, alpha.zero=alpha.count, gamma.count=3, gamma.zero=gamma.count, rescale=FALSE, init.theta=1, theta.fixed=FALSE, EM=TRUE, maxit.em=200, convtype=c("count", "both"), maxit= 1000, maxit.theta =10, reltol = 1e-5, thresh=1e-6, eps.bino=1e-5, shortlist=FALSE, trace=FALSE, ...)
+{
+    if(is.null(init.theta) && family=="negbin" && theta.fixed)
+        stop("missing argument init.theta while family=='negbin' and theta.fixed is TRUE\n")
     if(length(gamma.count) > 1 || length(gamma.zero) > 1)
         stop("gamma.count or gamma.zero must be a scalar")
     family <- match.arg(family)
@@ -37,7 +103,6 @@ zipath <- function(formula, data, weights, subset, na.action, offset, standardiz
         ## log-likelihood for y = 0 and y >= 1
         loglik0 <- log( phi + exp( log(1-phi) - mu ) ) ## -mu = dpois(0, lambda = mu, log = TRUE)
         loglik1 <- log(1-phi) + dpois(Y, lambda = mu, log = TRUE)
-        
         ## collect and return
         loglik <- sum(weights[Y0] * loglik0[Y0]) + sum(weights[Y1] * loglik1[Y1])
         loglik
@@ -294,51 +359,6 @@ zipath <- function(formula, data, weights, subset, na.action, offset, standardiz
                   paste("zero-inflation model: binomial with", linkstr, "link\n"), sep = "")
     
     
-    ## call and formula
-    cl <- match.call()
-    if(missing(data)) data <- environment(formula)
-    mf <- match.call(expand.dots = FALSE)
-    m <- match(c("formula", "data", "subset", "na.action", "weights", "offset"), names(mf), 0)
-    mf <- mf[c(1, m)]
-    mf$drop.unused.levels <- TRUE
-    
-    ## extended formula processing
-    if(length(formula[[3]]) > 1 && identical(formula[[3]][[1]], as.name("|")))
-    {
-        ff <- formula
-        formula[[3]][1] <- call("+")
-        mf$formula <- formula
-        ffc <- . ~ .
-        ffz <- ~ .
-        ffc[[2]] <- ff[[2]]
-        ffc[[3]] <- ff[[3]][[2]]
-        ffz[[3]] <- ff[[3]][[3]]
-        ffz[[2]] <- NULL
-    } else {
-        ffz <- ffc <- ff <- formula
-        ffz[[2]] <- NULL
-    }
-    if(inherits(try(terms(ffz), silent = TRUE), "try-error")) {
-        ffz <- eval(parse(text = sprintf( paste("%s -", deparse(ffc[[2]])), deparse(ffz) )))
-    }
-
-    ## call model.frame()
-    mf[[1]] <- as.name("model.frame")
-    mf <- eval(mf, parent.frame())
-    
-    ## extract terms, model matrices, response
-    mt <- attr(mf, "terms")
-    mtX <- terms(ffc, data = data)
-    X <- model.matrix(mtX, mf)
-    Xold <- X
-### This means X possibly has intercept (1st) column depending on the specifications 
-    Xnew <- as.matrix(X[,-1])
-    mtZ <- terms(ffz, data = data)
-    mtZ <- terms(update(mtZ, ~ .), data = data)
-    Z <- model.matrix(mtZ, mf)
-    Zold <- Z
-    Znew <- as.matrix(Z[,-1])
-    Y <- model.response(mf, "numeric")
 
     ## sanity checks
     if(length(Y) < 1) stop("empty model")
@@ -359,23 +379,23 @@ zipath <- function(formula, data, weights, subset, na.action, offset, standardiz
     n <- length(Y)
     kx <- NCOL(X)
     kz <- NCOL(Z)
+    Xold <- X
+    Zold <- Z
+    Xnew <- as.matrix(X[,-1])
+    Znew <- as.matrix(Z[,-1])
     nobs <- n
     Y0 <- Y <= 0
     Y1 <- Y > 0
     ## weights and offset
-    weights <- model.weights(mf)
+                                        # weights <- model.weights(mf)
     if(is.null(weights)) weights <- 1
     if(length(weights) == 1) weights <- rep.int(weights, n)
     sumw <- sum(weights)
     weights <- weights/sumw 
     weights <- as.vector(weights)
-    names(weights) <- rownames(mf)
-    offsetx <- model_offset_2(mf, terms = mtX, offset = TRUE)
-    ##  offsetx <- NULL
     if(is.null(offsetx)) offsetx <- 0
     if(length(offsetx) == 1) offsetx <- rep.int(offsetx, n)
     offsetx <- as.vector(offsetx)
-    offsetz <- model_offset_2(mf, terms = mtZ, offset = FALSE)
     if(is.null(offsetz)) offsetz <- 0
     if(length(offsetz) == 1) offsetz <- rep.int(offsetz, n)
     offsetz <- as.vector(offsetz)
@@ -526,7 +546,9 @@ zipath <- function(formula, data, weights, subset, na.action, offset, standardiz
         else start$theta <- init.theta
     }
     if(is.null(start$theta)) start$theta <- 1
-    if(active==1)
+    if(active==1 && (kx == 1 || kz == 1))
+        warnings("type.path='active' is not implemented when count model or zero model is intercept-only, and the model is fitted with type.path='nonactive'.\n")
+    if(active==1 && kx > 1 && kz > 1)
         RET1 <- .Fortran("zipath_active", 
                          x=as.double(Xnew), 
                          z=as.double(Znew), 
@@ -696,7 +718,7 @@ zipath <- function(formula, data, weights, subset, na.action, offset, standardiz
                      n = nobs,
                      df.null = nobs - 2, 
                      df.residual = dfc + dfz,
-                     terms = list(count = mtX, zero = mtZ, full = mt),
+                                        #           terms = list(count = mtX, zero = mtZ, full = mt),
                      theta = theta,
                      theta.fixed = theta.fixed,
                      loglik = ll,
@@ -706,14 +728,7 @@ zipath <- function(formula, data, weights, subset, na.action, offset, standardiz
                      theta.fixed=theta.fixed,
                      penalty=penalty,
                      link = linkstr,
-                     linkinv = linkinv,
-                                        #converged = convout,
-                     call = cl,
-                     formula = ff,
-                     levels = .getXlevels(mt, mf),
-                     contrasts = list(count = attr(X, "contrasts"), zero = attr(Z, "contrasts"))
-                     )
-    if(model) rval$model <- mf
+                     linkinv = linkinv)
     if(y) rval$y <- Y
     if(x) rval$x <- list(count = Xold, zero = Zold)
     class(rval) <- "zipath"
