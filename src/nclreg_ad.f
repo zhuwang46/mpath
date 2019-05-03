@@ -60,6 +60,7 @@ C
       endif
       start_act(1)=start(1)
       do j=1, m_act
+         beta_1(j)=0
          start_act(j+1)=start(1+activeset(j))
          penaltyfactor_act(j)=penaltyfactor(activeset(j))
       enddo
@@ -122,6 +123,7 @@ C
                allocate(x_act(n, jk), stat=AllocateStatus)
                start_act(1)=b0all
                do 11135 ii=1, jk
+                  beta_1(ii)=0
                   start_act(ii+1)=betaall(activeset(ii))
                   penaltyfactor_act(ii)=penaltyfactor(activeset(ii))
                   activeset_old(ii)=activeset(ii)
