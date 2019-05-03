@@ -66,7 +66,7 @@ cv.glmreg.matrix <- function(x, y, weights, offset=NULL, ...){
 
 cv.glmreg_fit <- function(x, y, weights, offset, lambda=NULL, balance=TRUE, 
                           family=c("gaussian", "binomial", "poisson", "negbin"), 
-                          nfolds=10, foldid, plot.it=TRUE, se=TRUE, n.cores=2, trace=FALSE, parallel=TRUE,  
+                          nfolds=10, foldid, plot.it=TRUE, se=TRUE, n.cores=2, trace=FALSE, parallel=FALSE,  
                           ...){
     call <- match.call()
     if(missing(foldid) && nfolds < 3)
