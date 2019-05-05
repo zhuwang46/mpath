@@ -16,7 +16,7 @@ C     outputs: coefc, coefz, thetaout
      +     standardize, maxit, y1(n), trace, iter, 
      +     rescale, jk_count, jk_zero, activeset_count(kx), 
      +     activeset_zero(kz), stopit,m_count_act, maxit_theta,
-     +     m_zero_act, AllocateStatus, 
+     +     m_zero_act, AllocateStatus, satu, 
      +     varsel_count(kx), varsel_count_old(kx),
      +     varsel_zero(kz), varsel_zero_old(kz), theta_fixed
       double precision x(n, kx), z(n, kz), weights(n), 
@@ -102,7 +102,7 @@ C     outputs: coefc, coefz, thetaout
      +           penaltyfactor_count_act, penaltyfactor_zero_act,
      +           maxit, eps, family, penalty, trace, yhat, iter, del,
      +           rescale, thresh, epsbino, theta_fixed,
-     +           maxit_theta, theta, betax, b0_x, betaz, b0z)
+     +           maxit_theta, theta, betax, b0_x, betaz, b0z, satu)
          coefc(1, i) = b0_x
          if(jk_count .GT. 0)then
             do 200 ii = 1, m_count_act
@@ -111,10 +111,12 @@ C     outputs: coefc, coefz, thetaout
          endif
          thetaout(i)=theta
          coefz(1, i) = b0z
+         if(satu==0 .OR. i>1)then
          if(jk_zero .GT. 0)then
             do 210 ii = 1, m_zero_act
                coefz(1+varsel_zero(ii), i) = betaz(ii)
  210        continue
+         endif
          endif
          i = i + 1
          goto 10
