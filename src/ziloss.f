@@ -3,18 +3,19 @@ C     in package mpath/zipath.R
 C     family=3 - ziPoisson; 4 - ziNegBin
 C     output: los is the average loss
 
-      subroutine ziloss(n, y, weights, fc, fz, family, theta, los)
+      subroutine ziloss(n, y, offsetx, offsetz, weights, fc, fz, 
+     +           family, theta, los)
       implicit none
       integer family, i, n
-      double precision x, y(n), weights(n), fc(n), fz(n), mu, 
-     +     phi, theta, los, dpois, dnbinom
+      double precision x, y(n), offsetx(n), offsetz(n), weights(n), 
+     +fc(n), fz(n), mu, phi, theta, los, dpois, dnbinom
       external dpois, dnbinom
 
       los = 0.d0
       do 20 i=1, n
+         mu=dexp(fc(i)+offsetx(i))
+         call linkinv(1, fz(i)+offsetz(i), 2, phi)
          if(family .EQ. 3)then
-            mu=dexp(fc(i))
-            call linkinv(1, fz(i), 2, phi)
             if(y(i) < 1)then
                los=los+weights(i)*dlog(phi+dexp(dlog(1.0D0-phi)-mu))
             else
@@ -22,8 +23,6 @@ C     output: los is the average loss
      +          +dpois(int(y(i)), mu, 1))
             endif
          else if(family .EQ. 4)then
-            mu=dexp(fc(i))
-            call linkinv(1, fz(i), 2, phi)
             if(y(i) < 1)then
                los=los+weights(i)*dlog(phi+dexp(dlog(1.0D0-phi)+
      +                 dnbinom(0, theta, mu, 1)))
