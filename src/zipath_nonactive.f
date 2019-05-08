@@ -20,8 +20,7 @@ C     outputs: coefc, coefz, thetaout
      +     varsel_count(kx), varsel_count_old(kx),
      +     varsel_zero(kz), varsel_zero_old(kz), theta_fixed
       double precision x(n, kx), z(n, kz), weights(n), 
-     +     start_count(kx+1), dpois, dnbinom, 
-     +     start_zero(kz+1), etastart_count(n), etastart_zero(n),
+     +     start_count(kx+1), dpois, dnbinom, start_zero(kz+1), 
      +     mustart_count(n), mustart_zero(n), offsetx(n), offsetz(n), 
      +     lambda_count(nlambda), thetaout(nlambda),
      +     lambda_zero(nlambda), alpha_count, alpha_zero, gam_count, 
@@ -41,8 +40,6 @@ C     outputs: coefc, coefz, thetaout
       jk_count = kx
       jk_zero = kz
 
-      call gfunc(mustart_count, n, family, epsbino, etastart_count)
-      call gfunc(mustart_zero, n, 2, epsbino, etastart_zero)
       do ii=1, n
             if(y1(ii) .EQ. 1)then
                probi(ii)=0
@@ -111,7 +108,11 @@ C     outputs: coefc, coefz, thetaout
          endif
          thetaout(i)=theta
          coefz(1, i) = b0z
-         if(satu==0 .OR. i>1)then
+         if(satu==1 .AND. i==1)then
+             do ii=1, m_zero_act
+             start_zero_act(ii)=0
+             enddo
+         else
          if(jk_zero .GT. 0)then
             do 210 ii = 1, m_zero_act
                coefz(1+varsel_zero(ii), i) = betaz(ii)
