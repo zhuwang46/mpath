@@ -20,10 +20,10 @@ C     outputs: coefc, coefz, theta, thetaout
      +     activeset_count_old(kx), activeset_zero(kz),
      +     activeset_zero_old(kz), m_count_act, maxit_theta,
      +     m_zero_act, AllocateStatus, DeAllocateStatus, jc, jz, 
-     +     nact, conv, theta_fixed, fakec, fakez
+     +     nact, conv, theta_fixed, fakec, fakez, satu
       double precision x(n, kx), z(n, kz), weights(n), 
      +     start_count(kx+1), dpois, dnbinom, b0_xall, b0zall, 
-     +     start_zero(kz+1), etastart_count(n), etastart_zero(n),
+     +     start_zero(kz+1),
      +     mustart_count(n), mustart_zero(n), offsetx(n), offsetz(n), 
      +     lambda_count(nlambda), thetaout(nlambda),
      +     lambda_zero(nlambda), alpha_count, alpha_zero, gam_count, 
@@ -36,7 +36,7 @@ C     outputs: coefc, coefz, theta, thetaout
      +     start_zero_act, betax, betaz,
      +     penaltyfactor_count_act, penaltyfactor_zero_act
       external :: dpois, dnbinom, gfunc
-
+      
       if(kx==0 .OR. kz==0)then
          return
       endif
@@ -60,12 +60,12 @@ C     When all coef are zero except intercept, choose a predictor
       fakez=0
       if(jk_count==0)then
          jk_count = 1
-         activeset_count(1)=1
+         activeset_count(1)=kx
          fakec=1
       endif
       if(jk_zero==0)then
          jk_zero = 1
-         activeset_zero(1)=1
+         activeset_zero(1)=kz
          fakez=1
       endif
       do ii=1, jk_count
@@ -78,8 +78,6 @@ C     When all coef are zero except intercept, choose a predictor
       m_count_act = jk_count
       m_zero_act = jk_zero
 
-      call gfunc(mustart_count, n, family, epsbino, etastart_count)
-      call gfunc(mustart_zero, n, 2, epsbino, etastart_zero)
       do ii=1, n
          if(y1(ii) .EQ. 1)then
             probi(ii)=0
@@ -127,6 +125,7 @@ C     When all coef are zero except intercept, choose a predictor
          penaltyfactor_zero_act(j)=
      +        penaltyfactor_zero(activeset_zero(j))
  105  continue
+      nact = 2
       i=1
  10   if(i .LE. nlambda)then
          if(trace .EQ. 1)then
@@ -143,7 +142,6 @@ C     When all coef are zero except intercept, choose a predictor
             call dblepr("betaz", -1, betaz, m_zero_act)
          endif
          j = 1
-         nact = 2
          conv=0
 13000    if(j <= nact .AND. conv==0)then
             if(trace==1)then
@@ -158,7 +156,7 @@ C     When all coef are zero except intercept, choose a predictor
      +           penaltyfactor_count_act, penaltyfactor_zero_act,
      +           maxit, eps, family, penalty, trace, yhat, iter, del,
      +           rescale, thresh, epsbino, theta_fixed, maxit_theta, 
-     +           theta, betax, b0_x, betaz, b0z)
+     +           theta, betax, b0_x, betaz, b0z, satu)
 C     update start_count with start_count_act, start_zero with
 C     start_zero_act
             start_count(1)=b0_x
@@ -166,6 +164,12 @@ C     start_zero_act
                start_count(activeset_count(ii)+1)=betax(ii)
             enddo
             start_zero(1)=b0z
+            if(satu==1 .AND. i==1)then
+               do ii=1, jk_zero
+                  start_zero_act(1+ii)=0
+                  betaz(ii)=0
+               enddo
+            endif
             do ii=1, jk_zero
                start_zero(activeset_zero(ii)+1)=betaz(ii)
             enddo
@@ -179,19 +183,25 @@ C     start_zero_act
      +              penaltyfactor_zero, maxit, eps, family, penalty, 
      +              trace, yhat, 2, del, rescale, thresh, epsbino,
      +              theta_fixed, maxit_theta, thetaall, betaxall, 
-     +              b0_xall, betazall, b0zall)
+     +              b0_xall, betazall, b0zall, satu)
+               if(satu==1 .AND. i==1)then
+                  do ii=1, kz
+                     start_zero(1+ii)=0
+                     betazall(ii)=0
+                  enddo
+               endif
                call find_activeset(kx, betaxall, eps, activeset_count
      +              , jk_count)
                if(jk_count==0)then
                   jk_count = 1
-                  activeset_count(1)=1
+                  activeset_count(1)=kx
                   fakec=1
                endif
                call find_activeset(kz, betazall, eps, activeset_zero
      +              , jk_zero)
                if(jk_zero==0)then
                   jk_zero = 1
-                  activeset_zero(1)=1
+                  activeset_zero(1)=kz
                   fakez=1
                endif
             endif
@@ -215,6 +225,10 @@ C     check if converged here!
                endif
             enddo
             jz=0
+C     what is activeset_zero==activeset_zero_old after only one iteration as
+C     in the above? Say, we only have betaz=0.2 with one element, but
+C     jk_zero=kz now. Then we have a problem here to update the values as
+C     stated below! Because in this case, the iteration stops.
             do ii=1, max(jk_zero, m_zero_act)
                if(activeset_zero(ii)==activeset_zero_old(ii))then
                   jz=jz+1
