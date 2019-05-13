@@ -80,7 +80,7 @@ compute.2d <- function(y, f, s, family=c("clossR", "closs", "gloss", "qloss")){
         sqrt(2/pi)*u/s^3*exp(-u^2/(2*s^2))
 }
 
-nclreg_fit <- function(x,y, weights, offset=NULL, cost=0.5, rfamily=c("clossR", "closs", "gloss", "qloss"), s=NULL, fk=NULL, iter=10, del=1e-10, penalty=c("enet","mnet","snet"), nlambda=100, lambda=NULL, type.path=c("active", "nonactive", "onestep"), decreasing=FALSE, lambda.min.ratio=ifelse(nobs<nvars,.05, .001),alpha=1, gamma=3, standardize=TRUE, penalty.factor = NULL, maxit=1000, type.init="bst", mstop.init=10, nu.init=0.1, eps=.Machine$double.eps, epscycle=10, thresh=1e-6, trace=FALSE){
+nclreg_fit <- function(x,y, weights, offset=NULL, cost=0.5, rfamily=c("clossR", "closs", "gloss", "qloss"), s=NULL, fk=NULL, iter=10, reltol=1e-5, penalty=c("enet","mnet","snet"), nlambda=100, lambda=NULL, type.path=c("active", "nonactive", "onestep"), decreasing=FALSE, lambda.min.ratio=ifelse(nobs<nvars,.05, .001),alpha=1, gamma=3, standardize=TRUE, penalty.factor = NULL, maxit=1000, type.init="bst", mstop.init=10, nu.init=0.1, eps=.Machine$double.eps, epscycle=10, thresh=1e-6, trace=FALSE){
 ### compute h value
     compute.h <- function(rfamily, y, fk_old, s, B){
         if(rfamily=="clossR")
@@ -178,7 +178,7 @@ nclreg_fit <- function(x,y, weights, offset=NULL, cost=0.5, rfamily=c("clossR", 
     start <- NULL
     if(is.null(fk) || is.null(lambda)){
         if(type.init %in% c("ncl", "heu")){ ### use ncl function to generate intercept-only model
-            RET <- ncl(y~1, data=data.frame(y, 1), iter=10000, del=1e-20, weights=weights, s=s, rfamily=rfamily, trace=FALSE)
+            RET <- ncl(y~1, data=data.frame(y, 1), iter=10000, reltol=1e-20, weights=weights, s=s, rfamily=rfamily, trace=FALSE)
             if(type.init=="ncl") start <- c(coef(RET), rep(0, nvars))
 ### it is similar to the following optimization results
                                         #fn <- function(b) sum(loss(y, f=b, cost, family = rfamily, s=s))
@@ -285,7 +285,7 @@ nclreg_fit <- function(x,y, weights, offset=NULL, cost=0.5, rfamily=c("clossR", 
             }
             k <- 1
             d1 <- 10
-            while(d1 > del && k <= iter){
+            while(d1 > reltol && k <= iter){
                 fk_old <- RET$fitted.values
                 h <- compute.h(rfamily, y, fk_old, s, B)
                 if(any(is.nan(h))){ # exit loop
@@ -315,7 +315,7 @@ nclreg_fit <- function(x,y, weights, offset=NULL, cost=0.5, rfamily=c("clossR", 
                 d1 <- sum((fk_old - fk)^2)
                                         #d1 <- sum((fk_old - fk)^2)/sum(fk_old^2) ### this can cause a problem if fk_old is zero
                 if(trace) cat("\n  iteration", k, ": relative change of fk", d1, ", robust loss value", los[k, i], ", penalized loss value", pll[k, i], "\n")
-                if(trace) cat("  d1=", d1, ", k=", k, ", d1 > del && k <= iter: ", (d1 > del && k <= iter), "\n")
+                if(trace) cat("  d1=", d1, ", k=", k, ", d1 > reltol && k <= iter: ", (d1 > reltol && k <= iter), "\n")
                 k <- k + 1
             }
             if(!stopit){
@@ -342,7 +342,7 @@ nclreg_fit <- function(x,y, weights, offset=NULL, cost=0.5, rfamily=c("clossR", 
             }
             k <- 1
             d1 <- 10
-            while(d1 > del && k <= iter){
+            while(d1 > reltol && k <= iter){
                 fk_old <- RET$fitted.values
                 h <- compute.h(rfamily, y, fk_old, s, B)
 	    	if(any(is.nan(h))){ # exit loop 
@@ -378,6 +378,7 @@ nclreg_fit <- function(x,y, weights, offset=NULL, cost=0.5, rfamily=c("clossR", 
 				beta=as.double(matrix(0, ncol=1, nrow=m)),
 				b0=as.double(0),
 				yhat=as.double(rep(0, n)),
+                satu=as.integer(0),
 				PACKAGE="mpath")
      # epsbino, theta are not used in the above Fortran call with family="gaussian"
 #		RET <- glmreg_fit(x=x.act*sqrt(B), y=h*sqrt(B), weights=weights, offset=offset, lambda=lambda[i],alpha=alpha,gamma=gamma, rescale=FALSE, standardize=FALSE, penalty.factor = penalty.factor.act, maxit=maxit, eps=eps, family="gaussian", penalty=penalty, start=start.act)
@@ -415,7 +416,7 @@ if(any(is.na(RET$beta))){
                 d1 <- sum((fk_old - fk)^2)
                                         #d1 <- sum((fk_old - fk)^2)/sum(fk_old^2) ### this can cause a problem if fk_old is zero
                 if(trace) cat("\n  iteration", k, ": relative change of fk", d1, ", robust loss value", los[k, i], ", penalized loss value", pll[k, i], "\n")
-                if(trace) cat("  d1=", d1, ", k=", k, ", d1 > del && k <= iter: ", (d1 > del && k <= iter), "\n")
+                if(trace) cat("  d1=", d1, ", k=", k, ", d1 > reltol && k <= iter: ", (d1 > reltol && k <= iter), "\n")
                 k <- k + 1
             }
             if(!stopit){
@@ -469,7 +470,7 @@ if(any(is.na(RET$beta))){
 			    epscycle=as.double(epscycle), 
 			    penalty=as.integer(pentype), 
 			    trace=as.integer(trace), 
-			    del=as.double(del), 
+			    del=as.double(reltol), 
 			    rfamily=as.integer(rfamilytype),
 			    B=as.double(B), 
 			    s=as.double(s),
@@ -507,7 +508,7 @@ if(any(is.na(RET$beta))){
 			    epscycle=as.double(epscycle), 
 			    penalty=as.integer(pentype), 
 			    trace=as.integer(trace), 
-			    del=as.double(del), 
+			    del=as.double(reltol), 
 			    rfamily=as.integer(rfamilytype),
 			    B=as.double(B), 
 			    s=as.double(s),
@@ -534,7 +535,7 @@ if(any(is.na(RET$beta))){
         fk <- RET$fitted.values
         d1 <- 10
         lam <- lambda[ifelse(decreasing, nlambda, 1)]
-	while(d1 > del && k <= iter){
+	while(d1 > reltol && k <= iter){
 	    fk_old <- fk
             h <- compute.h(rfamily, y, fk_old, s, B)
 	    RET <- glmreg_fit(x=x*sqrt(B), y=h*sqrt(B), weights=weights, offset=offset, lambda=lam, alpha=alpha,gamma=gamma, rescale=FALSE, standardize=FALSE, penalty.factor = penalty.factor, maxit=maxit, eps=eps, family="gaussian", penalty=penalty, start=start)
@@ -543,7 +544,7 @@ if(any(is.na(RET$beta))){
             start <- coef(RET)
             d1 <- sum((fk_old - fk)^2)
             if(trace) cat("\n  iteration", k, ": relative change of fk", d1, "\n")
-            if(trace) cat("  d1=", d1, ", k=", k, ", d1 > del && k <= iter: ", (d1 > del && k <= iter), "\n")
+            if(trace) cat("  d1=", d1, ", k=", k, ", d1 > reltol && k <= iter: ", (d1 > reltol && k <= iter), "\n")
             k <- k + 1
         }
 ### fit a solution path    
