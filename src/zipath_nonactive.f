@@ -14,8 +14,7 @@ C     outputs: coefc, coefz, thetaout
       implicit none
       integer n,i,ii,j,kx, kz, penalty,nlambda,family, 
      +     standardize, maxit, y1(n), trace, iter, 
-     +     rescale, jk_count, jk_zero, activeset_count(kx), 
-     +     activeset_zero(kz), stopit,m_count_act, maxit_theta,
+     +     rescale, jk_count, jk_zero, stopit,m_count_act, maxit_theta,
      +     m_zero_act, AllocateStatus, satu, 
      +     varsel_count(kx), varsel_count_old(kx),
      +     varsel_zero(kz), varsel_zero_old(kz), theta_fixed
@@ -27,11 +26,9 @@ C     outputs: coefc, coefz, thetaout
      +     gam_zero, eps, penaltyfactor_count(kx), y(n),
      +     penaltyfactor_zero(kz), probi(n), thresh, epsbino, 
      +     theta, coefc(kx+1, nlambda), coefz(kz+1, nlambda), b0_x, b0z,
-     +     yhat(n), del
-      double precision, dimension(:, :), allocatable :: x_act, z_act
-      double precision, dimension(:), allocatable :: start_count_act,
-     +     start_zero_act, betax, betaz,
-     +     penaltyfactor_count_act, penaltyfactor_zero_act
+     +     yhat(n), del, start_count_act(kx+1), start_zero_act(kz+1), 
+     +     x_act(n, kx), z_act(n, kz), betax(kx), betaz(kz),
+     +     penaltyfactor_count_act(kx), penaltyfactor_zero_act(kz)
       external :: dpois, dnbinom, gfunc
 
       stopit = 0
@@ -54,24 +51,14 @@ C     outputs: coefc, coefz, thetaout
               endif
             endif
       enddo
-      allocate(start_count_act(kx+1), stat=AllocateStatus)
-      allocate(start_zero_act(kz+1), stat=AllocateStatus)
-      allocate(penaltyfactor_count_act(kx), stat=AllocateStatus)
-      allocate(penaltyfactor_zero_act(kz), stat=AllocateStatus)
-      allocate(x_act(n, kx), stat=AllocateStatus)
-      allocate(z_act(n, kz), stat=AllocateStatus)
       call copymatrix(n, kx, x, x_act)
       call copymatrix(n, kz, z, z_act)
 
-      allocate(betax(m_count_act), stat=AllocateStatus)
-      allocate(betaz(m_zero_act), stat=AllocateStatus)
       do 5 j=1, kx
          betax(j)=0
-         activeset_count(j)=j
  5    continue
       do 105 j=1, kz
          betaz(j)=0
-         activeset_zero(j)=j
  105    continue
       call dcopy(kx+1, start_count, 1, start_count_act, 1)
       call dcopy(kz+1, start_zero, 1, start_zero_act, 1)
@@ -122,10 +109,6 @@ C     outputs: coefc, coefz, thetaout
          i = i + 1
          goto 10
       endif
-      deallocate(betax, start_count_act, x_act, 
-     +     penaltyfactor_count_act)
-      deallocate(betaz, start_zero_act, z_act, 
-     +     penaltyfactor_zero_act)
 
       return
       end
