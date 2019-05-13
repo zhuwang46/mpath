@@ -17,16 +17,17 @@ C
      +     mustart(n), offset(n), lambda(nlambda), alpha, gam, eps, 
      +     penaltyfactor(m), thresh, beta(m, nlambda), epscycle,
      +     betaall(m), b0all, b0(nlambda), b0_1, yhat(n), d, del, 
-     +     lambda_i, fk_old(n), s, 
-     +     B, h(n), fk(n), los(nlambda), pll(nlambda), cost, penval
+     +     lambda_i, fk_old(n), s, B, h(n), fk(n), los(nlambda), 
+     +     pll(nlambda), cost, penval
       double precision, dimension(:, :), allocatable :: x_act
       double precision, dimension(:), allocatable :: start_act, beta_1,
      +     penaltyfactor_act
 
-
+      b0all=start(1)
       do ii=1, m
          activeset(ii)=ii
          activeset_old(ii)=ii
+         betaall(ii)=start(ii+1)
       enddo
       call find_activeset(m, start(2:(m+1)), eps, activeset, jk)
       fakejk=0
@@ -70,7 +71,7 @@ C
       cutpoint=1
  10   if(i .LE. nlambda)then
          if(trace .EQ. 1)then
-            call intpr("nclreg_ad lambda iteration", -1, i, 1)
+            call intpr("nclreg_ad lambda iteration i=", -1, i, 1)
          endif
          lambda_i=lambda(i)/B
          j=1
@@ -85,7 +86,7 @@ C
      +           penaltyfactor_act, maxit, eps, penalty, trace, iter,
      +           del, rfamily, B, s, thresh, beta_1, b0_1, fk)
             start(1)=b0_1
-            do ii=1, jk
+            do ii=1, m_act
                start(activeset(ii)+1)=beta_1(ii)
             enddo
             if(j .NE. nact)then
@@ -145,12 +146,11 @@ C
          endif
          nlambdacal=nlambdacal+1
          b0(i)=b0_1
-         if(jk .GT. 0)then
+         if(m_act .GT. 0)then
             do ii=1, m_act
                beta(activeset(ii), i)=beta_1(ii)
             enddo
          endif
-
          call loss(n, y, fk, cost, rfamily, s, los(i))
          call penGLM(beta_1, m_act, lambda_i*penaltyfactor_act, 
      +        alpha, gam, penalty, penval)
@@ -164,7 +164,7 @@ C     i-th lambda. Note, i=i-2 not i-1 will do this since i=i+1 is
 C     computed before the end of the loop.
          if(decreasing==1)then
             if(i > 1)then
-               if(abs(los(i)-los(i-1))/los(i) > epscycle)then
+               if(abs(pll(i)-pll(i-1))/pll(i) > epscycle)then
                   if(cutpoint==1)then
                      cutpoint = i
                   endif
