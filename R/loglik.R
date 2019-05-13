@@ -93,10 +93,10 @@ object$aic
 BIC.zipath <- function(object, ...)
 object$bic
 
-logLik.zipath <- function(object, newdata, y, weights, na.action=na.pass, 
+logLik.zipath <- function(object, newdata, X, Z, y, offsetx, offsetz, weights, na.action=na.pass, 
                    link = c("logit", "probit", "cloglog", "cauchit", "log"),
 ...){
-if(missing(newdata) || missing(y)) return(object$loglik)
+if(missing(y) || missing(X) || missing(Z)) return(object$loglik)
 linkstr <- match.arg(link)
   linkobj <- make.link(linkstr)
   linkinv <- linkobj$linkinv
@@ -107,7 +107,7 @@ Y <- y
   kz <- NCOL(Z)
     Y0 <- Y <= 0
     Y1 <- Y > 0
-    offsetx <- offsetz <- 0
+#    offsetx <- offsetz <- 0
     ## count mean
     mu <- as.vector(exp(X %*% parms[1:kx] + offsetx))
     ## binary mean
@@ -125,14 +125,13 @@ Y <- y
   kz <- NCOL(Z)
     Y0 <- Y <= 0
     Y1 <- Y > 0
-    offsetx <- offsetz <- 0
+#    offsetx <- offsetz <- 0
     ## count mean
     mu <- as.vector(exp(X %*% parms[1:kx] + offsetx))
     ## binary mean
     phi <- as.vector(linkinv(Z %*% parms[(kx+1):(kx+kz)] + offsetz))
     ## negbin size
     theta <- exp(parms[(kx+kz)+1])
-
     ## log-likelihood for y = 0 and y >= 1
     loglik0 <- log( phi + exp( log(1-phi) + suppressWarnings(dnbinom(0, size = theta, mu = mu, log = TRUE)) ) )
     loglik1 <- log(1-phi) + suppressWarnings(dnbinom(Y, size = theta, mu = mu, log = TRUE))
