@@ -1,13 +1,13 @@
-cv.zipath <- function(x, ...) UseMethod("cv.zipath", x)
+cv.zipath <- function(X, ...) UseMethod("cv.zipath", X)
  
-cv.zipath.default <- function(x, ...) {
-     if (extends(class(x), "Matrix"))
-         return(zipath.matrix(x=x, ...))
-     stop("no method for objects of class ", sQuote(class(x)),
+cv.zipath.default <- function(X, ...) {
+     if (extends(class(X), "Matrix"))
+         return(zipath.matrix(X=X, ...))
+     stop("no method for objects of class ", sQuote(class(X)),
           " implemented")
  }
  
-cv.zipath.formula <- function(formula, data, weights, offset=NULL,                 contrast=NULL, ...){
+cv.zipath.formula <- function(formula, data, weights, offset=NULL,                 contrasts=NULL, ...){
      ## call and formula
      cl <- match.call()
      if(!attr(terms(formula), "intercept"))
@@ -56,6 +56,7 @@ mtZ <- terms(ffz, data = data)
      ## weights and offset
      n <- length(Y)
      weights <- model.weights(mf)
+     if(is.null(weights)) weights <- rep.int(1, n)
      offsetx <- model_offset_2(mf, terms = mtX, offset = TRUE)
      if(is.null(offsetx)) offsetx <- 0
    if(length(offsetx) == 1) offsetx <- rep.int(offsetx, n)
@@ -64,49 +65,33 @@ mtZ <- terms(ffz, data = data)
    if(is.null(offsetz)) offsetz <- 0
    if(length(offsetz) == 1) offsetz <- rep.int(offsetz, n)
    offsetz <- as.vector(offsetz)
-     RET <- cv.zipath_fit(X, Z, Y, data, weights=weights, offsetx=offsetx, offsetz=offsetz, ...)
+     RET <- cv.zipath_fit(X, Z, Y, weights=weights, offsetx=offsetx, offsetz=offsetz, ...)
      RET$call <- match.call()
      RET
 
 }
-cv.zipath.matrix <- function(X, Z, Y, data, weights, offsetx=NULL, offsetz=NULL, ...){
-     RET <- cv.zipath_fit(X, Z, Y, data, weights, offsetx=offsetx, offsetz=offsetz, ...)
+cv.zipath.matrix <- function(X, Z, Y, weights, offsetx=NULL, offsetz=NULL, ...){
+     RET <- cv.zipath_fit(X, Z, Y, weights, offsetx=offsetx, offsetz=offsetz, ...)
      RET$call <- match.call()
      return(RET)
  }
 
-cv.zipath_fit <- function(X, Z, Y, data, weights, offsetx, offsetz, family=c("poisson", "negbin", "geometric"), nlambda=100, lambda.count=NULL, 
+cv.zipath_fit <- function(X, Z, Y, weights, offsetx, offsetz, nlambda=100, lambda.count=NULL, 
 		      lambda.zero=NULL, nfolds=10, foldid, plot.it=TRUE, se=TRUE, n.cores=2, 
               trace=FALSE, parallel=FALSE, ...){
     call <- match.call()
-    family <- match.arg(family)
     if(missing(foldid) && nfolds < 3)
         stop("smallest nfolds should be 3\n")
-    n <- dim(data)[1]
-    #    nm <- dim(data)
-#    nobs <- n <- nm[1]
-#    nvars <- m <- nm[2]
-#    mf <- Call <- match.call()
-#    m <- match(c("formula", "data", "subset", "weights", "na.action",
-#                 "offset"), names(mf), 0)
-#    mf <- mf[c(1, m)]
-#    mf$drop.unused.levels <- TRUE
-#    mf[[1L]] <- as.name("model.frame")
-#    Y <- data[,all.vars(terms(formula))[[1]]]
-    ## null model support
-#    weights <- model.weights(mf)
-#    if(!length(weights)) weights <- rep(1, length(Y))
-#    if(any(weights < 0)) stop("negative weights not allowed")
-
+    n <- length(Y)
     K <- nfolds
-    tim <- proc.time()
     zipath.obj <- zipath_fit(X, Z, Y, weights, offsetx, offsetz, nlambda=nlambda, lambda.count=lambda.count, lambda.zero=lambda.zero, ...)
     #zipath.obj <- do.call("zipath", list(formula, data, weights, nlambda=nlambda, lambda.count=lambda.count, lambda.zero=lambda.zero, ...))
-    cat("zipath_fit time within cv.zipath\n")
-    print(proc.time()-tim)
-    #lambda.count <- zipath.obj$lambda.count
-    #lambda.zero <- zipath.obj$lambda.zero
-    #nlambda <- zipath.obj$nlambda
+    if(is.null(lambda.count) || is.null(lambda.zero)){
+    lambda.count <- zipath.obj$lambda.count
+    lambda.zero <- zipath.obj$lambda.zero
+    nlambda <- zipath.obj$nlambda
+    }
+    else nlambda <- length(lambda.count)
     if(missing(foldid))
         all.folds <- cv.folds(n, K)
     else {
@@ -121,20 +106,19 @@ cv.zipath_fit <- function(X, Z, Y, data, weights, offsetx, offsetz, family=c("po
         omit <- all.folds[[i]]
     #	fitcv <- do.call("zipath", list(formula, data[-omit,], weights[-omit], lambda.count=lambda.count, lambda.zero=lambda.zero, nlambda=nlambda, ...))
         fitcv <- zipath_fit(X[-omit,,drop=FALSE], Z[-omit,,drop=FALSE], Y[-omit], weights[-omit], offsetx[-omit], offsetz[-omit], nlambda=nlambda, lambda.count=lambda.count, lambda.zero=lambda.zero, ...)
-        logLik(fitcv, X=X[omit,, drop=FALSE], Z=Z[omit,, drop=FALSE], Y[omit], weights=weights[omit], offsetx=offsetx[omit], offsetxz=offsetz[omit])
+        logLik(fitcv, X=X[omit,, drop=FALSE], Z=Z[omit,, drop=FALSE], y=Y[omit], weights=weights[omit], offsetx=offsetx[omit], offsetz=offsetz[omit])
     }
     stopImplicitCluster()
     }
     else{
      residmat <- matrix(NA, nlambda, K)
      for(i in seq(K)) {
-         cat("\n CV Fold", i, "\n\n")
        if(trace)
          cat("\n CV Fold", i, "\n\n")
        omit <- all.folds[[i]]
        fitcv <- zipath_fit(X[-omit,,drop=FALSE], Z[-omit,,drop=FALSE], Y[-omit], weights[-omit], offsetx[-omit], offsetz[-omit], nlambda=nlambda, lambda.count=lambda.count, lambda.zero=lambda.zero, ...)
        #fitcv <- do.call("zipath", list(formula, data[-omit,], weights[-omit], lambda.count=lambda.count, lambda.zero=lambda.zero, nlambda=nlambda, ...))
-       residmat[, i] <- logLik(fitcv, X=X[omit,, drop=FALSE], Z=Z[omit,, drop=FALSE], Y[omit], weights=weights[omit], offsetx=offsetx[omit], offsetz=offsetz[omit])
+       residmat[, i] <- logLik(fitcv, X=X[omit,, drop=FALSE], Z=Z[omit,, drop=FALSE], y=Y[omit], weights=weights[omit], offsetx=offsetx[omit], offsetz=offsetz[omit])
      }
     }
     cv <- apply(residmat, 1, mean)
