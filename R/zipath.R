@@ -1,13 +1,13 @@
-zipath <- function(x, ...) UseMethod("zipath")
+zipath <- function(X, ...) UseMethod("zipath")
 
-zipath.default <- function(x, ...) {
-    if (extends(class(x), "Matrix"))
-        return(zipath.matrix(x=x, ...))
-    stop("no method for objects of class ", sQuote(class(x)),
+zipath.default <- function(X, ...) {
+    if (extends(class(X), "Matrix"))
+        return(zipath.matrix(X=X, ...))
+    stop("no method for objects of class ", sQuote(class(X)),
          " implemented")
 }
 
-zipath.formula <- function(formula, data, weights, offset=NULL, contrast=NULL, ...){
+zipath.formula <- function(formula, data, weights, offset=NULL, contrasts=NULL, ...){
     ## call and formula
     cl <- match.call()
     if(!attr(terms(formula), "intercept"))
@@ -57,7 +57,6 @@ zipath.formula <- function(formula, data, weights, offset=NULL, contrast=NULL, .
     weights <- model.weights(mf)
     offsetx <- model_offset_2(mf, terms = mtX, offset = TRUE)
     offsetz <- model_offset_2(mf, terms = mtZ, offset = FALSE)
-
     RET <- zipath_fit(X, Z, Y, weights=weights, offsetx=offsetx, offsetz=offsetz, ...)
     RET$call <- match.call()
     class(RET) <- "zipath"
@@ -74,7 +73,7 @@ zipath.matrix <- function(X, Z, Y, weights, offsetx=NULL, offsetz=NULL, ...){
     RET$call <- match.call()
     return(RET)
 }
-zipath_fit <- function(X, Z, Y, weights, offsetx, offsetz, na.action, standardize=TRUE, family = c("poisson", "negbin", "geometric"), link = c("logit", "probit", "cloglog", "cauchit", "log"), penalty = c("enet", "mnet", "snet"), start = NULL, y = TRUE, x = FALSE, nlambda=100, lambda.count=NULL, lambda.zero=NULL, type.path=c("active", "nonactive"), penalty.factor.count=NULL, penalty.factor.zero=NULL, lambda.count.min.ratio=.0001, lambda.zero.min.ratio=.1, alpha.count=1, alpha.zero=alpha.count, gamma.count=3, gamma.zero=gamma.count, rescale=FALSE, init.theta=1, theta.fixed=FALSE, EM=TRUE, maxit.em=200, convtype=c("count", "both"), maxit= 1000, maxit.theta =10, reltol = 1e-5, thresh=1e-6, eps.bino=1e-5, shortlist=FALSE, trace=FALSE, ...)
+zipath_fit <- function(X, Z, Y, weights, offsetx, offsetz, standardize=TRUE, family = c("poisson", "negbin", "geometric"), link = c("logit", "probit", "cloglog", "cauchit", "log"), penalty = c("enet", "mnet", "snet"), start = NULL, y = TRUE, x = FALSE, nlambda=100, lambda.count=NULL, lambda.zero=NULL, type.path=c("nonactive", "active"), penalty.factor.count=NULL, penalty.factor.zero=NULL, lambda.count.min.ratio=.0001, lambda.zero.min.ratio=.1, alpha.count=1, alpha.zero=alpha.count, gamma.count=3, gamma.zero=gamma.count, rescale=FALSE, init.theta=1, theta.fixed=FALSE, EM=TRUE, maxit.em=200, convtype=c("count", "both"), maxit= 1000, maxit.theta =10, reltol = 1e-5, thresh=1e-6, eps.bino=1e-5, shortlist=FALSE, trace=FALSE, ...)
 {
     if(is.null(init.theta) && family=="negbin" && theta.fixed)
         stop("missing argument init.theta while family=='negbin' and theta.fixed is TRUE\n")
@@ -338,9 +337,7 @@ zipath_fit <- function(X, Z, Y, weights, offsetx, offsetz, na.action, standardiz
             return(checkzero)
         }
     }
-    family <- match.arg(family)
     convtype <- match.arg(convtype)
-    penalty <- match.arg(penalty)
     loglikfun <- switch(family,
                         "poisson" = ziPoisson,
                         "geometric" = ziGeom,
@@ -505,22 +502,22 @@ zipath_fit <- function(X, Z, Y, weights, offsetx, offsetz, na.action, standardiz
             if(family=="negbin")
                 if(theta.fixed) thetanow <- init.theta
                 else thetanow <- fit0$theta
-        lmax <- .Fortran("lmax_zipath",
-                         B=as.double(Xnew),
-                         G=as.double(Znew),
+	    lmax <- .Fortran("lmax_zipath",
+                         B=as.double(X),
+                         G=as.double(Z),
                          y=as.double(Y),
                          y1=as.integer(Y1),
                          weights=as.double(weights), 
                          n=as.integer(n), 
-                         d1=as.integer(kz-1),
-                         d2=as.integer(kx-1),
+                         kx=as.integer(kx),
+                         kz=as.integer(kz),
                          family=as.integer(famtype),
-                         coefx=as.double(fit0$coefficients$count),
+                         coefc=as.double(fit0$coefficients$count),
                          coefz=as.double(fit0$coefficients$zero),
                          alpha_count=as.double(alpha.count),
                          alpha_zero=as.double(alpha.zero),
-                         penaltyfactor_count=as.double(penalty.factor.count),
-                         penaltyfactor_zero=as.double(penalty.factor.zero),
+                         penaltyfactor_count=as.double(c(1,penalty.factor.count)),
+                         penaltyfactor_zero=as.double(c(1, penalty.factor.zero)),
                          theta=as.double(thetanow),
                          lmax_count=as.double(1),
                          lmax_zero=as.double(1),
