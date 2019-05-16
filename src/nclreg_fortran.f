@@ -98,6 +98,9 @@ C     relative to x instead? compute varsel for true index in x
  35            continue
                deallocate(beta_1, stat=DeAllocateStatus) 
                allocate(beta_1(jk), stat=AllocateStatus)
+               do 37 ii=1, jk
+               beta_1(ii)=0
+ 37            continue
                deallocate(x_act, stat=DeAllocateStatus)
                allocate(x_act(n, jk), stat=AllocateStatus)
 C     update x_act matrix
