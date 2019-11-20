@@ -6,7 +6,7 @@
 \usage{
 cv.glmreg_fit(x, y, weights, offset, lambda=NULL, balance=TRUE, 
 family=c("gaussian", "binomial", "poisson", "negbin"), nfolds=10, foldid, 
-plot.it=TRUE, se=TRUE, n.cores=2, trace=FALSE, parallel=TRUE, ...)
+plot.it=TRUE, se=TRUE, n.cores=2, trace=FALSE, parallel=FALSE, ...)
 }
 \arguments{
   \item{x}{\code{x} matrix as in \code{glmreg}.}
