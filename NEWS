@@ -139,5 +139,52 @@
   o  offset is now working in glmregNB, zipath, cv.glmreg, cv.glmregNB and cv.zipath
                
                CHANGES in `mpath' VERSION 0.3-8 (03-03-2019)
-  o  changes were made on how active set works. Now, we cycle through the active set until convergence, then cycle through all the variables ONCE, this is an reverse to the previous procedure. This includes changes in outloop.f, midloop.f, midloopGLM.f, lmnetGLM, add src/find_activeset.f to simplify the codes.
+  o  R zipath function has both Fortran and R computations, can be useful to compare the results.
+  o  changes were made on how active set works in src/outloop.f file. Now, we cycle through the active set until convergence, then cycle through all the variables ONCE, this is an reverse to the previous procedure. This includes changes in outloop.f, midloop.f, midloopGLM.f, lmnetGLM, add src/find_activeset.f to simplify the codes.
   o  R/nclreg seems to be incorrect when update beta[activeset, i], since activeset is relative to the current x.act, not x. The new Fortran subroutine using dynamic allocation to deal with this. The Fortran subroutine nclreg_fortran.f conducts the three layers of iteration loops, lambda, MM and internal penalty estimation loop.
+  o  Not a good idea to convert theta.ml R function to Fortran subroutine since the speed actually is slower in Fortran. This is probably because digamma and trigamma functions in a Fortran subroutine used C functions. In contrast, the R function theta.ml directly used these C functions. Maybe there are other reasons. But we leave a glmregNB.R with the Fortran subroutine glmregnb_fortran.
+
+               CHANGES in `mpath' VERSION 0.3-9 (04-06-2019)
+  o  Major improvement on zipath.R. Replace the R codes with Fortran codes to compute lmax. Compute the solution path with zipath_fortran subroutine to replace the R codes.
+
+               CHANGES in `mpath' VERSION 0.3-10 (04-12-2019)
+  o  update zipath_fortran subroutine with an active set approach. Is this faster than nonactive approach?
+  
+               CHANGES in `mpath' VERSION 0.3-11 (04-12-2019)
+  o  implement both active and nonactive path in R zipath function
+  
+               CHANGES in `mpath' VERSION 0.3-13 (05-18-2019)
+  o  fix bugs in Fortran subroutines, mostly related to uninitialized values after dynamic allocate of vectors.
+  o  in vignettes/brcancer.Rnw, compare type.path="nonative" and "active"
+  o  in man/nclreg.Rd, provide examples of different solution paths
+ 
+               CHANGES in `mpath' VERSION 0.3-14 (05-24-2019)
+  o  zipath can be slow for some data, and change outloop subroutine from active set to nonactive set can help substantially. The reason is that the active set approach can repeat the cycle without convergence. Will be addressed in version 0.3-15.
+  
+               CHANGES in `mpath' VERSION 0.3-15 (06-03-2019)
+  o  still use active set, as in version 0.3-13, but change the number of maximum iteration from 100 to 2 when determining active set in outloop.f. Similarly in lmnetGaussian.f. This will reduce the computing times in case of nonconvergence. The program looks for a cycle that repeats itself, default is 2
+  o  fix bugs in nclreg_ad.f regarding m_act and jk, and similar bugs in zipath_active.f
+
+               CHANGES in `mpath' VERSION 0.3-16 (07-09-2019)
+  o to avoid mismatch between predictor variables and the estimated coefficients - this can happen if the input data contains response variable but not appropriately handled, add the following line in R/predict.glmreg.R
+    if(dim(object$beta)[1] != m) stop("number of columns in newx should be the same as number of rows  in beta\n")
+  
+               CHANGES in `mpath' VERSION 0.3-17 (07-11-2019)
+  o add intercept option in penalized regression
+  o make clarity in vignettes/kkt.Rnw  
+  
+               CHANGES in `mpath' VERSION 0.3-18 (10-03-2019)
+  o gfortran in GCC trunk aka 10.0.0 is reporting new warnings
+  
+               CHANGES in `mpath' VERSION 0.3-19 (11-07-2019)
+
+  o no change
+  
+               CHANGES in `mpath' VERSION 0.3-20 (11-10-2019)
+
+  o glmnet 3.0_0 doesn't export nonzeroCoef and plotCoef function, therefore copy the relevant R files in glmnet
+  
+               CHANGES in `mpath' VERSION 0.3-21 (11-20-2019)
+
+  o subroutine linkinv in midloopGLM.f needs safeguard with too small mu for poission, just like negbin
+
