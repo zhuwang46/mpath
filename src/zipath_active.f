@@ -6,7 +6,7 @@ C     kz: number of variables of z having no intercept column
 C     outputs: coefc, coefz, theta, thetaout
       subroutine zipath_active(x, z, y, y1, weights, n, kx, kz, 
      +     start_count, start_zero, mustart_count, mustart_zero, 
-     +     offsetx, offsetz, nlambda, lambda_count,
+     +     offsetx, offsetz, intercept, nlambda, lambda_count,
      +     lambda_zero, alpha_count, alpha_zero,  
      +     gam_count, gam_zero, penaltyfactor_count, 
      +     penaltyfactor_zero, maxit, eps, family,
@@ -15,7 +15,7 @@ C     outputs: coefc, coefz, theta, thetaout
      +     theta_fixed, maxit_theta, theta, thetaout)
       implicit none
       integer n,i,ii,j,jj,kx, kz, penalty,nlambda,family, 
-     +     maxit, y1(n), trace, iter, 
+     +     maxit, y1(n), trace, iter, intercept, 
      +     rescale, jk_count, jk_zero, activeset_count(kx), 
      +     activeset_count_old(kx), activeset_zero(kz),
      +     activeset_zero_old(kz), m_count_act, maxit_theta,
@@ -58,6 +58,8 @@ C     find current active set
 C     When all coef are zero except intercept, choose a predictor
       fakec=0
       fakez=0
+      jz=0
+      jc=0
       if(jk_count==0)then
          jk_count = 1
          activeset_count(1)=kx
@@ -129,7 +131,8 @@ C     When all coef are zero except intercept, choose a predictor
       i=1
  10   if(i .LE. nlambda)then
          if(trace .EQ. 1)then
-            call intpr("Fortran lambda iteration i=", -1, i, 1)
+C            i is not array
+C            call intpr("Fortran lambda iteration i=", -1, i, 1), 
             call intpr("kx=", -1, kx, 1)
             call intpr("kz=", -1, kz, 1)
             call intpr("m_count_act", -1, m_count_act, 1)
@@ -151,8 +154,8 @@ C     When all coef are zero except intercept, choose a predictor
             call zi_onelambda(x_act, z_act, y, y1, probi, weights, n, 
      +           m_count_act, m_zero_act, start_count_act, 
      +           start_zero_act, mustart_count, mustart_zero, offsetx, 
-     +           offsetz, lambda_count(i), lambda_zero(i), alpha_count, 
-     +           alpha_zero, gam_count, gam_zero, 
+     +           offsetz, intercept, lambda_count(i), lambda_zero(i), 
+     +           alpha_count, alpha_zero, gam_count, gam_zero, 
      +           penaltyfactor_count_act, penaltyfactor_zero_act,
      +           maxit, eps, family, penalty, trace, yhat, iter, del,
      +           rescale, thresh, epsbino, theta_fixed, maxit_theta, 
@@ -177,9 +180,9 @@ C     start_zero_act
                thetaall = theta
                call zi_onelambda(x, z, y, y1, probi, weights, n, kx,
      +              kz, start_count, start_zero, mustart_count, 
-     +              mustart_zero, offsetx, offsetz, lambda_count(i), 
-     +              lambda_zero(i), alpha_count, alpha_zero, gam_count,
-     +              gam_zero, penaltyfactor_count, 
+     +              mustart_zero, offsetx, offsetz, intercept, 
+     +              lambda_count(i), lambda_zero(i), alpha_count, 
+     +              alpha_zero, gam_count,gam_zero,penaltyfactor_count, 
      +              penaltyfactor_zero, maxit, eps, family, penalty, 
      +              trace, yhat, 2, del, rescale, thresh, epsbino,
      +              theta_fixed, maxit_theta, thetaall, betaxall, 
