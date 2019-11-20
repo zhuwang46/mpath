@@ -4,11 +4,11 @@ C subroutine?
 c output: yhat is the updated mustart as output
       subroutine glmreg_fit_fortran(x, y, weights, n,m,start, etastart,
      +         mustart, offset, nlambda, lambda, alpha, gam, rescale, 
-     +         standardize, penaltyfactor, thresh, epsbino, maxit, 
-     +         eps, theta, family, penalty, trace, beta, b0, yhat, satu)
+     +         standardize, intercept, penaltyfactor, thresh, epsbino, 
+     +         maxit,eps,theta,family,penalty,trace,beta,b0, yhat, satu)
       implicit none
       integer n,m, i,j, penalty, nlambda, family, standardize, maxit,
-     +     innermaxit, trace, rescale, good,
+     +     innermaxit, trace, rescale, good, intercept,
      +     satu, convout(nlambda), startv
 C      double precision, intent(in) :: etastart(n),mustart(n),start(m+1)
       double precision :: etastart(n),mustart(n),start(m+1)
@@ -20,33 +20,6 @@ Cstart(m+1),etastart(n), mustart(n),
      +     wt(n), meanx(m), normx(m),xd(m), nulldev,
      +     penfac(m), resdev(nlambda), yhat(n), mu(n), sumwt,
      +     crossprod_beta(nlambda), meany, meanoffset
-      if(family.EQ.10)then
-              call dblepr("y", -1, y, 5)
-              call dblepr("sum(y)", -1, sum(y), 1)
-              call dblepr("weights", -1, weights(1:5), 5)
-              call dblepr("sum(weights)", -1, sum(weights), 1)
-              call dblepr("start", -1, start, m+1)
-              call dblepr("etastart", -1, etastart, 5)
-              call dblepr("sum(etastart)", -1, sum(etastart), 1)
-              call dblepr("mustart", -1, mustart, 5)
-              call dblepr("sum(mustart)", -1, sum(mustart), 1)
-              call dblepr("offset", -1, offset, 5)
-              call intpr("nlambda", -1, nlambda, 1)
-              call dblepr("alpha", -1, alpha, 1)
-              call intpr("rescale", -1, rescale, 1)
-              call intpr("standardize", -1, standardize, 1)
-              call dblepr("penaltyfactor", -1, penaltyfactor, m)
-              call dblepr("thresh", -1, thresh, 1)
-              call dblepr("epsbino", -1, epsbino, 1)
-              call intpr("maxit", -1, maxit, 1)
-              call dblepr("eps", -1, eps, 1)
-              call dblepr("theta", -1, theta, 1)
-              call intpr("family", -1, family, 1)
-              call intpr("penalty", -1, penalty, 1)
-              call intpr("trace", -1, trace, 1)
-              call dblepr("beta", -1, beta, m)
-              call dblepr("b0", -1, b0, 1)
-      endif
 
 C      if(family.EQ.1)then
 C            rescale = 0
@@ -92,10 +65,9 @@ C    need to check if satu is input or output
           good = nlambda
       call outloop(x,y,weights,wt,n,m,penalty,nlambda,lam,alpha,gam,
      +            theta,rescale,mustart,etastart,offset,family,
-     +            standardize,nulldev,thresh,maxit,innermaxit,eps,trace,
-     +            start,startv,beta,b0,resdev,yhat,
-     +              convout, satu, good, epsbino,outpll)
-
+     +            standardize,intercept, nulldev,thresh,maxit,
+     +            innermaxit,eps,trace,start,startv,beta,b0,resdev,yhat,
+     +            convout, satu, good, epsbino,outpll)
       if (standardize .EQ. 1)then
          do 200 j=1, nlambda
          do 250 i=1, m
@@ -106,6 +78,7 @@ C     compute crossproduct, like crossprod(meanx, beta) in R
 C http://www.tat.physik.uni-tuebingen.de/~kley/lehre/ftn77/tutorial/blas.html
          call DGEMV('T',m, nlambda, 1.0D0, beta, m, meanx, 1, 0.0D0, 
      +             crossprod_beta, 1)
+        if(intercept .EQ. 1)then
          do 300 j=1, nlambda
                 b0(j)=b0(j) - crossprod_beta(j)
  300      continue
@@ -116,6 +89,7 @@ C http://www.tat.physik.uni-tuebingen.de/~kley/lehre/ftn77/tutorial/blas.html
                 b0(j)=b0(j) + meany - meanoffset
  400        continue
          endif
+        endif
       endif
       return
       end
