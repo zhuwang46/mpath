@@ -27,13 +27,13 @@ C     dev
 
       subroutine midloopGLM(n,m,x,y,yold,weights, mu, eta, offset,
      +     family, penalty,lamk, 
-     +     alpha, gam, theta, rescale, standardize,eps,
+     +     alpha, gam, theta, rescale, standardize, intercept, eps,
      +     maxit, thresh, nulldev, wt, beta, b0,yhat,dev,trace,convmid, 
      +     satu, ep, pll, activeset, jk)
       
       implicit none
       integer standardize, trace, penalty, maxit, i, j, jj, nmid, n, 
-     +     family, m,converged,convmid, satu,
+     +     family, m,converged,convmid, satu, intercept,
      +     rescale,activeset(m), jk, ii
       double precision x(n,m),y(n), mu(n), z(n), eta(n), wt(n), w(n), 
      +     del,olddev,weights(n),yold(n), 
@@ -70,7 +70,7 @@ C     dev
             z(i)=z(i) - offset(i)
  10      continue
          call loop_glm(x, y, z, n, m, w, mu, penalty, thresh, eps, 
-     +        standardize, family, beta, b0, lamk, alpha, gam, 
+     +        standardize, intercept,family,beta, b0, lamk, alpha, gam, 
      +        weights,trace,nmid, rescale, converged, theta,
      +        pll(jj),activeset, jk)
          do 220 i = 1, n
@@ -85,6 +85,7 @@ C     dev
             eta(i) = eta(i) + offset(i)
  350     continue
          call linkinv(n, eta, family, mu)
+         olddev = dev
 C     compute deviance dev
          call deveval(n, yold, mu, theta, weights, family, dev)
          if(family .EQ. 2)then
@@ -192,9 +193,9 @@ C     mu
             else if(mu(i) .GT. 1-1e-5)then
                mu(i) = 1-1e-5
             endif
-         else if(family.EQ.3)then
-            mu(i) = exp(eta(i))
-         else if(family.EQ.4)then
+C         else if(family.EQ.3)then
+C            mu(i) = exp(eta(i))
+         else if(family.EQ.3 .OR. family.EQ.4)then
             if(eta(i) .LT. log(1e-5))then
                mu(i) = 1e-5
             else
@@ -284,6 +285,8 @@ C     dev
      +           (y(i)+theta)*dlog((y(i)+theta)/(mu(i) + theta)))) 
          endif
          if(cisnan(dev).NE.0) then
+             call intpr("dev is NA in Fortran src/deveval, check if some
+     +columns of x have the same values", -1, 1, 1)
             call intpr("i=", -1, i, 1)
             call dblepr("y(i)=", -1, y(i), 1)
             call dblepr("mu(i)=", -1, mu(i), 1)
