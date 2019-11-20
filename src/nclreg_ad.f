@@ -4,14 +4,14 @@ C     repeated ones
 C     
       subroutine nclreg_ad(x, y, weights, n,m,start, etastart,
      +     mustart, offset, iter, nlambda, lambda, alpha, gam, 
-     +     standardize, penaltyfactor, maxit, eps, epscycle, 
+     +     standardize, intercept, penaltyfactor, maxit, eps, epscycle, 
      +     penalty, trace, del,rfamily, B, s, thresh, cost, 
      +     decreasing, beta, b0, yhat, los, pll, nlambdacal)
       implicit none
       integer n,m,i,ii,j,jj,penalty,nlambda, standardize, maxit,
-     +     trace, iter, rfamily, jk, activeset(m), 
+     +     trace, iter, rfamily, jk, activeset(m), intercept, 
      +     activeset_old(m), m_act, nlambdacal, uturn, decreasing, 
-     +     cutpoint, nact, conv, jc, fakejk, AllocateStatus, varsel(m) 
+     +     cutpoint, nact, conv, jc, fakejk, AllocateStatus
       double precision x(n, m), y(n), weights(n),start(m+1),etastart(n),
      +     mustart(n), offset(n), lambda(nlambda), alpha, gam, eps, 
      +     penaltyfactor(m), thresh, beta(m, nlambda), epscycle,
@@ -82,22 +82,22 @@ C
             endif
             call nclreg_onelambda(x_act, y,weights, n,m_act,start_act,
      +           etastart, mustart, yhat, offset, lambda_i, alpha, gam, 
-     +           penaltyfactor_act, maxit, eps, penalty, trace, iter,
-     +           del, rfamily, B, s, thresh, beta_1, b0_1, fk)
+     +           intercept, penaltyfactor_act, maxit, eps, penalty, 
+     +           trace,iter,del,rfamily, B, s, thresh, beta_1, b0_1, fk)
             start(1)=b0_1
             do ii=1, m_act
                start(activeset(ii)+1)=beta_1(ii)
             enddo
             if(j .NE. nact)then
                if(trace .EQ. 1)then
-                  call dblepr("b0_1=", -1, b0_1, 1)
+C                  call dblepr("b0_1=", -1, b0_1, 1)
                   call dblepr("beta_1=", -1, beta_1, m_act)
                   call intpr("begin fullset nclreg_onelambda", -1, 1, 1)
                   call dblepr("start=", -1, start, m+1)
                endif
                call nclreg_onelambda(x, y,weights, n,m,start, etastart,
      +              mustart, yhat, offset, lambda_i, alpha, gam, 
-     +              penaltyfactor, maxit, eps, penalty, trace, 1,
+     +              intercept,penaltyfactor, maxit, eps,penalty,trace,1,
      +              del, rfamily, B, s, thresh, betaall, b0all, fk)
                call find_activeset(m, betaall, eps, activeset, jk)
                if(jk==0)then
