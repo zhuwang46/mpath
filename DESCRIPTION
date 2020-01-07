@@ -12,5 +12,7 @@ Depends: methods
 Suggests: zic, R.rsp, knitr, gdata
 VignetteBuilder: R.rsp, knitr
 License: GPL-2
+URL: https://github.com/zhuwang46/mpath
+BugReports: https://github.com/zhuwang46/mpath
 Packaged: 2019-05-13 03:54:39 UTC; zhu
 NeedsCompilation: yes
