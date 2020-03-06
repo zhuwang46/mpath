@@ -10,6 +10,7 @@ family <- object$family
 nlambda <- object$nlambda
 beta <- object$beta
 b0 <- object$b0
+offset <- object$offset
 famtype <- switch(family,
       "gaussian"=1,
       "binomial"=2,
@@ -31,6 +32,7 @@ w <- weights
  x=as.double(newx),
  b=as.double(beta),
  a0=as.double(b0),
+ offset=as.double(offset),
  family=as.integer(famtype),
  eta=as.double(matrix(0, nobs, nlambda)),
  mu=as.double(matrix(0, nobs, nlambda)),
