@@ -45,7 +45,7 @@ glmregNB <- function(formula, data, weights, offset=NULL, nlambda=100, lambda=NU
     etastart <- model.extract(mf, "etastart")
 ### thoughts: use glm.nb to estimate intercept-only model which can take care of theta estimate 
     if(is.null(lambda)){
-        lmax <- findlam(x=X[,-1], y=Y, weights=weights, family="negbin", theta=NULL, mu=NULL, w=NULL, z=NULL, alpha=alpha, penalty.factor=penalty.factor, standardize=standardize)
+        lmax <- findlam(x=X[,-1], y=Y, weights=weights, family="negbin", theta=NULL, w=NULL, z=NULL, alpha=alpha, penalty.factor=penalty.factor, standardize=standardize)
         lpath <- seq(log(lmax), log(lambda.min.ratio * lmax), length.out=nlambda)
         lambda <- exp(lpath)
     }
