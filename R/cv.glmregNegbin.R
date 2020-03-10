@@ -35,7 +35,7 @@ lambda=NULL, nfolds=10, foldid, plot.it=TRUE, se=TRUE, n.cores=2, trace=FALSE, p
       fitcv <- do.call("glmregNB", list(formula, data[-omit,], weights[-omit], offset=offset[-omit], nlambda=nlambda, lambda=lambda, theta.est=FALSE, theta0=glmregNB.obj$theta, ...))
 ### remove the first column, which is for intercept
       fitcv$terms <- NULL ### logLik requires data frame if terms is not NULL
-      logLik(fitcv, newx=X[omit,-1, drop=FALSE], Y[omit], weights=weights[omit])
+      logLik(fitcv, newx=X[omit,-1, drop=FALSE], Y[omit], weights=weights[omit], offset=offset[omit])
    }
    stopImplicitCluster()
     }
@@ -46,10 +46,10 @@ lambda=NULL, nfolds=10, foldid, plot.it=TRUE, se=TRUE, n.cores=2, trace=FALSE, p
          cat("\n CV Fold", i, "\n\n")
        omit <- all.folds[[i]]
  ### changed 5/20/2013 fixed theta
-       fitcv <- do.call("glmregNB", list(formula, data[-omit,], weights[-omit], nlambda=nlambda,  lambda=lambda, theta.est=FALSE, theta0=glmregNB.obj$theta, trace=trace, ...))
+       fitcv <- do.call("glmregNB", list(formula, data[-omit,], weights[-omit], offset[-omit], nlambda=nlambda,  lambda=lambda, theta.est=FALSE, theta0=glmregNB.obj$theta, trace=trace, ...))
  ### remove the first column, which is for intercept
        fitcv$terms <- NULL ### logLik requires data frame if terms is not NULL
-       residmat[, i] <- logLik(fitcv, newx=X[omit,-1, drop=FALSE], Y[omit], weights=weights[omit])
+       residmat[, i] <- logLik(fitcv, newx=X[omit,-1, drop=FALSE], Y[omit], weights=weights[omit], offset=offset[omit])
      }
     }
    cv <- apply(residmat, 1, mean)
