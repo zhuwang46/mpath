@@ -169,7 +169,7 @@ glmregNB <- function(formula, data, weights, offset=NULL, nlambda=100, lambda=NU
     fit$contrasts <- attr(X, "contrasts")
     fit$xlevels <- .getXlevels(Terms, mf)
     fit$method <- method
-    fit$offset <- offset
+    fit$offset <- fit$offset
     if(is.null(colnames(X[,-1]))) varnames <- paste("V", 1:ncol(X[,-1]), sep="")
     else varnames <- colnames(X[,-1])
     dimnames(beta) <- list(varnames, round(lambda, digits=4))
