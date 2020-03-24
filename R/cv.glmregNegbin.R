@@ -16,6 +16,7 @@ lambda=NULL, nfolds=10, foldid, plot.it=TRUE, se=TRUE, n.cores=2, trace=FALSE, p
   nobs <- n <- length(Y)
   nvars <- m <- dim(X) - 1
  weights <- model.weights(mf)
+ offset <- as.vector(model.offset(mf))
  if(!length(weights)) weights <- rep(1, nrow(mf))
   if(any(weights < 0)) stop("negative weights not allowed")
 
@@ -23,6 +24,7 @@ lambda=NULL, nfolds=10, foldid, plot.it=TRUE, se=TRUE, n.cores=2, trace=FALSE, p
       glmregNB.obj <- do.call("glmregNB", list(formula, data, weights, offset=offset, lambda=lambda, ...))
     lambda <- glmregNB.obj$lambda
     nlambda <- length(lambda)
+    if(is.null(offset)) offset <- rep(0, nobs)
     if(missing(foldid))
     all.folds <- cv.folds(n, K)
     else all.folds <- foldid
