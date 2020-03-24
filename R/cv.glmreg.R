@@ -76,6 +76,7 @@ cv.glmreg_fit <- function(x, y, weights, offset, lambda=NULL, balance=TRUE,
     nobs <- n <- nm[1]
     nvars <- m <- nm[2]
     if(missing(weights)) weights <- rep(1, nobs)
+    if(is.null(offset)) offset <- rep(0, nobs)
     K <- nfolds
     glmreg.obj <- glmreg_fit(x, y, weights, offset=offset, lambda=lambda, family=family, ...)
     lambda <- glmreg.obj$lambda
