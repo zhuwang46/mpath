@@ -75,11 +75,11 @@ zipath.matrix <- function(X, Z, Y, weights, offsetx=NULL, offsetz=NULL, ...){
 }
 zipath_fit <- function(X, Z, Y, weights, offsetx, offsetz, standardize=TRUE, intercept=TRUE, family = c("poisson", "negbin", "geometric"), link = c("logit", "probit", "cloglog", "cauchit", "log"), penalty = c("enet", "mnet", "snet"), start = NULL, y = TRUE, x = FALSE, nlambda=100, lambda.count=NULL, lambda.zero=NULL, type.path=c("active", "nonactive"), penalty.factor.count=NULL, penalty.factor.zero=NULL, lambda.count.min.ratio=.0001, lambda.zero.min.ratio=.1, alpha.count=1, alpha.zero=alpha.count, gamma.count=3, gamma.zero=gamma.count, rescale=FALSE, init.theta=NULL, theta.fixed=FALSE, EM=TRUE, maxit.em=200, convtype=c("count", "both"), maxit= 1000, maxit.theta =10, reltol = 1e-5, thresh=1e-6, eps.bino=1e-5, shortlist=FALSE, trace=FALSE, ...)
 {
+    family <- match.arg(family)
     if(is.null(init.theta) && family=="negbin" && theta.fixed)
         stop("missing argument init.theta while family=='negbin' and theta.fixed is TRUE\n")
     if(length(gamma.count) > 1 || length(gamma.zero) > 1)
         stop("gamma.count or gamma.zero must be a scalar")
-    family <- match.arg(family)
     if(family=="geometric"){
         family <- "negbin"
         init.theta <- 1
