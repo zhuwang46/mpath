@@ -7,7 +7,7 @@ predict.glmreg <- function(object,newx,which=1:length(object$lambda), type=c("li
 if(!is.null(object$terms)){
  mf <- model.frame(delete.response(object$terms), newx, na.action = na.action, xlev = object$xlevels)
  newx <- model.matrix(delete.response(object$terms), mf, contrasts = object$contrasts)
- newx <- newx[,-1] ### remove the intercept
+ newx <- newx[, -1, drop = FALSE] ### remove the intercept
 }
 }
   b0=as.matrix(object$b0)
