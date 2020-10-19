@@ -1,0 +1,210 @@
+---
+title: "Robust Generalized Linear Models"
+author: Zhu Wang^[UT Health San Antonio, wangz1@uthscsa.edu]
+date: "10/12/2020"
+bibliography: mpath.bib
+link-citations: true
+output:
+  pdf_document: default
+vignette: >
+   %\VignetteIndexEntry{Robust Generalized Linear Models}
+   %\VignetteEngine{knitr::rmarkdown}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE) 
+```
+The CC-family contains functions of composite of concave and convex functions. The CC-estimators are derived from minimizing loss functions in the CC-family via composite optimization by conjugation operator (COCO). The CC-estimators include robust generalized linear models. See @wang2020unified.
+
+## Robust logistic regression
+
+In a UK hospital, 135 expectant mothers were surveyed on the decision of breastfeeding their
+babies or not, along with two-level predictive factors. Description and references can be found in @heritier2009robust.
+
+```{r message=FALSE, echo=TRUE, results='hide'}
+require("mpath")
+data(breastfeed)
+```
+Remove rows with missing values.
+```{r missing value}
+breastfeed=na.omit(breastfeed)
+```
+We compute
+binomial-induced CC-estimators, i.e., robust logistic regression, and display the robust weights for each model.
+```{r glm, echo=TRUE}
+sval <- c(1.5, 1.5, 5, 2.5, 3.5, 2.5, 2.2, 7) 
+cfun <- c("hcave", "acave", "bcave", "ccave", "dcave", "gcave", "tcave", "ecave")
+id <- 1:8
+for(i in c(1:5,8,6,7)){
+fitnew <- ccglm(breast~., data=breastfeed, s=sval[i], cfun=i, dfun=binomial(), 
+                trace=FALSE)
+goodid <- sort.list(fitnew$weights_update)[id]
+plot(fitnew$weights_update, type="n", ylab="weight", 
+     main = eval(substitute(expression(paste(cfun, "(", sigma, "=", s, ")")),
+                            list(cfun=cfun[i], s = sval[i]))))
+points(fitnew$weights_update[-goodid], ylab="weight", 
+       main = eval(substitute(expression(paste(cfun, "(", sigma, "=", s, ")")),
+                              list(cfun=cfun[i], s = sval[i]))))
+points(sort.list(fitnew$weights_update)[id], sort(fitnew$weights_update)[id], pch=3, 
+       col="red")
+}
+```
+
+Despite large estimated probability $\geq$ 0.8 of trying to breastfeed or not in a logistic regression, these individuals took the opposite decisions.
+```{r glm2}
+fit.glm <- glm(as.integer(breast)-1~., data=breastfeed, family=binomial())
+id <- c(3, 11, 14, 53,63, 75,90, 115)
+pred <- predict(fit.glm, type="response") ### predicted probabilities
+cbind(breastfeed, pred)[id,]
+```
+For variable selection, we develop a usual penalized LASSO
+logistic regression, where
+the optimal penalty parameter $\lambda$ is chosen by a 10-fold cross-validation.
+```{r glmreg lasso}
+n.cores <- 2
+set.seed(195)
+fitcv.glm <- cv.glmreg(as.integer(breast)-1~., data=breastfeed, penalty="enet", 
+                       family="binomial", type="loss",plot.it=FALSE, parallel=TRUE, 
+                       n.cores=n.cores, standardize=TRUE)
+fit <- fitcv.glm$fit
+```
+The smallest CV value from penalized logistic regression
+```{r cv min}
+min(fitcv.glm$cv)
+```
+Penalized logistic regression with penalty LASSO
+```{r lasso coef}
+coef(fit)[,fitcv.glm$lambda.which]
+```
+Compute the SCAD
+logistic regression, where
+the optimal penalty parameter $\lambda$ is chosen by a 10-fold cross-validation. The SCAD logistic regression is more sparse than the LASSO estimator.
+```{r glmreg scad}
+set.seed(195)
+fitcv.glm <- cv.glmreg(as.integer(breast)-1~., data=breastfeed, penalty="snet", 
+                       family="binomial", type="loss", plot.it=FALSE, parallel=TRUE,
+                       n.cores=n.cores, standardize=TRUE)
+fit <- fitcv.glm$fit
+```
+The smallest CV value from penalized logistic regression
+```{r min}
+min(fitcv.glm$cv)
+```
+Penalized logistic regression with penalty SCAD
+```{r coef}
+coef(fit)[,fitcv.glm$lambda.which]
+```
+The $\lambda$ value in SCAD is then
+utilized to compute binomial-induced SCAD CC-estimators for various concave components.
+```{r ccglmreg}
+for(i in c(1:5,8,6,7)){
+  cat("\ncfun=", cfun[i], "\n")
+    fit.ccglmreg <- ccglmreg(breast~., data=breastfeed, s=sval[i], cfun=i, penalty="snet", 
+                       lambda=fitcv.glm$lambda.optim, dfun=binomial(), parallel=FALSE, 
+                       type.path="nonactive", standardize=TRUE)
+    print(coef(fit.ccglmreg))
+}
+```
+## Robust Poisson regression
+A cohort of 3066 Americans over the age of 50 were studied on health care utilization, doctor
+office visits @heritier2009robust. The survey also contained 24 predictors in demographic,
+health needs and economic access. We compute Poisson-induced CC-estimators, i.e., robust
+Poisson regressions. The seven smallest
+weights occur to the subjects with 200, 208, 224, 260, 300, 365 and 750 doctor visits in
+two years.
+```{r doc}
+data(docvisits)
+sval <- c(10, 10, 45, 20, 5, 5, 280, 200)
+cfun <- c("hcave", "acave", "bcave", "ccave", "dcave", "gcave", "tcave", "ecave")
+id <- 1:7
+for(i in c(1:5,8,6,7)){
+     fitnew <-ccglm(visits~age+factor(gender)+factor(race)+factor(hispan)
+                    +factor(marital)+factor(arthri)+factor(cancer)
+                    +factor(hipress)+factor(diabet)+factor(lung)+factor(hearth)
+                    +factor(stroke)+factor(psych)+factor(iadla)+factor(adlwa)
+                    +edyears+feduc+meduc+log(income+1)+factor(insur),
+                    data=docvisits,cfun=i,s=sval[i],dfun=poisson(),trace=FALSE)
+     goodid <- sort.list(fitnew$weights_update)[id]
+     plot(fitnew$weights_update, type="n", ylab="weight",
+          main = eval(substitute(expression(paste(cfun, "(", sigma, "=", s, ")")),
+                                 list(cfun=cfun[i], s = sval[i]))))
+     points(fitnew$weights_update[-goodid], ylab="weight",
+            main = eval(substitute(expression(paste(cfun, "(", sigma, "=", s, ")")),
+                                   list(cfun=cfun[i], s = sval[i]))))
+ if(i > 4){
+          ### deal with overlapped points: obs 109, 111
+          x <- sort.list(fitnew$weights_update)[id]
+          y <- sort(fitnew$weights_update)[id]
+          xnew <- sort(x)
+          ynew <- y[sort.list(x)]
+          points(xnew[1]-10, ynew[1], pch=3,  col="red")
+          points(xnew[2]+10, ynew[2], pch=3,  col="red")
+          points(xnew[3:7], ynew[3:7], pch=3,  col="red")
+ }
+ else points(sort.list(fitnew$weights_update)[id], sort(fitnew$weights_update)[id],
+             pch=3, col="red")
+ }
+```
+
+Outliers of office visits
+```{r}
+newid <- sort(sort.list(fitnew$weights_update)[id])
+docvisits$visits[newid]
+```
+Penalized Poisson regression with LASSO penalty. The tuning parameter $\lambda$ value is chosen by cross-validation.
+```{r}
+set.seed(195)
+fitcv.glm <- cv.glmreg(visits~age+factor(gender)+factor(race)+factor(hispan)
+                      +factor(marital)+factor(arthri)+factor(cancer)
+                      +factor(hipress)+factor(diabet)+factor(lung)+factor(hearth)
+                      +factor(stroke)+factor(psych)+factor(iadla)+factor(adlwa)
+                      +edyears+feduc+meduc+log(income+1)+factor(insur),
+                      data=docvisits,family="poisson", penalty="enet", type="loss",
+                      plot.it=FALSE, parallel=TRUE, n.cores=n.cores, standardize=TRUE)
+fit <- fitcv.glm$fit
+```
+The smallest CV value from penalized Poisson regression
+```{r}
+min(fitcv.glm$cv)
+```
+Penalized Poisson regression with penalty LASSO
+```{r}
+coef(fit)[,fitcv.glm$lambda.which]
+```
+Penalized Poisson regression with SCAD penalty. The tuning parameter $\lambda$ value is chosen by cross-validation.
+```{r}
+set.seed(195)
+fitcv.glm <- cv.glmreg(visits~age+factor(gender)+factor(race)+factor(hispan)
+                      +factor(marital)+factor(arthri)+factor(cancer)
+                      +factor(hipress)+factor(diabet)+factor(lung)+factor(hearth)
+                      +factor(stroke)+factor(psych)+factor(iadla)+factor(adlwa)
+                      +edyears+feduc+meduc+log(income+1)+factor(insur),
+                      data=docvisits, family="poisson", penalty="snet", type="loss", 
+                      plot.it=FALSE, parallel=TRUE, n.cores=n.cores, standardize=TRUE)
+fit <- fitcv.glm$fit
+```
+The smallest CV value from penalized Poisson regression
+```{r} 
+min(fitcv.glm$cv)
+```
+Penalized Poisson regression with penalty SCAD
+```{r}
+coef(fit)[,fitcv.glm$lambda.which]
+```
+The $\lambda$ value in SCAD is then
+utilized to compute robust Poisson SCAD CC-estimators for various concave components.
+```{r}
+for(i in c(1:5,8,6,7)){
+  cat("\ncfun=", cfun[i], "\n")
+  fit.ccglmreg <- ccglmreg(visits~age+factor(gender)+factor(race)+factor(hispan)
+                     +factor(marital)+factor(arthri)+factor(cancer)
+                     +factor(hipress)+factor(diabet)+factor(lung)+factor(hearth)
+                     +factor(stroke)+factor(psych)+factor(iadla)+factor(adlwa)
+                     +edyears+feduc+meduc+log(income+1)+factor(insur), 
+                     data=docvisits, s=sval[i], cfun=i, penalty="snet",
+                     lambda=fitcv.glm$lambda.optim, dfun=poisson(), parallel=FALSE, 
+                     type.path="nonactive", standardize=TRUE)
+ print(coef(fit.ccglmreg))
+}
+```
+## References
