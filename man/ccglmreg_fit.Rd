@@ -99,6 +99,7 @@ An object with S3 class \code{"ccglmreg"} for the various types of models.
   \item{b0}{Intercept sequence of length \code{length(lambda)}}
   \item{beta}{A \code{nvars x length(lambda)} matrix of coefficients.}
   \item{lambda}{The actual sequence of \code{lambda} values used}
+  \item{weights_update}{A \code{nobs x length(lambda)} matrix of weights computed by the COCO algorithm. The entry of i-th row and j-th column is the weight for the i-th observation and j-th \code{lambda} value.}
   \item{decreasing}{ if \code{lambda} is an increasing sequence or not, used to determine regularization path direction either from lambda_max to a potentially modified lambda_min or vice versa if \code{type.init="bst", "heu"}. }
 }
 
