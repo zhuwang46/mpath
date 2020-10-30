@@ -154,8 +154,6 @@ cfun="ccave", dfun=gaussian(), s=NULL, delta=0.1, fk=NULL, init.family=NULL, ite
         k <- k + 1
 	if(trace) cat("d1=", d1, ", k=", k, ", d1 > reltol && k <= iter: ", (d1 > reltol && k <= iter), "\n")
     }
-    RET$x <- x
-    RET$y <- y
     RET$s <- s
     RET$call <- call
     RET$cfun <- cfunold
@@ -291,7 +289,7 @@ y2num4glm <- function(y){
         y <- as.integer(y)
     } else {
         if(any(as.integer(y) != y))
-            stop("y variable has to be of factor or         integer type for classification\n")
+            stop("y variable has to be of factor or integer type for classification\n")
         y <- as.factor(y)
         y <- as.integer(y)
     }
