@@ -163,7 +163,6 @@ ccglmreg_fit <- function(x,y, weights, offset, cfun="ccave", dfun="gaussian",
     if(is.null(fk) || is.null(lambda)){
         if(type.init %in% c("co", "heu")){ ### use co function to generate intercept-only model
             RET <- ccglm(y~1, data=data.frame(cbind(y, rep(1, n))), iter=10000, reltol=1e-20, weights=weights, s=s, cfun=cfun, dfun=dfunold2, init.family=init.family, trace=FALSE)
-            #RET <- co_fit(x=matrix(1, ncol=1, nrow=length(y)), y=y, iter=10000, reltol=1e-20, weights=weights, s=s, cfun=cfun, dfun=ifelse(dfun!=6, dfun, 1), init.family=init.family, trace=FALSE)
             if(type.init=="co") start <- c(coef(RET), rep(0, nvars))
 ### end of intercept computing
             else if(type.init=="heu"){ ### heuristic for choosing starting values
@@ -224,6 +223,7 @@ ccglmreg_fit <- function(x,y, weights, offset, cfun="ccave", dfun="gaussian",
     beta <- matrix(0, ncol=nlambda, nrow=m)
     fitted <- matrix(NA, ncol=nlambda, nrow=n)
     b0 <- rep(0, nlambda)
+    weights_cc <- matrix(0, nrow=n, ncol=nlambda)
 ### initialize start values -begin
 ### Todo: initial values?
     mustart <- rep(0, n)
@@ -279,8 +279,9 @@ ccglmreg_fit <- function(x,y, weights, offset, cfun="ccave", dfun="gaussian",
                             b0_1=as.double(0),
                             fk=as.double(rep(0, n)),
                             delta=as.double(delta),
+                            weights_update=as.double(rep(0, n)),
                             PACKAGE="mpath")
-            list(beta=RET$beta, b0=RET$b0, yhat=RET$yhat)   
+            list(beta=RET$beta, b0=RET$b0, yhat=RET$yhat, weights_update=RET$weights_update)   
         }
     parallel::stopCluster(cl)
     RET <- fitall[[nlambda]]    
@@ -288,8 +289,9 @@ ccglmreg_fit <- function(x,y, weights, offset, cfun="ccave", dfun="gaussian",
              beta[,k] <- fitall[[k]]$beta
              b0[k] <- fitall[[k]]$b0
              fitted[,k] <- fitall[[k]]$yhat
+             weights_cc[,k] <- fitall[[k]]$weights_update
          }
-        tmp <- list(beta=beta, b0=b0, RET=RET, fitted=fitted)
+        tmp <- list(beta=beta, b0=b0, RET=RET, fitted=fitted, weights_cc=weights_cc)
     }
     typeA <- function(beta, b0){
         if(dfun %in% c(1, 4)) dfuntmp <- 1 else if(dfun==5) dfuntmp <- 2
@@ -298,6 +300,7 @@ ccglmreg_fit <- function(x,y, weights, offset, cfun="ccave", dfun="gaussian",
                                         if(all(x[,1]==1)) xtmp <- x[,-1] else xtmp <- x
         i <- 1
         los <- pll <- matrix(NA, nrow=iter, ncol=nlambda)
+        weights_cc <- matrix(NA, nrow=n, ncol=nlambda)
         if(trace && tracelevel==2) tracel <- 1 else tracel <- 0
         while(i <= nlambda){
             if(trace) message("\nloop in lambda:", i, ", lambda=", lambda[i], "\n")
@@ -399,9 +402,10 @@ ccglmreg_fit <- function(x,y, weights, offset, cfun="ccave", dfun="gaussian",
             }
                 beta[,i] <- RET$beta
                 b0[i] <- RET$b0
+                weights_cc[,i] <- weights_update
                 i <- i + 1
         }
-        list(beta=beta, b0=b0, RET=RET, risk=los, pll=pll)
+        list(beta=beta, b0=b0, RET=RET, risk=los, pll=pll, weights_cc=weights_cc)
     }
     typeBB <- function(beta, b0){
         if(trace && tracelevel==2) tracel <- 1 else tracel <- 0
@@ -445,6 +449,7 @@ ccglmreg_fit <- function(x,y, weights, offset, cfun="ccave", dfun="gaussian",
 			    pll=as.double(rep(0, nlambda)),
 			    nlambdacal=as.integer(0),
 			    delta=as.double(delta),
+			    weights_cc=as.double(matrix(0, nrow=n, ncol=nlambda)),
 			    PACKAGE="mpath")
         else
 	    RET <- .Fortran("ccglmreg_fortran",
@@ -487,8 +492,9 @@ ccglmreg_fit <- function(x,y, weights, offset, cfun="ccave", dfun="gaussian",
 			    pll=as.double(rep(0, nlambda)),
 			    nlambdacal=as.integer(0),
 			    delta=as.double(delta),
+			    weights_cc=as.double(matrix(0, nrow=n, ncol=nlambda)),
 			    PACKAGE="mpath")
-        list(beta=matrix(RET$beta, ncol=nlambda), b0=RET$b0, RET=RET, risk=RET$los, pll=RET$pll, nlambdacal=RET$nlambdacal)
+        list(beta=matrix(RET$beta, ncol=nlambda), b0=RET$b0, RET=RET, risk=RET$los, pll=RET$pll, nlambdacal=RET$nlambdacal, weights_cc=RET$weights_cc)
     }
         #tmp <- typeP(x, y, weights, start, etastart, mustart, offset,lambda[i],alpha,gamma,intercept,penalty.factor,maxit,eps, pentype, trace, iter, reltol, cfun, dfun, s, thresh, delta, m) 
     if(is.null(parallel)) tmp <- typeA(beta, b0) else 
@@ -496,6 +502,7 @@ ccglmreg_fit <- function(x,y, weights, offset, cfun="ccave", dfun="gaussian",
     beta <- tmp$beta
     b0 <- tmp$b0
     RET <- tmp$RET
+    RET$weights_update <- tmp$weights_cc
     if(!is.null(parallel) && standardize && dfun%in%c(5,8,9)){
         tmp1 <- stan(x, weights)
         meanx <- tmp1$meanx
