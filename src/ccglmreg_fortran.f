@@ -5,14 +5,16 @@ C     repeated ones
      +     mustart, offset, iter, nlambda, lambda, alpha, gam, rescale, 
      +     standardize, intercept, penaltyfactor, maxit, eps, theta, 
      +     epscycle,penalty, trace,del,cfun, dfun, s,thresh,decreasing, 
-     +     active, beta, b0, yhat, los, pll, nlambdacal, delta)
+     +     active, beta, b0, yhat, los, pll, nlambdacal, delta,
+     +     weights_cc)
       implicit none
       integer n,m,i,ii,j,jj,penalty,nlambda, standardize, maxit,
      +     trace, iter, jk, active, activeset(m), intercept,rescale, 
      +     m_act, nlambdacal, uturn, decreasing, cutpoint, cfun,
      +     dfun,dfunnew, 
      +     AllocateStatus, DeAllocateStatus, varsel(m), varsel_old(m)
-      double precision x(n, m), y(n), weights(n),start(m+1),etastart(n),
+      double precision x(n, m), y(n), weights(n), weights_update(n), 
+     +     weights_cc(n, nlambda), start(m+1),etastart(n),
      +     mustart(n), offset(n), lambda(nlambda), alpha, gam, eps, 
      +     penaltyfactor(m), thresh, beta(m, nlambda), epscycle,
      +     b0(nlambda), b0_1, yhat(n), del, lambda_i, s,sumw,wt(n),  
@@ -82,8 +84,8 @@ C unlike in nclreg_fortran, no need B: lambda_i=lambda(i)/B
          call ccglmreg_onelambda(x_act, y,weights, n,m_act,start_act,
      +        etastart, mustart, yhat, offset, lambda_i, alpha, gam, 
      +        rescale, standardize, intercept, penaltyfactor_act, 
-     +        maxit, eps, theta, penalty, trace, 
-     +        iter, del, cfun, dfun, s, thresh, beta_1, b0_1, fk, delta)
+     +        maxit, eps, theta, penalty, trace, iter, del, cfun, dfun,
+     +        s, thresh, beta_1, b0_1, fk, delta, weights_update)
          nlambdacal=nlambdacal+1
           if(dfun .EQ. 1 .OR. dfun .EQ. 4 .OR. dfun .EQ. 5)then
               call loss2(n, y, fk, wt, cfun, dfun, s, delta, los(i))
@@ -99,6 +101,9 @@ C unlike in nclreg_fortran, no need B: lambda_i=lambda(i)/B
             pll(i)=los(i) + penval
          endif
          b0(i) = b0_1
+         do ii=1, n
+            weights_cc(ii,i)=weights_update(ii)
+         enddo
          if(jk .GT. 0)then
             do 200 ii = 1, m_act
                beta(varsel(ii), i) = beta_1(ii)
