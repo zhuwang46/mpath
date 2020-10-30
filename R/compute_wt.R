@@ -1,4 +1,4 @@
-### this is different from src/update_wt in that the inputs are different 
+### this is different from R/update_wt in that the inputs are different 
 compute_wt <- function(z, weights, cfun, s, delta=0.0001){
     if(any(z < 0)) stop("z must be non-negative")
     if(is.null(s)) s <- assign_s(cfun, z) else check_s(cfun, s)
