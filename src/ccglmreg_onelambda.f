@@ -5,7 +5,8 @@ C     output: start_act, etastart, mustart, beta_1, b0_1, fk
       subroutine ccglmreg_onelambda(x_act,y,weights,n,m_act,start_act, 
      +     etastart, mustart, yhat, offset, lambda_i,alpha,gam,rescale,
      +     standardize,intercept,penaltyfactor_act,maxit,eps,theta,
-     +   penalty,trace,iter,del,cfun,dfun,s,thresh,beta_1,b0_1,fk,delta)
+     +   penalty,trace,iter,del,cfun,dfun,s,thresh,beta_1,b0_1,fk,delta,
+     +   weights_update)
       implicit none
       integer n,k,j,intercept,penalty,maxit,trace,iter,m_act,
      +        satu, cfun, dfun, dfunnew, i, ii, standardize, rescale
