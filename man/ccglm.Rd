@@ -53,19 +53,21 @@
 \item{theta}{ an overdispersion scaling parameter for \code{family=negbin()}} 
   \item{x.keep, y.keep}{ logical values indicating whether the response
           vector and model matrix used in the fitting process should be
-          returned as components of the returned value.
-          For co_fit: x is a design matrix of dimension n * p,
+          returned as components of the returned value, x is a design matrix of dimension n * p,
           and x is a vector of observations of length n.}
  \item{trace}{If \code{TRUE}, fitting progress is reported}
   \item{...}{Other arguments passing to \code{ccglm}}
 }
 \details{
-  A case weighted robust linear or logistic regression model is fit by the COCO algorithm, where the loss function is a composite function of \code{cfun}o\code{dfun}.
+  A robust linear, logistic or Poisson regression model is fit by the COCO algorithm, where the loss function is a composite function of \code{cfun}o\code{dfun}.
   }
 \value{
-An object with S3 class \code{"ccglm"} for the various types of models.
+An object with S3 class \code{"ccglm", "glm"} for various types of models.
   \item{call}{the call that produced the model fit}
-  \item{fitted.values}{predicted values}  
+  \item{weights}{original weights used in the model}
+  \item{weights_update}{weights in the final iteration of the COCO algorithm}
+  \item{cfun, s, dfun}{original input arguments}
+  \item{is.offset}{is offset used?}
 }
 
 \references{
@@ -76,10 +78,10 @@ An object with S3 class \code{"ccglm"} for the various types of models.
 \author{Zhu Wang <wangz1@uthscsa.edu>}
 \seealso{\code{\link{print}}, \code{\link{predict}}, \code{\link{coef}}.}
 \examples{
-#binomial
 x=matrix(rnorm(100*20),100,20)
 g2=sample(c(-1,1),100,replace=TRUE)
  fit=ccglm(g2~x,data=data.frame(cbind(x, g2)), s=1,cfun="ccave",          dfun=gaussian())
+fit$weights_update
 }
  
 \keyword{models}
