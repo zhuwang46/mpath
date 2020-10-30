@@ -35,8 +35,11 @@
 }
 
 \value{
-An object with S3 class \code{"wsvm"} for the various types of models.
-  \item{call}{the call that produced this object}
+An object with S3 class \code{"wsvm"} for various types of models.
+\item{call}{the call that produced this object}
+\item{weights_update}{weights in the final iteration of the COCO algorithm}
+\item{cfun, s}{original input arguments}
+\item{delta}{delta value used for \code{cfun="gcave"}}
 }
 
 \references{
