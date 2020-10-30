@@ -6,14 +6,16 @@ C
      +     mustart, offset, iter, nlambda, lambda, alpha, gam,rescale, 
      +     standardize, intercept, penaltyfactor, maxit, eps, theta, 
      +     epscycle, penalty, trace, del, cfun, dfun, s, thresh, 
-     +     decreasing, beta, b0, yhat, los, pll, nlambdacal, delta)
+     +     decreasing, beta, b0, yhat, los, pll, nlambdacal, delta,
+     +     weights_cc)
       implicit none
       integer n,m,i,ii,j,jj,penalty,nlambda, standardize, maxit,
      +     trace, iter, jk, activeset(m), intercept, rescale,
      +     activeset_old(m), m_act, nlambdacal, uturn, decreasing, 
      +     cutpoint, nact, conv, jc, fakejk, AllocateStatus, cfun, dfun,
      +     dfunnew
-      double precision x(n,m),y(n),weights(n),sumw, wt(n),start(m+1),
+      double precision x(n,m),y(n),weights(n),weights_update(n),
+     +     weights_cc(n, nlambda), sumw, wt(n),start(m+1),
      +     etastart(n),mustart(n),offset(n),lambda(nlambda),alpha,gam,
      +     eps, penaltyfactor(m), thresh, beta(m, nlambda), epscycle,
      +     betaall(m), b0all, b0(nlambda), b0_1, yhat(n), del, theta, 
@@ -97,8 +99,8 @@ C unlike in nclreg_ad, no need B: lambda_i=lambda(i)/B
             call ccglmreg_onelambda(x_act, y,weights, n,m_act,start_act,
      +           etastart, mustart, yhat, offset, lambda_i, alpha, gam, 
      +           rescale, standardize, intercept, penaltyfactor_act, 
-     +           maxit, eps, theta, penalty,trace,
-     +           iter,del, cfun, dfun,s, thresh, beta_1, b0_1, fk,delta)
+     +           maxit, eps, theta, penalty,trace, iter,del, cfun, dfun,
+     +           s, thresh, beta_1, b0_1, fk, delta, weights_update)
             start(1)=b0_1
             do ii=1, m_act
                start(activeset(ii)+1)=beta_1(ii)
@@ -111,10 +113,11 @@ C                  call dblepr("b0_1=", -1, b0_1, 1)
                   call dblepr("start=", -1, start, m+1)
                endif
                call ccglmreg_onelambda(x,y,weights,n,m,start, etastart,
-     +              mustart, yhat, offset, lambda_i, alpha,
-     +              gam, rescale, standardize, intercept,penaltyfactor, 
-     +              maxit, eps, theta, penalty,trace,1,
-     +              del, cfun, dfun, s, thresh, betaall, b0all,fk,delta)
+     +              mustart, yhat, offset, lambda_i, alpha, gam, 
+     +              rescale, standardize, intercept, penaltyfactor, 
+     +              maxit, eps, theta, penalty, trace, 1, del, cfun, 
+     +              dfun, s, thresh, betaall, b0all,fk, delta,
+     +              weights_update)
                call find_activeset(m, betaall, eps, activeset, jk)
                if(jk==0)then
                   jk=1
@@ -165,6 +168,9 @@ C                  call dblepr("b0_1=", -1, b0_1, 1)
          endif
          nlambdacal=nlambdacal+1
          b0(i)=b0_1
+         do ii=1, n
+         weights_cc(ii,i)=weights_update(ii)
+         enddo
          if(jk .GT. 0)then
             do ii=1, jk
                beta(activeset(ii), i)=beta_1(ii)
