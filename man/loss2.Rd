@@ -11,8 +11,8 @@ loss2(y, f, weights, cfun, dfun, s, delta=0.0001)
  \item{y}{response variable values}
  \item{f}{fitted values of \code{y}}
  \item{weights}{observation weights, same length as \code{y}}
- \item{cfun}{integer from 1-7, concave function as in \code{co_fit}}
- \item{dfun}{integer from 1-7, convex function as in \code{co_fit}}
+ \item{cfun}{integer from 1-7, concave function as in \code{ccglm_fit}}
+ \item{dfun}{integer from 1-7, convex function as in \code{ccglm_fit}}
 \item{s}{ tuning parameter of \code{cfun}. \code{s > 0} and can be equal    to 0 for \code{cfun="tcave"}.} 
    \item{delta}{a small positive number provided by user only if \code{cfun="gcave"} and \code{0 < s <1}}
 }
