@@ -9,7 +9,7 @@ babies or not, along with two-level predictive factors
 \usage{data(breastfeed)}
 
 \source{
-Heritier, Stephane and Cantoni, Eva and Copt, Samuel and Victoria-Feser, Maria-Pia (2009). \emph{Robust Methods in Biostatistics}, John Wiley \& Sons}
+Stephane Heritier, Eva Cantoni, Samuel Copt and Maria-Pia Victoria-Fese (2009). \emph{Robust Methods in Biostatistics}, John Wiley & Sons}
 
 \examples{
 data(breastfeed)
