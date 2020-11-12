@@ -5,9 +5,10 @@
   and returns cross-validated loss values for \code{lambda}}
 \usage{
 cv.nclreg_fit(x, y, weights, offset, lambda=NULL, balance=TRUE, 
-rfamily=c("clossR", "closs", "gloss", "qloss"), s=1.5, nfolds=10, foldid, 
-type = c("loss", "error"), plot.it=TRUE, se=TRUE, n.cores=2, trace=FALSE, 
-parallel=FALSE, ...)
+              rfamily=c("clossR", "closs", "gloss", "qloss"), s=1.5, 
+              nfolds=10, foldid, type = c("loss", "error"), 
+              plot.it=TRUE, se=TRUE, n.cores=2, trace=FALSE, 
+              parallel=FALSE, ...)
 }
 \arguments{
   \item{x}{\code{x} matrix as in \code{nclreg}.}
