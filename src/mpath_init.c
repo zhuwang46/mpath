@@ -49,7 +49,7 @@ extern void F77_NAME(zi_onelambda)(void *, void *, void *, void *, void *, void*
 extern void F77_NAME(zipath_active)(void *, void *, void*, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
 extern void F77_NAME(zipath_nonactive)(void *, void *, void*, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
 extern void F77_NAME(ccglmreg_ad)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
-extern void F77_NAME(ccglmreg_fortran)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
+extern void F77_NAME(ccglmreg_fortran)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
 extern void F77_NAME(ccglmreg_onelambda)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
 extern void F77_NAME(update_wt)(void *, void *, void *, void *, void *, void *, void *, void *, void *);
 extern void F77_NAME(update_wt_ccsvm)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
@@ -88,7 +88,7 @@ static const R_FortranMethodDef FortranEntries[] = {
 	    {"zipath_active",              (DL_FUNC) &F77_NAME(zipath_active),      41},
 	    {"zipath_nonactive",           (DL_FUNC) &F77_NAME(zipath_nonactive),   41},
 	    {"ccglmreg_ad",                   (DL_FUNC) &F77_NAME(ccglmreg_ad),           38},
-	    {"ccglmreg_fortran",              (DL_FUNC) &F77_NAME(ccglmreg_fortran),      39},
+	    {"ccglmreg_fortran",              (DL_FUNC) &F77_NAME(ccglmreg_fortran),      38},
 	    {"ccglmreg_onelambda",            (DL_FUNC) &F77_NAME(ccglmreg_onelambda),    33},
 	    {"update_wt",                  (DL_FUNC) &F77_NAME(update_wt),           9},
 	    {"update_wt_ccsvm",            (DL_FUNC) &F77_NAME(update_wt_ccsvm),    10},
