@@ -4,9 +4,9 @@
 \description{Internal function to conduct k-fold cross-validation for ccglmreg, produces a plot,
   and returns cross-validated loss values for \code{lambda}}
 \usage{
-cv.ccglmreg_fit(x, y, weights, offset, lambda=NULL, balance=TRUE, 
-cfun=4, dfun=1, s=1.5, nfolds=10, foldid, type = c("loss", "error"), 
-plot.it=TRUE, se=TRUE, n.cores=2, trace=FALSE, parallel=FALSE, ...)
+cv.ccglmreg_fit(x, y, weights, offset, lambda=NULL, balance=TRUE, cfun=4, dfun=1, 
+                s=1.5, nfolds=10, foldid, type = c("loss", "error"), plot.it=TRUE,
+                se=TRUE, n.cores=2, trace=FALSE, parallel=FALSE, ...)
 }
 \arguments{
   \item{x}{\code{x} matrix as in \code{ccglmreg}.}
