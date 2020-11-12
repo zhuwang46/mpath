@@ -3,9 +3,10 @@
 \title{Internal function of cross-validation for ccsvm}
 \description{Internal function to conduct k-fold cross-validation for ccsvm}
 \usage{
-cv.ccsvm_fit(x, y, weights, cfun="ccave", s=c(1, 5), type=NULL, kernel="radial", 
-             gamma=2^(-4:10), cost=2^(-4:4), epsilon=0.1, balance=TRUE, nfolds=10,
-             foldid, trim_ratio=0.9, n.cores=2, ...)
+cv.ccsvm_fit(x, y, weights, cfun="ccave", s=c(1, 5), type=NULL, 
+             kernel="radial", gamma=2^(-4:10), cost=2^(-4:4), 
+             epsilon=0.1, balance=TRUE, nfolds=10, foldid, 
+             trim_ratio=0.9, n.cores=2, ...)
 }
 \arguments{
  \item{x}{a data matrix, a vector, or a sparse '\emph{design} matrix' (object  of class
@@ -26,6 +27,7 @@ cv.ccsvm_fit(x, y, weights, cfun="ccave", s=c(1, 5), type=NULL, kernel="radial",
          \item \code{"bcave"}
          \item \code{"ccave"}
          \item \code{"dcave"}
+         \item \code{"ecave"}
          \item \code{"gcave"}
          \item \code{"tcave"}
       }
