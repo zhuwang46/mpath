@@ -2,11 +2,12 @@
 \alias{ccsvm_fit}
 \title{Fit iteratively re-weighted support vector machines for robust loss functions}
 \description{
-\code{ccsvm} is used to train a subject weighted support vector machine where the weights are provided iteratively from robust loss function with COCO algorithm. It can be used to carry out general regression and binary classification.
+\code{ccsvm} is used to train a subject weighted support vector machine where the weights are provided iteratively from robust loss function with COCO algorithm. It can be used to carry out robust regression and binary classification.
 }
 \usage{
 ccsvm_fit(x, y, weights, cfun="ccave", s=NULL, delta=0.0001, type = NULL, 
-kernel="radial", cost=1, epsilon = 0.1, iter=10, reltol=1e-5, trace=FALSE, ...)
+          kernel="radial", cost=1, epsilon = 0.1, iter=10, reltol=1e-5, 
+          trace=FALSE, ...)
 }
 \arguments{
   \item{x}{a data matrix, a vector, or a sparse '\emph{design} matrix' (object of class
@@ -27,6 +28,7 @@ kernel="radial", cost=1, epsilon = 0.1, iter=10, reltol=1e-5, trace=FALSE, ...)
         \item \code{"bcave"}
         \item \code{"ccave"}
         \item \code{"dcave"}
+        \item \code{"ecave"}
         \item \code{"gcave"}
         \item \code{"tcave"}
      }
@@ -81,8 +83,8 @@ kernel="radial", cost=1, epsilon = 0.1, iter=10, reltol=1e-5, trace=FALSE, ...)
 }
 \details{
     A case weighted SVM is fit by the COCO algorithm, where the loss function is a composite function of \code{cfun}o\code{type}, plus a \eqn{L\_2} penalty.
- Additional arguments include \code{degree, gamma, coef0, 
-     class.weights, cachesize, tolerance, shrinking, propbability, fitted}, the same as \code{"wsvm"} in package \pkg{WeightSVM}.
+ Additional arguments include \code{degree, gamma, coef0}, 
+ \code{class.weights, cachesize, tolerance, shrinking, propbability, fitted}, the same as \code{"wsvm"} in package \pkg{WeightSVM}.
 }
 \references{
    Zhu Wang (2020)
