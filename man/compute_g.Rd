@@ -9,7 +9,7 @@ compute_g(z, cfun, s, delta=0.0001)
 }
 \arguments{
  \item{z}{vector nonnegative values from \code{dfun}, e.g., u^2/2}
- \item{cfun}{integer from 1-7, concave function as in \code{ccglm_fit}}
+ \item{cfun}{integer from 1-8, concave function as in \code{ccglm_fit}}
  \item{s}{a numeric value, see details in \code{ccglmreg_fit}}
  \item{delta}{a positive small value, see details in \code{ccglmreg_fit}}
 }
