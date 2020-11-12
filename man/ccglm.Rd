@@ -39,9 +39,9 @@
    \item{dfun}{ character, type of convex component. \cr
    Valid options are:
    \itemize{
-       \item \code{"gaussian"}
-       \item \code{"gaussianC"}
-       \item \code{"binomial"}
+       \item \code{gaussian()}
+       \item \code{binomial()}
+       \item \code{poisson()}
        }
    }
    \item{init.family}{ character value for initial family, one of "clossR","closs","gloss","qloss", which can be used to derive an initial estimator, if the selection is different from the default value }
@@ -55,8 +55,8 @@
           vector and model matrix used in the fitting process should be
           returned as components of the returned value, x is a design matrix of dimension n * p,
           and x is a vector of observations of length n.}
- \item{trace}{If \code{TRUE}, fitting progress is reported}
-  \item{...}{Other arguments passing to \code{ccglm}}
+ \item{trace}{if \code{TRUE}, fitting progress is reported}
+  \item{...}{other arguments passing to \code{ccglm}}
 }
 \details{
   A robust linear, logistic or Poisson regression model is fit by the COCO algorithm, where the loss function is a composite function of \code{cfun}o\code{dfun}.
@@ -80,7 +80,7 @@ An object with S3 class \code{"ccglm", "glm"} for various types of models.
 \examples{
 x=matrix(rnorm(100*20),100,20)
 g2=sample(c(-1,1),100,replace=TRUE)
- fit=ccglm(g2~x,data=data.frame(cbind(x, g2)), s=1,cfun="ccave",          dfun=gaussian())
+fit=ccglm(g2~x,data=data.frame(cbind(x, g2)), s=1, cfun="ccave", dfun=gaussian())
 fit$weights_update
 }
  
