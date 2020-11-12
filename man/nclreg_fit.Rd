@@ -7,15 +7,14 @@
   of values for the regularization parameter lambda.
   }
 \usage{
-nclreg_fit(x, y, weights, offset, 
-	   rfamily=c("clossR", "closs", "gloss", "qloss"), 
-	   s=NULL, fk=NULL, iter=10, reltol=1e-5, 
-	   penalty=c("enet","mnet","snet"), nlambda=100, lambda=NULL,
-   type.path=c("active", "nonactive", "onestep"), decreasing=FALSE,
-	   lambda.min.ratio=ifelse(nobs<nvars,.05, .001),alpha=1, gamma=3, 
-	   standardize=TRUE, intercept=TRUE, penalty.factor = NULL, maxit=1000, 
-   type.init=c("bst", "ncl", "heu"), mstop.init=10, nu.init=0.1, 
-   eps=.Machine$double.eps, epscycle=10, thresh=1e-6, trace=FALSE)
+nclreg_fit(x, y, weights, offset, rfamily=c("clossR", "closs", "gloss", "qloss"), 
+           s=NULL, fk=NULL, iter=10, reltol=1e-5, 
+           penalty=c("enet","mnet","snet"), nlambda=100,lambda=NULL, 
+           type.path=c("active", "nonactive", "onestep"), decreasing=FALSE, 
+           lambda.min.ratio=ifelse(nobs<nvars,.05, .001), alpha=1, gamma=3, 
+           standardize=TRUE, intercept=TRUE, penalty.factor=NULL, maxit=1000, 
+           type.init=c("bst", "ncl", "heu"), mstop.init=10, nu.init=0.1, 
+           eps=.Machine$double.eps, epscycle=10, thresh=1e-6, trace=FALSE)
 }
 
 \arguments{
@@ -41,7 +40,7 @@ nclreg_fit(x, y, weights, offset,
   \item{gamma}{The tuning parameter of the \code{snet} or \code{mnet} penalty.}
   \item{standardize}{logical value for x variable standardization, prior to
     fitting the model sequence. The coefficients are always returned on
-    the original scale. Default is \code{standardize=TRUE}.}
+    the original scale. Default is \code{TRUE}.}
   \item{intercept}{logical value: if TRUE (default), intercept(s) are fitted; otherwise, intercept(s)  are set to zero}
   \item{penalty.factor}{This is a number that multiplies \code{lambda} to allow
     differential shrinkage of coefficients. Can be 0 for some variables, which implies
