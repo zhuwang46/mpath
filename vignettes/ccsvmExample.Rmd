@@ -12,7 +12,7 @@ vignette: >
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, tidy.opts=list(width.cutoff=60),tidy=TRUE)
+knitr::opts_chunk$set(echo = TRUE) #tidy.opts=list(width.cutoff=60),tidy=TRUE)
 ```
 The CC-family contains functions of composite of concave and convex functions. The CC-estimators are derived from minimizing loss functions in the CC-family via composite optimization by conjugation operator (COCO). The CC-estimators include robust support vector machines. See @wang2020unified.
 
@@ -38,7 +38,8 @@ plot(svm.model, dat)
 
 Robust radial kernel SVM for classification.
 ```{r, eval=TRUE}
-ccsvm.model <- ccsvm(y ~ ., data = dat, cost = 100, type="C-classification", cfun="acave", s=1)
+ccsvm.model <- ccsvm(y ~ ., data = dat, cost = 100, type="C-classification", cfun="acave", 
+                     s=1)
 summary(ccsvm.model)
 plot(ccsvm.model, dat)
 ```
@@ -51,7 +52,8 @@ id <- sample(n)[1:nout]
 cat("id=", id)
 y[id] <- -y[id]
 dat2 <- data.frame(x=x, y=as.factor(y))
-ccsvm.opt <- cv.ccsvm(y ~ ., data=dat2, type="C-classification", s=1, cfun="acave", n.cores=2, balance=FALSE)
+ccsvm.opt <- cv.ccsvm(y ~ ., data=dat2, type="C-classification", s=1, cfun="acave", 
+                      n.cores=2, balance=FALSE)
 ccsvm.opt$cost
 ccsvm.opt$gamma
 ccsvm.opt$s
@@ -67,7 +69,8 @@ testdat <- data.frame(x=xtest, y=as.factor(ytest))
 
 Fit a robust SVM model again, with tuning parameters selected by cross-validation, then evaluate prediction accuracy with test data, with 85% accuracy.
 ```{r, eval=TRUE}
-ccsvm.model1 <- ccsvm(y ~ ., data = dat2, cost = ccsvm.opt$cost, gamma=ccsvm.opt$gamma, s=ccsvm.opt$s, cfun="acave", type="C-classification")
+ccsvm.model1 <- ccsvm(y ~ ., data = dat2, cost = ccsvm.opt$cost, gamma=ccsvm.opt$gamma, 
+                      s=ccsvm.opt$s, cfun="acave", type="C-classification")
 summary(ccsvm.model1)
 table(predict=predict(ccsvm.model1, xtest), truth=testdat$y)
 plot(ccsvm.model1, dat2)
@@ -75,11 +78,13 @@ plot(ccsvm.model1, dat2)
 
 Develop a SVM model with training data and evaluate with the test data. The prediction accuracy is 80%.
 ```{r, eval=TRUE}
-svm.model1 <- svm(y~., data=dat2, cost=ccsvm.opt$cost, gamma=ccsvm.opt$gamma,  type="C-classification")
+svm.model1 <- svm(y~., data=dat2, cost=ccsvm.opt$cost, gamma=ccsvm.opt$gamma,  
+                  type="C-classification")
 summary(svm.model1)
 table(predict=predict(svm.model1, testdat), truth=testdat$y)
 plot(svm.model1, dat2)
 ```
+
 In robust SVM with function \texttt{ccsvm}, argument \texttt{cfun} can be chosen from \texttt{"hcave", "acave", "bcave", "ccave", "dcave", "gcave", "tcave", "ecave"}, for a variety of concave functions.
 
 ## Support vector machine regression
@@ -102,7 +107,8 @@ testdat <- dat[-trid, ]
 ```
 Fit the robust radial kernel CCSVM model with truncated $\epsilon$-insensitive loss, i.e., \texttt{cfun=``tcave''} in function \texttt{ccsvm}. Root mean squared error on test data is reported. A comprehensive robust CCSVM analysis  with other types of \texttt{cfun} can be found in @wang2020unified.
 ```{r}
-ccsvm.model <- ccsvm(x=traindat[,-p], y=traindat[,p], cost = 2^3, gamma=2^(-4), epsilon=2^(-4), s=5, cfun="tcave")
+ccsvm.model <- ccsvm(x=traindat[,-p], y=traindat[,p], cost = 2^3, gamma=2^(-4), 
+                     epsilon=2^(-4), s=5, cfun="tcave")
 summary(ccsvm.model)
 ccsvm.predict <- predict(ccsvm.model, testdat[,-p])
 mse1 <- mean((testdat[,p] - ccsvm.predict)^2)
@@ -110,12 +116,13 @@ cat("RMSE with robust SVM", sqrt(mse1))
 ```
 Fit the radial kernel SVM model. The RMSE is larger than the robust SVM, and the model has a larger number of support vectors as well. See the figure below for a comparison.
 ```{r}
-svm.model <- svm(x=traindat[,-p], y=traindat[,p], cost=2^3,       gamma=2^(-4), epsilon=2^(-4))
+svm.model <- svm(x=traindat[,-p], y=traindat[,p], cost=2^3, gamma=2^(-4), epsilon=2^(-4))
 summary(svm.model)
 svm.predict <- predict(svm.model, testdat[,-p])
 mse2 <- mean((testdat[,p] - svm.predict)^2)
 cat("RMSE with SVM", sqrt(mse2))
-plot(testdat[,p], ccsvm.predict, col="red", pch=1, ylab="Predicted values",xlab="Median home values ($1000)")
+plot(testdat[,p], ccsvm.predict, col="red", pch=1, ylab="Predicted values",
+     xlab="Median home values ($1000)")
 points(testdat[,p], svm.predict, col="black", pch=2)
 legend("topleft", c("CCSVM", "SVM"), col=c("red", "black"), pch=c(1, 2))
 abline(coef=c(0, 1))
