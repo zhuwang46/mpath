@@ -4,7 +4,7 @@ C     repeated ones
       subroutine ccglmreg_fortran(x, y, weights, n,m,start, etastart,
      +     mustart, offset, iter, nlambda, lambda, alpha, gam, rescale, 
      +     standardize, intercept, penaltyfactor, maxit, eps, theta, 
-     +     epscycle,penalty, trace,del,cfun, dfun, s,thresh,decreasing, 
+     +     penalty, trace,del,cfun, dfun, s,thresh,decreasing, 
      +     active, beta, b0, yhat, los, pll, nlambdacal, delta,
      +     weights_cc)
       implicit none
@@ -16,7 +16,7 @@ C     repeated ones
       double precision x(n, m), y(n), weights(n), weights_update(n), 
      +     weights_cc(n, nlambda), start(m+1),etastart(n),
      +     mustart(n), offset(n), lambda(nlambda), alpha, gam, eps, 
-     +     penaltyfactor(m), thresh, beta(m, nlambda), epscycle,
+     +     penaltyfactor(m), thresh, beta(m, nlambda),
      +     b0(nlambda), b0_1, yhat(n), del, lambda_i, s,sumw,wt(n),  
      +     fk(n), los(nlambda), pll(nlambda), penval, delta, theta
       double precision, dimension(:, :), allocatable :: x_act
