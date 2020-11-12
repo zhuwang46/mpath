@@ -298,3 +298,10 @@
                CHANGES in `mpath' VERSION 0.4-2.16 (10-14-2020)
 
   o change function names from coglm to ccglm, coreg to ccglmreg, cosvm to ccsvm, etc.
+  o move ccglmExample.Rmd, ccsvmExample.Rmd and german.Rmd out of vignettes folder (mpath_vignettes) to avoid some errors in some systems on CRAN/rhub for unknown reasons. Set up static link in vignettes instead
+  o How to build mpath:
+    R CMD build --compact-vignettes="both" mpath
+  
+               CHANGES in `mpath' VERSION 0.4-2.17 (11-10-2020)
+
+  o add .Rbuildignore to ignore three Rmd files in vignettes
