@@ -1,9 +1,10 @@
 loss2 <- function(y, f, weights, cfun, dfun, s, delta=0.0001){
     cfun <- cfun2num(cfun)
     dfun <- dfun2num(dfun)
-    if(!dfun %in% c(1, 4:7)) stop("dfun is not implemented")
+    #if(!dfun %in% c(1, 4:7)) stop("dfun is not implemented")
     if(!cfun %in% 1:8) stop("cfun is not implemented")
     check_s(cfun, s)
+    if(dfun %in% 4:7 && !setequal(unique(y), c(-1, 1))) stop("y must be -1/1 for binary classification")
     n <- length(y)
     if(n!=length(f)) stop("y and f should have comparable length\n")
     if(missing(weights)) weights <- rep(1, length(y))
