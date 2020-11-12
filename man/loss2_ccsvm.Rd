@@ -11,7 +11,7 @@ loss2_ccsvm(y, f, weights, cfun, dfun, s, eps, delta=0.0001)
  \item{y}{response variable values}
  \item{f}{fitted values of \code{y}}
  \item{weights}{observation weights, same length as \code{y}}
- \item{cfun}{integer from 1-7, concave function as in \code{ccsvm_fit}}
+ \item{cfun}{integer from 1-8, concave function as in \code{ccsvm_fit}}
  \item{dfun}{integer value, only \code{dfun=2} is implemented for now. Convex function as in \code{ccsvm_fit}}
   \item{s}{ tuning parameter of \code{cfun}. \code{s > 0} and can be equal to 0 for \code{cfun="tcave"}.}
     \item{delta}{a small positive number provided by user only if  \code{cfun="gcave"} and \code{0 < s <1}}
