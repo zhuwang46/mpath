@@ -6,8 +6,8 @@
   }
 \usage{
 ncl_fit(x,y, weights, offset=NULL, 
-	rfamily=c("clossR", "closs", "gloss", "qloss"), 
-	s=NULL, fk=NULL, iter=10, reltol=1e-5, trace=FALSE)
+        rfamily=c("clossR", "closs", "gloss", "qloss"), 
+        s=NULL, fk=NULL, iter=10, reltol=1e-5, trace=FALSE)
 }
 
 \arguments{
