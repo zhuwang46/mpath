@@ -11,20 +11,12 @@ C     output: start_act, etastart, mustart, beta_1, b0_1, fk
       integer n,k,j,intercept,penalty,maxit,trace,iter,m_act,
      +        satu, cfun, dfun, dfunnew, i, ii, standardize, rescale
       double precision y(n), weights(n),etastart(n), mustart(n), 
-     +     offset(n),lambda_i,alpha,gam,eps,los,penval,pll,pll_old,
+     +     offset(n),lambda_i,alpha,gam,eps,
      +     thresh, b0_1, yhat(n), d, d1, del, fk_old(n), s, 
-     +     h(n), fk(n), x_act(n, m_act), start_act(m_act+1),
-     +     beta_1(m_act), penaltyfactor_act(m_act), u(n), z(n), v(n),
-     +     weights_update(n), sumw, delta, ytmp(n), theta
+     +     fk(n), x_act(n, m_act), start_act(m_act+1),
+     +     beta_1(m_act), penaltyfactor_act(m_act),
+     +     weights_update(n), delta, ytmp(n), theta
       external update_wt, loss2, penGLM
-
-C        sumw = 0.0D0
-C        do ii=1, n
-C          sumw=sumw+weights(ii)
-C        enddo
-C        do ii=1, n
-C          wt(ii)=weights(ii)/sumw
-C        enddo
 
       if(dfun==5)then
          do i=1, n
