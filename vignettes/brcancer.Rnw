@@ -37,7 +37,7 @@ options(prompt = "R> ", continue = " ", width = 60, useFancyQuotes = FALSE)
 opts_chunk$set(tidy=TRUE, highlight=FALSE, background="white")
 opts_chunk$set(dev=c('pdf','postscript'), fig.path='cancerfigure/')
 @
-<<message=FALSE, eval=TRUE>>=
+<<message=FALSE, eval=FALSE>>=
 #The data files below were downloaded on June 1, 2016
 require("gdata")
 library("mpath")
@@ -87,7 +87,7 @@ plot.it <- TRUE
 The training data contains randomly selected 50 samples with positive estrogen receptor status and 50 samples with negative estrogen receptor status, and the rest were designated as the test data. The training data is contaminated by randomly switching response variable labels at varying pre-specified proportions \R{per}=\Sexpr{per}. This process is repeated \R{nrun}=\Sexpr{nrun} times. Robust non-convex loss functions include C-loss, G-loss and Q-loss, each with penalty LASSO, SCAD and MCP. The
 initial values are derived using the boosting package \R{bst} with \R{mstop}=\Sexpr{mstop} and \R{nu} provided below depending on loss function \R{type}. For SCAD and MCP penalty, a penalty tuning parameter \R{gam} is provided below. To select optimal penalization tuning parameters, we run five-fold cross-validation averaging classification errors. The classification errors and number of selected variables are tabularized and plotted with \R{plot.it=TRUE}. %With \R{type.path="nonactive"}, the prediction accuracy can be slightly improved in some scenarios, for instance, with contamination rate 15\%. However, the computing times can be doubled. 
 Finally, this script also contains results with penalized logistic regression using \R{glmreg}. 
-<<brcancer, fig.show='hold', eval=TRUE>>=
+<<brcancer, fig.show='hold', eval=FALSE>>=
 summary7 <- function(x) c(summary(x), sd=sd(x))
 ptm <- proc.time()
 for(k in (1:4)){   ### k controls family argument rfamily type (see above)
