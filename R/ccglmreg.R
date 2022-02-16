@@ -305,7 +305,7 @@ ccglmreg_fit <- function(x,y, weights, offset, cfun="ccave", dfun="gaussian",
         while(i <= nlambda){
             if(trace) message("\nloop in lambda:", i, ", lambda=", lambda[i], "\n")
              if(trace) {
-                 cat(" COCO iterations ...\n")
+                 cat(" IRCO iterations ...\n")
              }
             k <- 1
             d1 <- 10
