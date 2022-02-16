@@ -1,7 +1,7 @@
 ---
 title: "Robust Generalized Linear Models"
-author: Zhu Wang^[UT Health San Antonio, wangz1@uthscsa.edu]
-date: "10/12/2020"
+author: Zhu Wang^[UT Health San Antonio, zhuwang@gmail.com]
+date: "`r format(Sys.time(), '%B %d, %Y')`"
 bibliography: mpath.bib
 link-citations: true
 output:
@@ -14,7 +14,7 @@ vignette: >
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE) 
 ```
-The CC-family contains functions of composite of concave and convex functions. The CC-estimators are derived from minimizing loss functions in the CC-family via composite optimization by conjugation operator (COCO). The CC-estimators include robust generalized linear models. See @wang2020unified.
+The CC-family contains functions of composite of concave and convex functions. The CC-estimators are derived from minimizing loss functions in the CC-family by the iteratively reweighted convex optimization (IRCO), an extension of the iteratively reweighted least squares (IRLS). The IRCO reduces the weight of the observation that leads to a large loss; it also provides weights to help identify outliers. Applications include robust (penalized) generalized linear models. See @wang2020unified.
 
 ## Robust logistic regression
 
