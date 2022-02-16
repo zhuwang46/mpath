@@ -47,9 +47,9 @@
    \item{init.family}{ character value for initial family, one of "clossR","closs","gloss","qloss", which can be used to derive an initial estimator, if the selection is different from the default value }
   \item{s}{ tuning parameter of \code{cfun}. \code{s > 0} and can be equal to 0 for \code{cfun="tcave"}. If \code{s} is too close to 0 for  \code{cfun="acave", "bcave", "ccave"}, the calculated weights can become 0 for all observations, thus crash the program.} 
  \item{delta}{a small positive number provided by user only if \code{cfun="gcave"} and \code{0 < s <1}}
-  \item{fk}{ predicted values at an iteration in the COCO algorithm }
- \item{iter}{number of iteration in the COCO algorithm}
- \item{reltol}{convergency criteria in the COCO algorithm}
+  \item{fk}{ predicted values at an iteration in the IRCO algorithm }
+ \item{iter}{number of iteration in the IRCO algorithm}
+ \item{reltol}{convergency criteria in the IRCO algorithm}
 \item{theta}{ an overdispersion scaling parameter for \code{family=negbin()}} 
   \item{x.keep, y.keep}{ logical values indicating whether the response
           vector and model matrix used in the fitting process should be
@@ -59,20 +59,20 @@
   \item{...}{other arguments passing to \code{ccglm}}
 }
 \details{
-  A robust linear, logistic or Poisson regression model is fit by the COCO algorithm, where the loss function is a composite function of \code{cfun}o\code{dfun}.
+  A robust linear, logistic or Poisson regression model is fit by the IRCO algorithm, where the loss function is a composite function of \code{cfun}o\code{dfun}.
   }
 \value{
 An object with S3 class \code{"ccglm", "glm"} for various types of models.
   \item{call}{the call that produced the model fit}
   \item{weights}{original weights used in the model}
-  \item{weights_update}{weights in the final iteration of the COCO algorithm}
+  \item{weights_update}{weights in the final iteration of the IRCO algorithm}
   \item{cfun, s, dfun}{original input arguments}
   \item{is.offset}{is offset used?}
 }
 
 \references{
   Zhu Wang (2020)
-  \emph{Unified Robust Estimation via the COCO, arXiv e-prints}, \url{https://arxiv.org/abs/2010.02848}
+  \emph{Unified Robust Estimation, arXiv e-prints}, \url{https://arxiv.org/abs/2010.02848}
  }
 
 \author{Zhu Wang <wangz1@uthscsa.edu>}
