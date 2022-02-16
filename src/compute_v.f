@@ -1,4 +1,4 @@
-C compute subdifferential of -g(z), step 4 in the COCO Algorithm
+C compute subdifferential of -g(z), step 4 in the IRCO Algorithm
 C used in ccglmreg_onelambda 
 C output v
       subroutine compute_v(cfun, n, z, s, delta, v)
