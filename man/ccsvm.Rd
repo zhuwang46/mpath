@@ -28,7 +28,7 @@
   \item{...}{Other arguments passing to \code{ccsvm_fit}}
 }
 \details{
-  The model is fit by the COCO algorithm.
+  The model is fit by the IRCO algorithm.
 
   For linear kernel, the coefficients of the regression/decision hyperplane
    can be extracted using the \code{coef} method.
@@ -37,14 +37,14 @@
 \value{
 An object with S3 class \code{"wsvm"} for various types of models.
 \item{call}{the call that produced this object}
-\item{weights_update}{weights in the final iteration of the COCO algorithm}
+\item{weights_update}{weights in the final iteration of the IRCO algorithm}
 \item{cfun, s}{original input arguments}
 \item{delta}{delta value used for \code{cfun="gcave"}}
 }
 
 \references{
    Zhu Wang (2020)
-   \emph{Unified Robust Estimation via the COCO, arXiv e-prints}, \url{https://arxiv.org/abs/2010.02848}
+   \emph{Unified Robust Estimation, arXiv e-prints}, \url{https://arxiv.org/abs/2010.02848}
   }
 
 \author{Zhu Wang <wangz1@uthscsa.edu>}
