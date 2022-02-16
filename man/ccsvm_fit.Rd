@@ -2,7 +2,7 @@
 \alias{ccsvm_fit}
 \title{Fit iteratively re-weighted support vector machines for robust loss functions}
 \description{
-\code{ccsvm} is used to train a subject weighted support vector machine where the weights are provided iteratively from robust loss function with COCO algorithm. It can be used to carry out robust regression and binary classification.
+\code{ccsvm} is used to train a subject weighted support vector machine where the weights are provided iteratively from robust loss function with the IRCO algorithm. It can be used to carry out robust regression and binary classification.
 }
 \usage{
 ccsvm_fit(x, y, weights, cfun="ccave", s=NULL, delta=0.0001, type = NULL, 
@@ -60,8 +60,8 @@ ccsvm_fit(x, y, weights, cfun="ccave", s=NULL, delta=0.0001, type = NULL,
   \item{cost}{cost of constraints violation (default: 1)---it is the
      \sQuote{C}-constant of the regularization term in the Lagrange formulation. This is proportional to the inverse of \code{lambda} in \code{ccglmreg}.} 
   \item{epsilon}{epsilon in the insensitive-loss function (default: 0.1)}
-\item{iter}{number of iteration in the COCO algorithm}
-  \item{reltol}{convergency criteria in the COCO algorithm}
+\item{iter}{number of iteration in the IRCO algorithm}
+  \item{reltol}{convergency criteria in the IRCO algorithm}
   \item{trace}{If \code{TRUE}, fitting progress is reported}
 \item{\dots}{additional parameters for function \code{wsvm} in package \pkg{WeightSVM}}
 }
@@ -82,13 +82,13 @@ ccsvm_fit(x, y, weights, cfun="ccave", s=NULL, delta=0.0001, type = NULL,
     the decision values of the binary classifiers (1 / (1 + exp(a x + b))).}
 }
 \details{
-    A case weighted SVM is fit by the COCO algorithm, where the loss function is a composite function of \code{cfun}o\code{type}, plus a \eqn{L\_2} penalty.
+    A case weighted SVM is fit by the IRCO algorithm, where the loss function is a composite function of \code{cfun}o\code{type}, plus a \eqn{L\_2} penalty.
  Additional arguments include \code{degree, gamma, coef0}, 
  \code{class.weights, cachesize, tolerance, shrinking, propbability, fitted}, the same as \code{"wsvm"} in package \pkg{WeightSVM}.
 }
 \references{
    Zhu Wang (2020)
-   \emph{Unified Robust Estimation via the COCO, arXiv e-prints}, \url{https://arxiv.org/abs/2010.02848}
+   \emph{Unified Robust Estimation, arXiv e-prints}, \url{https://arxiv.org/abs/2010.02848}
   }
 \author{
   Zhu Wang \email{wangz1@uthscsa.edu}
