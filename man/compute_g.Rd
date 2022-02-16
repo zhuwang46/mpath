@@ -25,7 +25,7 @@ plot(z, res, ylab="Weight", type="l", lwd=2,
      main=expression(paste("hcave", "   (", sigma, "=1)", )))
 }
 \references{
-   Zhu Wang (2020) \emph{Unified Robust Estimation via the COCO, arXiv e-prints}, \url{https://arxiv.org/abs/2010.02848}
+   Zhu Wang (2020) \emph{Unified Robust Estimation, arXiv e-prints}, \url{https://arxiv.org/abs/2010.02848}
   }
 \author{Zhu Wang <wangz1@uthscsa.edu>}
 
