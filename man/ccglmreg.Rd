@@ -30,7 +30,7 @@
   \item{...}{Other arguments passing to \code{ccglmreg_fit}}
 }
 \details{
-  The sequence of robust models implied by \code{lambda} is fit by COCO along with coordinate
+  The sequence of robust models implied by \code{lambda} is fit by the IRCO along with coordinate
   descent. Note that the objective function is \deqn{weights*loss + \lambda*penalty,} if \code{standardize=FALSE} and \deqn{
   \frac{weights}{\sum(weights)}*loss + \lambda*penalty,} if \code{standardize=TRUE}. 
   }
@@ -50,7 +50,7 @@ An object with S3 class \code{"ccglmreg"} for the various types of models.
 
 \references{
    Zhu Wang (2020)
-   \emph{Unified Robust Estimation via the COCO, arXiv e-prints}, \url{https://arxiv.org/abs/2010.02848}
+   \emph{Unified Robust Estimation, arXiv e-prints}, \url{https://arxiv.org/abs/2010.02848}
   }
 
 \author{Zhu Wang <wangz1@uthscsa.edu>}
