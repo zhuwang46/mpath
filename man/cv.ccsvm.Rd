@@ -41,7 +41,7 @@ ccsvm.opt$s
 }
 }
 \references{
-   Zhu Wang (2020) \emph{Unified Robust Estimation via the COCO, arXiv e-prints}, \url{https://arxiv.org/abs/2010.02848}
+   Zhu Wang (2020) \emph{Unified Robust Estimation, arXiv e-prints}, \url{https://arxiv.org/abs/2010.02848}
  }
 \author{Zhu Wang <wangz1@uthscsa.edu>}
 
