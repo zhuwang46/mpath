@@ -81,7 +81,7 @@ This function is the driving force behind \code{cv.ccsvm}. Does a K-fold cross-v
 }
 \references{
    Zhu Wang (2020)
-   \emph{Unified Robust Estimation via the COCO, arXiv e-prints}, \url{https://arxiv.org/abs/2010.02848}
+   \emph{Unified Robust Estimation, arXiv e-prints}, \url{https://arxiv.org/abs/2010.02848}
   }
 
 \author{Zhu Wang <wangz1@uthscsa.edu>}
