@@ -59,7 +59,7 @@
    Zhu Wang (2021),
    \emph{MM for Penalized Estimation},
    \emph{TEST},
-   \url{https://doi.org/10.1007/s11749-021-00770-2}
+   \doi{10.1007/s11749-021-00770-2}
  }
 \author{Zhu Wang <wangz1@uthscsa.edu>}
 
