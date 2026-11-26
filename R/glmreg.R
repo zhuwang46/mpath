@@ -1,10 +1,10 @@
-                                        #.First.lib <- function(lib, pkg)
+#.First.lib <- function(lib, pkg)
 .onLoad <- function(lib, pkg)
 {
     library.dynam("mpath", pkg, lib)
 }
-                                        #coordinate descent algorithm
-                                        #ref: Regularization paths for generalized linear models via coordinate descent, Friedman et al., JSS, 2010, 33(1)
+#coordinate descent algorithm
+#ref: Regularization paths for generalized linear models via coordinate descent, Friedman et al., JSS, 2010, 33(1)
 glmreg <- function(x, ...) UseMethod("glmreg")
 
 glmreg.default <- function(x, ...) {
@@ -53,9 +53,9 @@ glmreg.formula <- function(formula, data, weights, offset=NULL, contrasts=NULL,
         if(length(offset) != NROW(Y))
             stop(gettextf("number of offsets is %d should equal %d (number of observations)", length(offset), NROW(Y)), domain = NA)
     }
-### End of addition 08/07/2012 
+    ### End of addition 08/07/2012 
 
-    RET <- glmreg_fit(X[,-1], Y, weights=weights, offset=offset,...)
+    RET <- glmreg_fit(X[,-1,drop=FALSE], Y, weights=weights, offset=offset,...)
     RET$call <- match.call()
     RET <- c(RET, list(formula=formula, terms = mt, data=data,
                        contrasts = attr(X, "contrasts"),
@@ -71,9 +71,9 @@ glmreg.matrix <- function(x, y, weights, offset=NULL, ...){
     return(RET)
 }
 
-glmreg_fit <- function(x, y, weights, start=NULL, etastart=NULL, mustart=NULL, offset=NULL, nlambda=100, lambda=NULL, lambda.min.ratio=ifelse(nobs<nvars,.05, .001),alpha=1, gamma=3, rescale=TRUE, standardize=TRUE, intercept=TRUE, penalty.factor = rep(1, nvars),thresh=1e-6, eps.bino=1e-5, maxit=1000, eps=.Machine$double.eps, theta, family=c("gaussian", "binomial", "poisson", "negbin"), penalty=c("enet","mnet","snet"), convex=FALSE, x.keep=FALSE, y.keep=TRUE, trace=FALSE){
-	#if(!is.null(start) && !is.null(etastart) && !is.null(mustart))
-	#stop("start, etastart and mustart is for testing only\n")
+glmreg_fit <- function(x, y, weights, start=NULL, etastart=NULL, mustart=NULL, offset=NULL, nlambda=100, lambda=NULL, lambda.min.ratio=ifelse(nobs<nvars,.05, .001),alpha=1, gamma=3, rescale=TRUE, standardize=TRUE, intercept=TRUE, penalty.factor = rep(1, nvars),thresh=1e-6, eps.bino=1e-5, maxit=1000, eps=.Machine$double.eps, theta, family=c("gaussian", "binomial", "poisson", "negbin"), penalty=c("enet","mnet","snet"), convex=FALSE, x.keep=FALSE, y.keep=TRUE, trace=FALSE, lower.limits=-Inf, upper.limits=Inf){
+    #if(!is.null(start) && !is.null(etastart) && !is.null(mustart))
+    #stop("start, etastart and mustart is for testing only\n")
     family <- match.arg(family)
     penalty <- match.arg(penalty)
     if(!family %in% c("gaussian", "binomial", "poisson", "negbin")){
@@ -81,8 +81,8 @@ glmreg_fit <- function(x, y, weights, start=NULL, etastart=NULL, mustart=NULL, o
         stop("'family' not recognizied\n")
     }
     if(family == "gaussian") rescale <- FALSE
-                                        #if(family!="gaussian" && y < 0)
-                                        #  stop("except for gaussian family, response should be nonnegative")
+    #if(family!="gaussian" && y < 0)
+    #  stop("except for gaussian family, response should be nonnegative")
     if (gamma <= 1 && penalty=="mnet") stop("gamma must be greater than 1 for the mnet penalty")
     if (gamma <= 2 && penalty=="snet") stop("gamma must be greater than 2 for the snet penalty")
     if (alpha < 0 || alpha > 1){
@@ -97,6 +97,28 @@ glmreg_fit <- function(x, y, weights, start=NULL, etastart=NULL, mustart=NULL, o
     nm <- dim(x)
     nobs <- n <- nm[1]
     nvars <- m <- nm[2]
+    check_limits <- function(limits, name, lower) {
+        if (!is.numeric(limits) || anyNA(limits) ||
+            !(length(limits) %in% c(1L, nvars)))
+            stop(name, " must be a numeric scalar or a vector of length ncol(x), without missing values")
+        if (length(limits) == 1L) limits <- rep(limits, nvars)
+        if (lower && any(limits > 0))
+            stop("lower.limits must be less than or equal to zero")
+        if (!lower && any(limits < 0))
+            stop("upper.limits must be greater than or equal to zero")
+        as.double(limits)
+    }
+    lower.limits <- check_limits(lower.limits, "lower.limits", TRUE)
+    upper.limits <- check_limits(upper.limits, "upper.limits", FALSE)
+    bounded <- any(is.finite(lower.limits) | is.finite(upper.limits))
+    if (bounded && penalty != "enet")
+        stop("coefficient limits are supported only with penalty = 'enet'")
+    if (bounded && !intercept)
+        stop("coefficient limits currently require intercept = TRUE")
+    if (is.null(lambda) && length(penalty.factor) == nvars &&
+        any(penalty.factor == 0 &
+            (is.finite(lower.limits) | is.finite(upper.limits))))
+        stop("supply lambda explicitly when an unpenalized coefficient has a finite limit")
     if (is.null(lambda) && is.null(lambda.min.ratio)){
         stop("lambda or lambda.min.ratio must be provided\n")
     }
@@ -109,8 +131,8 @@ glmreg_fit <- function(x, y, weights, start=NULL, etastart=NULL, mustart=NULL, o
         stop("negative weights not allowed")
     }
     if (is.null(offset)){
-	    is.offset <- FALSE
-	    offset <- rep.int(0, nobs)
+        is.offset <- FALSE
+        offset <- rep.int(0, nobs)
     }else is.offset <- TRUE
     if(family=="binomial"){
         if(is.factor(y))
@@ -142,12 +164,12 @@ glmreg_fit <- function(x, y, weights, start=NULL, etastart=NULL, mustart=NULL, o
                       "mnet"=2,
                       "snet"=3)
     stantype <- as.numeric(standardize)
-                                        #  warning("alp = 1/theta in glm negative.binomial function\n")
+    #  warning("alp = 1/theta in glm negative.binomial function\n")
     if(length(penalty.factor) != nvars) stop("number of penalty.factor should be the same as nvars")
     if(all(penalty.factor==0)){ 
-    lambda <- rep(0, nvars)
-    penalty.factor <- rep(1, nvars)
-}
+        lambda <- rep(0, nvars)
+        penalty.factor <- rep(1, nvars)
+    }
     ### ref: McCullagh and Nelder, 2nd edition, 1989, page 121
     ### compute intercept-only model
     if(family!="negbin") tmpres <- glm(y~rep(1, nobs)-1, weights=weights, offset=offset, family=family)
@@ -163,12 +185,12 @@ glmreg_fit <- function(x, y, weights, start=NULL, etastart=NULL, mustart=NULL, o
                         family=as.integer(famtype),
                         dev=as.double(0),
                         PACKAGE="mpath")$dev
-### compute the pathwise coordinate descent, cf: section 2.5 in Friedman et al., JSS 2010, 33(1)
+    ### compute the pathwise coordinate descent, cf: section 2.5 in Friedman et al., JSS 2010, 33(1)
     if(is.null(weights)) weights <- rep(1, n)
     wt <- weights/sum(weights)
     if(is.null(mustart) || is.null(etastart) || is.null(lambda)){
-     eta <- eta0
-     mu <- mu0
+        eta <- eta0
+        mu <- mu0
     }
     else{
         mu <- mustart
@@ -192,10 +214,10 @@ glmreg_fit <- function(x, y, weights, start=NULL, etastart=NULL, mustart=NULL, o
                       family=as.integer(famtype),
                       z=as.double(rep(0,n)),
                       PACKAGE="mpath")$z
-	z <- z - offset
-    lmax <- findlam(x=x, y=y, weights=weights, family=family, theta=theta, w=w, z=z, alpha=ifelse(alpha > 0, alpha, 1e-3), penalty.factor=penalty.factor, standardize=standardize) 
-                                        #    if(penalty %in% c("mnet", "snet") && !rescale) lmax <- 0.5 * sqrt(lmax)
-    lpath <- seq(log(lmax), log(lambda.min.ratio * lmax), length.out=nlambda)
+        z <- z - offset
+        lmax <- findlam(x=x, y=y, weights=weights, family=family, theta=theta, w=w, z=z, alpha=ifelse(alpha > 0, alpha, 1e-3), penalty.factor=penalty.factor, standardize=standardize) 
+        #    if(penalty %in% c("mnet", "snet") && !rescale) lmax <- 0.5 * sqrt(lmax)
+        lpath <- seq(log(lmax), log(lambda.min.ratio * lmax), length.out=nlambda)
         lambda <- exp(lpath)
     }
     else nlambda <- length(lambda)
@@ -235,9 +257,18 @@ glmreg_fit <- function(x, y, weights, start=NULL, etastart=NULL, mustart=NULL, o
         xx <- sqrt(wtnew) * xx
         one <- rep(1,n)  
         normx <- sqrt(one %*% xx^2)
+        normx[normx == 0] <- 1
         xx <- scale(x, meanx, normx)
     }
-    tmp <- .Fortran("outloop",
+    # The solver operates on standardized coefficients when requested. Bounds
+    # are specified on the returned coefficient scale and transformed here.
+    bound_scale <- if (standardize) as.vector(normx) else rep(1, nvars)
+    lower_solver <- pmax(lower.limits * bound_scale, -.Machine$double.xmax)
+    upper_solver <- pmin(upper.limits * bound_scale, .Machine$double.xmax)
+    if (bounded && startv == 1 &&
+        any(start[-1] < lower_solver | start[-1] > upper_solver))
+        stop("starting coefficients must satisfy the coefficient limits")
+    fortran_args <- list(if (bounded) "outloop_bounds" else "outloop",
                     x=as.double(x),
                     y=as.double(y),
                     weights=as.double(weights),
@@ -253,7 +284,7 @@ glmreg_fit <- function(x, y, weights, start=NULL, etastart=NULL, mustart=NULL, o
                     rescale=as.integer(rescale),
                     mu=as.double(mu),
                     eta=as.double(eta),
-	          	    offset=as.double(offset),
+                    offset=as.double(offset),
                     family=as.integer(famtype),
                     standardize=as.integer(stantype),
                     intercept=as.integer(intercept),
@@ -273,17 +304,19 @@ glmreg_fit <- function(x, y, weights, start=NULL, etastart=NULL, mustart=NULL, o
                     satu=as.integer(0),
                     good=as.integer(nlambda),
                     ep = as.double(eps.bino),
-                    outpll = as.double(matrix(0, maxit, nlambda)),
-                    PACKAGE="mpath") 
+                    outpll = as.double(matrix(0, maxit, nlambda)))
+    if (bounded)
+        fortran_args <- c(fortran_args, list(lower=as.double(lower_solver),
+                                             upper=as.double(upper_solver)))
+    tmp <- do.call(.Fortran, c(fortran_args, list(PACKAGE="mpath")))
     if(nlambda > 1 || tmp$satu==0)
         good <- 1:tmp$good # only those non-saturated models
     else if(tmp$satu==1)
         return(RET <- list(satu=1))
-### Names
+    ### Names
     if(is.null(colnames(x))) varnames <- paste("V", 1:ncol(x), sep="")
     else varnames <- colnames(x)
-    beta <- matrix(tmp$b, ncol=nlambda)[,good]
-    beta <- as.matrix(beta)
+    beta <- matrix(tmp$b, ncol=nlambda)[,good,drop=FALSE]
     b0 <- tmp$bz[good]
     ### note: pll was from standardized beta values if standardize=TRUE
     if(trace)
@@ -292,15 +325,14 @@ glmreg_fit <- function(x, y, weights, start=NULL, etastart=NULL, mustart=NULL, o
     convex.min <- if (convex && all(weights==1)) convexMin(rbind(b0, beta), xx, penalty, gamma, lambda*(1-alpha), family, theta=theta) else NULL
     if(convex && any(weights!=1)) warnings("code for convex region implemented for weights=1 only\n")
     if (standardize){ 
-                                        #if (family != "gaussian" && standardize){ 
+        #if (family != "gaussian" && standardize){ 
         beta <- as.matrix(beta/as.vector(normx))
         if(intercept){
-        b0 <- b0 - crossprod(meanx,beta)
-        if (family == "gaussian"){
-            b0 <- mean(y) + b0    ### changed 4/22/2015
-            b0 <- b0 - mean(offset)
+            b0 <- b0 - crossprod(meanx,beta)
+            if (family == "gaussian"){
+                b0 <- b0 + sum(wtnew * (y - offset))
+            }
         }
-	}
     }
     else normx <- NULL
     resdev <- tmp$resdev[good]
@@ -316,11 +348,15 @@ glmreg_fit <- function(x, y, weights, start=NULL, etastart=NULL, mustart=NULL, o
     nlambda <- length(lambda[good])
     b0 <- matrix(b0, ncol=nlambda)
     RET <- list(family=family,standardize=standardize, satu=tmp$satu, lambda=lambda, nlambda=nlambda, beta=beta, b0=b0, meanx=meanx, normx=normx, theta=theta[good], nulldev=nulldev, resdev=resdev, pll = pll, fitted.values=yhat, converged=tmp$convout[good], convex.min=convex.min, penalty.factor=penalty.factor, gamma=gamma, alpha=alpha, is.offset=is.offset, offset=offset)
+    if (bounded) {
+        RET$lower.limits <- lower.limits
+        RET$upper.limits <- upper.limits
+    }
     if(x.keep) RET$x <- x
     if(y.keep) RET$y <- y
     class(RET) <- "glmreg"
     RET$twologlik <- try(2*logLik(RET, newx=x, y=y, weights=weights, offset=offset))
-###penalized log-likelihood function value for rescaled beta
+    ###penalized log-likelihood function value for rescaled beta
     penval <- rep(NA, nlambda)
     for(j in (1:nlambda)){
         penval[j] <- .Fortran("penGLM", 
@@ -337,17 +373,20 @@ glmreg_fit <- function(x, y, weights, start=NULL, etastart=NULL, mustart=NULL, o
     if(standardize)
         RET$pllres <- RET$twologlik/2 - n*penval
     else RET$pllres <- RET$twologlik/2 - penval
-    if(intercept) npar <- 1+RET$df else npar <- RET$df
+    #if(intercept) npar <- 1+RET$df else npar <- RET$df
     if(nlambda == 1){
         RET$df <- sum(abs(beta) > 0) ### df= number of nonzero coefficients (intercept excluded)
-        RET$aic <- -RET$twologlik + 2*npar
-        RET$bic <- -RET$twologlik + log(n)*npar
+        #RET$aic <- -RET$twologlik + 2*npar
+        #RET$bic <- -RET$twologlik + log(n)*npar
     }
     else{
         RET$df <- apply(abs(beta) > 0, 2, sum) ##number of nonzero coefficients for each lambda
-        RET$aic <- -RET$twologlik + 2*npar
-        RET$bic <- -RET$twologlik + log(n)*npar
+        #RET$aic <- -RET$twologlik + 2*npar
+        #RET$bic <- -RET$twologlik + log(n)*npar
     }
+    if(intercept) npar <- 1+RET$df else npar <- RET$df
+    RET$aic <- -RET$twologlik + 2*npar
+    RET$bic <- -RET$twologlik + log(n)*npar
     RET  
 }
 
@@ -372,7 +411,7 @@ g <- function(mu, family, eps.bino=1e-5){
            "negbin"={
                eta <- log(mu)
            }
-           )
+    )
     return(eta)
 }
 
@@ -393,24 +432,73 @@ init <- function(wt, y, offset, family){
            "negbin"={ ###Negative binomial regression by Hilbe, page 52, Table 4.1. Note, Table 8.3 has errors.
                eta <- log(pmax(1, mu))
            }
-           )
+    )
     list(mu=mu, eta=eta)
 }
 
 findlam <- function(x, y, weights, family, theta=NULL, w, z, alpha, penalty.factor, eps.bino=1e-5, standardize=TRUE){ 
     if(all(penalty.factor==0)) return(0)
-    	if (alpha <= 0 || alpha > 1){
+    if (alpha <= 0 || alpha > 1){
         stop("alpha must be greater than 0 and less than or equal to 1, but alpha=", alpha)
     }
+
+    # Check a matrix for constant 
+    # Columns that are constant (e.g., an intercept column of all 1s).
+    # It will stop with an informative error message if either
+    # condition is met.
+
+    # --- 0. Input Validation ---
+
+    # Ensure input is a matrix or data.frame
+    if (is.null(x) || (!is.data.frame(x) && !is.matrix(x))) {
+        stop("Input 'x' must be a data frame or matrix.")
+    }
+
+    if (ncol(x) < 1L) stop("Input 'x' must contain at least one column")
+
+    # Convert to data.frame for consistent `sapply` behavior
+    # and store original column names
+    x_df <- as.data.frame(x)
+    orig_colnames <- colnames(x_df)
+
+    # Assign temporary names if none exist, for error reporting
+    if (is.null(orig_colnames)) {
+        orig_colnames <- paste0("Col", seq_len(ncol(x_df)))
+    }
+
+
+    # --- 1. Check for Constant (Intercept) Columns ---
+
+    # We check this first, as it's a common mistake (e.g., adding a manual
+    # intercept to a model that adds one automatically).
+
+    # Get the number of unique, non-NA values in each column
+    num_unique_vals <- sapply(x_df, function(col) {
+                                  length(unique(na.omit(col)))
+    })
+
+    constant_col_indices <- which(num_unique_vals == 1)
+
+    if (length(constant_col_indices) > 0) {
+        # Get the names of the constant columns
+        constant_col_names <- orig_colnames[constant_col_indices]
+
+        stop(paste0(
+                    "Error: Constant columns found. This is not allowed.\n",
+                    "An intercept column (all 1s) may have been mistakenly included.\n",
+                    "Constant columns: ", paste(constant_col_names, collapse = ", ")
+                    ))
+    }
+
+
     if(family=="gaussian" || standardize)  #changed 8/12/2016
         weights <- weights/sum(weights)
     penfac <- penalty.factor/sum(penalty.factor) * dim(x)[2]
     acvar <- which(penfac > 0)
-### regression from unregularied variables
-    if(length(acvar) < length(penalty.factor)){
-        x <- x[, acvar]
-        penfac <- penfac[acvar]
-    }
+    ### The initial residual accounts for unpenalized variables. Keep the
+    ### original matrix until that regression is complete, then calculate the
+    ### maximum lambda from the penalized columns only.
+    unpenalized <- which(penfac == 0)
 
     if(family == "negbin" && is.null(theta)){
         fit <- glm.nb(y ~ 1, weights = weights)
@@ -434,10 +522,13 @@ findlam <- function(x, y, weights, family, theta=NULL, w, z, alpha, penalty.fact
                           PACKAGE="mpath")$z
     }
     else{
-        if(length(acvar) < length(penalty.factor))
-            resid <- lm(z ~ x[,-acvar], weights=weights)$resid
+        if(length(unpenalized))
+            resid <- lm.wfit(cbind(1, x[, unpenalized, drop=FALSE]),
+                             z, weights)$residuals
         else resid <- z-weighted.mean(z, weights)
     }
+    x <- x[, acvar, drop=FALSE]
+    penfac <- penfac[acvar]
     if(standardize){
         xx <- x
         meanx <- drop(weights %*% x)
@@ -446,7 +537,7 @@ findlam <- function(x, y, weights, family, theta=NULL, w, z, alpha, penalty.fact
         one <- rep(1, length(y))
         normx <- sqrt(drop(one %*% (x^2)))
         x <- scale(xx, meanx, normx)
-	lmax <- max(abs(crossprod(x,weights*w*resid))/(penfac*alpha))
+        lmax <- max(abs(crossprod(x,weights*w*resid))/(penfac*alpha))
     }
     else
         lmax <- max(abs(crossprod(x,weights*w*resid))/(penfac*alpha))
@@ -486,7 +577,7 @@ deviance.glmreg <- function(object, newx, y, weights, na.action=na.pass, ...){
 ### convert glm object to class glmreg, thus can be used to predict newdata
 conv2glmreg <- function(object, family=c("poisson", "negbin")){
     family <- match.arg(family)
-    if(class(object)=="glm") class(object) <- "glmreg"
+    if(inherits(object, "glm")) class(object) <- "glmreg"
     object$family <- family
     object$nlambda <- 1
     namecount <- names(object$coefficients)

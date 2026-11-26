@@ -38,6 +38,7 @@ extern void F77_NAME(nclreg_ad)(void *, void *, void *, void *, void *, void *, 
 extern void F77_NAME(nclreg_fortran)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
 extern void F77_NAME(nonconvexloss)(void *, void *, void *, void *);
 extern void F77_NAME(outloop)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
+extern void F77_NAME(outloop_bounds)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
 extern void F77_NAME(outprod)(void *, void *, void *, void *, void *);
 extern void F77_NAME(penglm)(void *, void *, void *, void *, void *, void *, void *);
 extern void F77_NAME(pnorm_fortran)(void *);
@@ -77,6 +78,7 @@ static const R_FortranMethodDef FortranEntries[] = {
 	    {"nclreg_fortran",             (DL_FUNC) &F77_NAME(nclreg_fortran),     35},
 	    {"nonconvesloss",              (DL_FUNC) &F77_NAME(nonconvexloss),       4},
 	    {"outloop",                    (DL_FUNC) &F77_NAME(outloop),            36},
+	    {"outloop_bounds",             (DL_FUNC) &F77_NAME(outloop_bounds),     38},
 	    {"outprod",                    (DL_FUNC) &F77_NAME(outprod),             5},
 	    {"penglm",                     (DL_FUNC) &F77_NAME(penglm),              7},
 	    {"pnorm_fortran",              (DL_FUNC) &F77_NAME(pnorm_fortran),       1},

@@ -44,6 +44,10 @@ x.keep=FALSE, y.keep=TRUE, ...)
  For the other families, this is a lasso (mcp, scad) or elastic net (mnet, snet) regularization path
   for fitting the generalized linear regression
   paths, by maximizing the appropriate penalized log-likelihood.
+ Coefficient bounds can be passed through \code{...} as \code{lower.limits}
+ and \code{upper.limits}; see \code{\link{glmreg_fit}}. For formula models,
+ vector bounds follow the columns of the model matrix after the intercept
+ is removed.
   Note that the objective function for \code{"gaussian"} is \deqn{1/2*
   weights*RSS + \lambda*penalty,} if \code{standardize=FALSE} and \deqn{1/2*
   \frac{weights}{\sum(weights)}*RSS + \lambda*penalty,} if \code{standardize=TRUE}. For the other models it is
@@ -81,13 +85,15 @@ Zhu Wang, Shuangge Ma, Michael Zappitelli, Chirag Parikh, Ching-Yun Wang and Pra
 2014 Apr 17. [Epub ahead of print]
 }
 
-\author{Zhu Wang <wangz1@uthscsa.edu>}
+\author{Zhu Wang <zwang145@uthsc.edu>}
 \seealso{\code{\link{print}}, \code{\link{predict}}, \code{\link{coef}} and \code{\link{plot}} methods, and the \code{\link{cv.glmreg}} function.}
 \examples{
 #binomial
 x=matrix(rnorm(100*20),100,20)
 g2=sample(0:1,100,replace=TRUE)
 fit2=glmreg(x,g2,family="binomial")
+# Require all predictor coefficients to be nonnegative.
+fit_nonnegative <- glmreg(x, g2, family="binomial", lower.limits=0)
 #poisson and negative binomial
 data("bioChemists", package = "pscl")
 fm_pois <- glmreg(art ~ ., data = bioChemists, family = "poisson")

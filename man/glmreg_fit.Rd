@@ -15,7 +15,7 @@ glmreg_fit(x, y, weights, start=NULL, etastart=NULL, mustart=NULL, offset = NULL
            eps=.Machine$double.eps, theta, 
            family=c("gaussian", "binomial", "poisson", "negbin"),
            penalty=c("enet","mnet","snet"), convex=FALSE, x.keep=FALSE, y.keep=TRUE,
-           trace=FALSE)
+           trace=FALSE, lower.limits=-Inf, upper.limits=Inf)
 }
 
 \arguments{
@@ -50,6 +50,14 @@ glmreg_fit(x, y, weights, start=NULL, etastart=NULL, mustart=NULL, offset = NULL
     differential shrinkage of coefficients. Can be 0 for some variables, which implies
     no shrinkage, and that variable is always included in the
     model. Default is same shrinkage for all variables.}
+ \item{lower.limits, upper.limits}{Lower and upper bounds on coefficients,
+    excluding the intercept, on the original predictor scale. Each can be a
+    scalar or a vector with one entry per column of \code{x}. Lower limits
+    must be at most zero and upper limits at least zero; \code{-Inf} and
+    \code{Inf} specify no bound. Finite bounds are supported for the elastic
+    net penalty (\code{penalty="enet"}) with \code{intercept=TRUE}. If an
+    unpenalized coefficient has a finite bound, supply \code{lambda} rather
+    than relying on the automatic sequence.}
  \item{thresh}{Convergence threshold for coordinate descent. Defaults value is \code{1e-6}.}
  \item{eps.bino}{a lower bound of probabilities to be truncated, for computing weights and related values when \code{family="binomial"}. It is also used when \code{family="negbin"}.}
  \item{maxit}{Maximum number of coordinate descent iterations for each \code{lambda} value; default is 1000.}
@@ -104,7 +112,7 @@ Zhu Wang, Shuangge Ma, Michael Zappitelli, Chirag Parikh, Ching-Yun Wang and Pra
 \emph{Penalized Count Data Regression with Application to Hospital Stay after Pediatric Cardiac Surgery}, \emph{Statistical Methods in Medical Research}. 2014 Apr 17. [Epub ahead of print]
 }
 
-\author{Zhu Wang <wangz1@uthscsa.edu>}
+\author{Zhu Wang <zwang145@uthsc.edu>}
 
 \seealso{\code{\link{glmreg}}}
 \keyword{models}

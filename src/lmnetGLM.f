@@ -17,14 +17,16 @@ C     y
 
       subroutine loop_glm(x,y,z,n,m,w,mu, penalty,thresh, eps, 
      +     standardize, intercept, family, beta, b0, lambda, alpha, gam,
-     +     wtold,trace,jj,rescale,converged,theta,pll,activeset, jk)
+     +     wtold,trace,jj,rescale,converged,theta,pll,activeset,jk,
+     +     lower,upper)
       implicit none
       integer trace, n, m, standardize, intercept, family, jj, i,j,
      +     penalty, converged, rescale,activeset(m), jk, ii
       double precision x(n, m), y(n), thresh, eps,beta(m),beta_old(m) 
       double precision lambda(m), alpha, gam, wtold(n)
       double precision z(n), b0, b0_old, xd(m), yhat(n), w(n),
-     +     r(n),xwx,xwr, wtnew(n), wsum,mu(n), theta, pll_old, pll
+     +     r(n),xwx,xwr,wtnew(n),wsum,mu(n),theta,pll_old,pll,
+     +     lower(m),upper(m)
          
       if(intercept .EQ. 0)then
            b0 = 0
@@ -116,6 +118,10 @@ C     cycle through in the active set (begin with if statement)
             call scad(z, xd(j), lambda(j)*alpha, 
      +           lambda(j)*(1-alpha), gam, rescale, beta(j))
          endif
+
+C     Enforce limits before updating the residual and objective.
+         if(beta(j).lt.lower(j)) beta(j)=lower(j)
+         if(beta(j).gt.upper(j)) beta(j)=upper(j)
 
 C     check if beta(j) strictly increases penalized loglikehood function 
          if(trace .EQ. 1)then

@@ -30,7 +30,7 @@ C     eta, mu
      +     family, penalty,lamk, 
      +     alpha, gam, theta, rescale, standardize, intercept, eps,
      +     maxit, thresh, nulldev, wt, beta, b0,yhat,dev,trace,convmid, 
-     +     satu, ep, pll, activeset, jk)
+     +     satu, ep, pll, activeset, jk,lower,upper)
       
       implicit none
       integer standardize, trace, penalty, maxit, i, j, jj, nmid, n, 
@@ -40,7 +40,7 @@ C     eta, mu
      +     del,olddev,weights(n),yold(n), 
      +     thresh, nulldev, dev, theta, thetaold, wtw(n),lamk(m),alpha, 
      +     gam, eps, beta(m), betaold(m), b0, b0old, yhat(n), ep, 
-     +     pll(maxit), offset(n)
+     +     pll(maxit), offset(n),lower(m),upper(m)
 
       do 5 jj=1, maxit
          pll(jj)=0
@@ -73,7 +73,7 @@ C     eta, mu
          call loop_glm(x, y, z, n, m, w, mu, penalty, thresh, eps, 
      +        standardize, intercept,family,beta, b0, lamk, alpha, gam, 
      +        weights,trace,nmid, rescale, converged, theta,
-     +        pll(jj),activeset, jk)
+     +        pll(jj),activeset, jk,lower,upper)
          do 220 i = 1, n
             yhat(i) = b0
             do 230 ii = 1, jk

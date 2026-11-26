@@ -10,11 +10,37 @@ C     resdev: residual deviance
 C     ypre: yhat
 C     mu, eta: uppdated values
 
-      subroutine outloop(x,y,weights, wt, n,m, penalty, nlambda, lam, 
-     +     alpha,gam,theta,rescale,mu,eta, offset,
-     #family,standardize, intercept, nulldev, 
-     +     thresh, maxit, innermaxit, eps, trace, start, startv,b, bz,
-     +     resdev,ypre, convout, satu, good, ep, outpll)
+C     Compatibility entry used by other model families: no coefficient bounds.
+      subroutine outloop(x,y,weights,wt,n,m,penalty,nlambda,lam,
+     +     alpha,gam,theta,rescale,mu,eta,offset,family,standardize,
+     +     intercept,nulldev,thresh,maxit,innermaxit,eps,trace,start,
+     +     startv,b,bz,resdev,ypre,convout,satu,good,ep,outpll)
+      implicit none
+      integer n,m,penalty,nlambda,family,standardize,intercept,maxit,
+     +     innermaxit,trace,startv,convout(nlambda),satu,good,j
+      double precision x(n,m),y(n),weights(n),wt(n),lam(m,nlambda),
+     +     alpha,gam,theta,mu(n),eta(n),offset(n),nulldev,thresh,eps,
+     +     start(m+1),b(m,nlambda),bz(nlambda),resdev(nlambda),
+     +     ypre(n,nlambda),ep,outpll(maxit,nlambda),lower(m),upper(m)
+      integer rescale
+      do j=1,m
+         lower(j)=-huge(1.0d0)
+         upper(j)=huge(1.0d0)
+      enddo
+      call outloop_bounds(x,y,weights,wt,n,m,penalty,nlambda,lam,
+     +     alpha,gam,theta,rescale,mu,eta,offset,family,standardize,
+     +     intercept,nulldev,thresh,maxit,innermaxit,eps,trace,start,
+     +     startv,b,bz,resdev,ypre,convout,satu,good,ep,outpll,
+     +     lower,upper)
+      return
+      end
+
+C     Bounds are expressed on the solver's (possibly standardized) scale.
+      subroutine outloop_bounds(x,y,weights, wt, n,m, penalty, nlambda,
+     +     lam,alpha,gam,theta,rescale,mu,eta,offset,family,standardize,
+     +     intercept,nulldev,thresh,maxit,innermaxit,eps,trace,start,
+     +     startv,b,bz,resdev,ypre,convout,satu,good,ep,outpll,
+     +     lower,upper)
 
       implicit none
       integer n,m,i,j,k,kk,penalty, nlambda, family, standardize, maxit,
@@ -26,7 +52,7 @@ C     mu, eta: uppdated values
      +     bz(nlambda),xold(n,m), yold(n), start(m+1), resdev(nlambda), 
      +     ypre(n,nlambda), lamk(m), beta(m), b0,dev,
      +     weights(n),yhat(n),ep, pll(maxit), outpll(maxit, nlambda),
-     +     normx(m),xd(m),avg, offset(n)
+     +     normx(m),xd(m),avg, offset(n),lower(m),upper(m)
 
       if(family .NE. 1)then
          call preprocess(x, y, n, m, weights, family, standardize,
@@ -95,7 +121,7 @@ C     -> loop_gaussian
      +           family, penalty,lamk,alpha,gam,theta,rescale,
      +           standardize, intercept, eps,innermaxit, maxit, thresh,
      +           nulldev, wt, beta, b0, yhat, dev, trace, convmid, ep,
-     +           normx,xd,avg, activeset, jk, fullset)
+     +           normx,xd,avg, activeset, jk, fullset,lower,upper)
          else 
 C     active set applies for family!=1. 
             convact=0
@@ -109,7 +135,8 @@ C     set maxit=1, and have a complete cycle through all the variables
      +              family, penalty,lamk,alpha,gam,theta,rescale,
      +              standardize, intercept,
      +              eps,1,thresh,nulldev,wt,beta,b0,yhat, 
-     +              dev,trace,convmid,satu,ep,pll,fullset,m)
+     +              dev,trace,convmid,satu,ep,pll,fullset,m,
+     +              lower,upper)
                call find_activeset(m, beta, eps, activesetold, jkold)
 C     it is possible, jk=0 if beta=0, like intercept-only model
                if(jkold .EQ. 0)then
@@ -122,13 +149,14 @@ C     now cycle through only the active set
      +              standardize, intercept,
      +              eps,maxit,thresh,nulldev,wt,beta,b0,yhat,
      +              dev,trace,convmid,satu,ep,pll,
-     +              activesetold, jkold)
+     +              activesetold, jkold,lower,upper)
 C     set maxit=1, and have a complete cycle through all the variables
                call midloopGLM(n,m,x,y,yold,weights,mu,eta,offset,
      +              family, penalty,lamk,alpha,gam,theta,rescale,
      +              standardize, intercept,
      +              eps,1,thresh,nulldev,wt,beta,b0,yhat, 
-     +              dev,trace,convmid,satu,ep,pll,fullset,m)
+     +              dev,trace,convmid,satu,ep,pll,fullset,m,
+     +              lower,upper)
 C     update the active set with only non-zero coefficients 
                call find_activeset(m, beta, eps, activeset, jk)
 C     check if the active set was changed--begin

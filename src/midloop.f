@@ -28,7 +28,7 @@ C     dev
      +     family, penalty,lamk, alpha, gam, theta, rescale, 
      +     standardize, intercept, eps,innermaxit,
      +     maxit, thresh, nulldev, wt, beta, b0,yhat,dev,trace,convmid, 
-     +     ep, normx, xd, avg, activeset, jk, fullset)
+     +     ep, normx, xd, avg, activeset, jk, fullset,lower,upper)
       
       implicit none
       integer standardize, intercept, trace, penalty, maxit, i, j, 
@@ -37,7 +37,8 @@ C     dev
       double precision x(n,m),y(n), mu(n), z(n), eta(n), wt(n), w(n), 
      +     del,olddev,weights(n),xold(n,m), yold(n),normx(m),xd(m), 
      +     thresh, nulldev, dev, theta, wtw(n),lamk(m),alpha, 
-     +     gam, eps, beta(m), b0, yhat(n),avg, ep, offset(n)
+     +     gam, eps, beta(m), b0, yhat(n),avg, ep, offset(n),
+     +     lower(m),upper(m)
 
 C      innermaxit = maxit
       maxit = 1
@@ -55,7 +56,7 @@ C     innermaxit serves as maxit here
       call lmnetGaus(x, z, n, m, wtw, lamk, alpha, gam, thresh, 
      +     innermaxit, eps, standardize, intercept, penalty, xd, 
      +     beta, b0, avg, nmid,rescale, converged, activeset, jk,
-     +     fullset)
+     +     fullset,lower,upper)
       do 220 i = 1, n
          yhat(i) = b0
          do 230 j = 1, m

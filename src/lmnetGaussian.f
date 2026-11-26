@@ -87,7 +87,8 @@ C     jj
 C     input: others except the above mentioned output
       subroutine lmnetGaus(x, y, n, m, weights, lambda, alpha, gam, 
      + thresh, maxit, eps, standardize, intercept, penalty, 
-     + xd,beta, b0, avg, jj, rescale, converged, activeset, jk, fullset)
+     + xd,beta,b0,avg,jj,rescale,converged,activeset,jk,fullset,
+     + lower,upper)
 
       implicit none
       integer maxit, standardize, intercept, penalty, n,m,i,j,jj,
@@ -96,7 +97,7 @@ C     input: others except the above mentioned output
       double precision x(n, m), y(n), weights(n), lambda(m),
      +     meanx(m), xd(m), resid(n),
      +     alpha, gam, thresh, eps, avg, wsum, mu(n),
-     +     wtnew(n), b0, beta(m), ddot
+     +     wtnew(n), b0, beta(m), ddot,lower(m),upper(m)
 
       do i=1, n
          resid(i) = y(i)
@@ -134,7 +135,7 @@ C     set maxit=1, and have a complete cycle through all the variables
          call loop_gaussian(x,y,n,m,penalty,thresh,eps,1,
      +        standardize, intercept,
      +        beta,b0,resid,xd,lambda,alpha,gam,weights,avg,meanx, 
-     +        jj,rescale, converged, fullset, m)
+     +        jj,rescale, converged, fullset, m,lower,upper)
          call find_activeset(m, beta, eps, activesetold, jkold)
 C     it is possible, jk=0 if beta=0, like intercept-only model
          if(jkold .EQ. 0)then
@@ -145,12 +146,12 @@ C     restrict further iterations to the active set till convergence
          call loop_gaussian(x,y,n,m,penalty,thresh,eps,maxit,
      +        standardize, intercept,
      +        beta,b0,resid,xd,lambda,alpha,gam,weights,avg,meanx, 
-     +        jj,rescale, converged, activesetold, jkold)
+     +        jj,rescale, converged, activesetold, jkold,lower,upper)
 C     set maxit=1, and have a complete cycle through all the variables
          call loop_gaussian(x,y,n,m,penalty,thresh,eps,1,
      +        standardize, intercept,
      +        beta,b0,resid,xd,lambda,alpha,gam,weights,avg,meanx, 
-     +        jj,rescale, converged, fullset, m)
+     +        jj,rescale, converged, fullset, m,lower,upper)
          call find_activeset(m, beta, eps, activeset, jk)
 C     check if the active set was changed--begin
 C     it is possible, jk=0 if beta=0, like intercept-only model
@@ -277,13 +278,15 @@ C     endif
 
       subroutine loop_gaussian(x, y, n, m, penalty, thresh, eps, maxit, 
      +    standardize, intercept, beta, b0, resid,xd, lambda, alpha, 
-     +    gam, wtold, avg, meanx, jj, rescale, converged, activeset, jk)
+     +    gam,wtold,avg,meanx,jj,rescale,converged,activeset,jk,
+     +    lower,upper)
       implicit none
       integer n, m, maxit,standardize,intercept,jj,i,j,penalty,converged
       integer rescale, activeset(m), jk, ii
       double precision x(n, m), y(n), thresh, eps,beta(m),beta_old(m) 
       double precision lambda(m), alpha, gam, wtold(n), avg, meanx(m)
-      double precision z, b0, xd(m), yhat(n), resid(n),b0_old
+      double precision z, b0, xd(m), yhat(n), resid(n),b0_old,
+     +     lower(m),upper(m)
       
       jj = 1
       converged = 0
@@ -329,6 +332,9 @@ C     endif
                call scad(z, xd(j), lambda(j)*alpha, 
      +              lambda(j)*(1-alpha), gam, rescale, beta(j))
             endif
+C     Apply limits inside each coordinate update before updating residuals.
+            if(beta(j).lt.lower(j)) beta(j)=lower(j)
+            if(beta(j).gt.upper(j)) beta(j)=upper(j)
             if(dabs(beta(j) - beta_old(j)) .GT. eps)then
                do 70 i = 1, n
                   resid(i) = resid(i) - x(i, j) * (beta(j)-beta_old(j))

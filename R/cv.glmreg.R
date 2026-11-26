@@ -54,7 +54,7 @@ cv.glmreg.formula <- function(formula, data, weights, offset=NULL, contrasts=NUL
     }
 ### End of addition 08/07/2012 
 
-    RET <- cv.glmreg_fit(X[,-1], Y, weights, offset=offset, ...)
+    RET <- cv.glmreg_fit(X[,-1,drop=FALSE], Y, weights, offset=offset, ...)
     RET$call <- match.call()
     return(RET)
 }
