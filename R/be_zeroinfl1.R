@@ -1,95 +1,117 @@
-### backward elimination for zeroinfl function
+### Backward elimination for zero-inflated regression.
+
+# Group model-matrix columns by formula term. A factor or interaction may
+# generate several columns, so its significance is a joint Wald test.
+.zeroinfl_term_pvalues <- function(fit, component, data) {
+    terms <- fit$terms[[component]]
+    labels <- attr(terms, "term.labels")
+    result <- setNames(rep(NA_real_, length(labels)), labels)
+    if (!length(labels)) return(result)
+
+    if (!is.null(fit$x) || !is.null(fit$model)) {
+        mm <- model.matrix(fit, model = component)
+    } else {
+        # Offsets are not model-matrix columns. Rebuild without them because
+        # the stored terms environment may contain an unevaluated offset arg.
+        matrix_formula <- reformulate(labels, intercept = attr(terms, "intercept"),
+                                      env = environment(formula(fit)))
+        variables <- attr(terms(matrix_formula), "variables")[-1L]
+        variables <- vapply(variables, function(x) paste(deparse(x), collapse = ""), "")
+        xlev <- fit$levels[intersect(names(fit$levels), variables)]
+        mf <- model.frame(matrix_formula, data = data, xlev = xlev,
+                          na.action = na.pass)
+        mm <- model.matrix(matrix_formula, data = mf,
+                           contrasts.arg = fit$contrasts[[component]])
+    }
+    assignment <- attr(mm, "assign")
+    beta <- fit$coefficients[[component]]
+    covariance <- fit$vcov
+    for (i in seq_along(labels)) {
+        columns <- colnames(mm)[assignment == i]
+        idx <- match(columns, names(beta))
+        covnames <- paste0(component, "_", columns)
+        if (!length(idx) || anyNA(idx) ||
+            !all(covnames %in% rownames(covariance))) next
+        b <- beta[idx]
+        V <- covariance[covnames, covnames, drop = FALSE]
+        if (any(!is.finite(b)) || any(!is.finite(V))) next
+        statistic <- tryCatch(as.numeric(crossprod(b, solve(V, b))),
+                              error = function(e) NA_real_)
+        if (is.finite(statistic) && statistic >= 0)
+            result[i] <- pchisq(statistic, df = length(b), lower.tail = FALSE)
+    }
+    result
+}
+
 be.zeroinfl <- function(object, data, dist=c("poisson", "negbin", "geometric"), alpha=0.05, trace=FALSE){
-    if(class(object)!="zeroinfl") stop("object must be zeroinfl\n")
-    dist <- match.arg(dist)
+    if(!inherits(object, "zeroinfl")) stop("object must be zeroinfl\n")
+    if (missing(dist)) dist <- object$dist else dist <- match.arg(dist)
     fit <- object
-    rhs1 <- attr(fit$terms$count, "term.labels")
-    rhs2 <- attr(fit$terms$zero, "term.labels")
-    nj <- length(rhs1)*length(rhs2)
-    j <- 1
-    if(trace) {
+    history <- list()
+    if (trace) {
         cat("Initial model\n")
         print(summary(fit))
     }
-    RET <- matrix(NA, nrow=nj, ncol=3)
-    colnames(RET) <- c("loglik", "BIC", "AIC")
-    while(T){
-        if(trace) cat("\nstep", j, "\n")
-        coef <- summary(fit)$coef
-### excluding intercept
-        d <- dim(coef$count)[1]
-        if(dist!="negbin")
-        count.pval <- coef$count[-1,4] ### find maximum p-value from count
-        else count.pval <- coef$count[-c(1,d),4] ### find maximum p-value from count model 
-        zero.pval <- coef$zero[-1,4] ### find maximum p-value from count model 
-        nc <- length(count.pval)
-        nz <- length(zero.pval)
-        if(dist!="negbin")
-        count.order <- order(coef$count[-1,4], decreasing=TRUE) ### which variable has maximum p-value from count model 
-        else count.order <- order(coef$count[-c(1,d),4], decreasing=TRUE) ### which variable has maximum p-value from count model 
-        zero.order <- order(coef$zero[-1,4], decreasing=TRUE) ### which variable has maximum p-value from zero model 
-        rhs1 <- attr(fit$terms$count, "term.labels")
-        rhs2 <- attr(fit$terms$zero, "term.labels")
 
-        kc <- 1
-        kz <- 1
-            count.max <- count.pval[count.order[kc]] 
-            zero.max  <- zero.pval[zero.order[kz]]
-            if(is.na(count.max) && is.na(zero.max)) break
-            else if(is.na(zero.max)) zero.max <- 0
-                 else if(is.na(count.max)) count.max <- 0
-            if(count.max > zero.max)
-                if(count.max > alpha){
-                    newid <- count.order[kc]
-                    if(dist!="negbin")
-                    dropvar <- rownames(coef$count)[-1][newid]
-                    else dropvar <- rownames(coef$count)[-c(1,d)][newid]
-                    if(trace) cat("drop variable in count component: ", rhs1[newid],"\n")
-                    rhs1 <- rhs1[-newid]
-                    kc <- kc + 1
-                }
-                else break
-            else if(zero.max > alpha){
-                newid <- zero.order[kc]
-                dropvar <- rownames(coef$zero)[-1][newid]
-                if(trace) cat("drop variable in zero component: ", rhs2[newid],"\n")
-                rhs2 <- rhs2[-newid]
-            }
-            else break
-        if(length(rhs1)==0) rhs1tmp <- 1
-        else {
-         rhs1tmp <- rhs1[1]
-         if(length(rhs1) > 1)
-            for(i in 2:length(rhs1))
-                rhs1tmp <- paste(rhs1tmp, "+", rhs1[i])
+    repeat {
+        count <- .zeroinfl_term_pvalues(fit, "count", data)
+        zero <- .zeroinfl_term_pvalues(fit, "zero", data)
+        # Respect marginality: do not remove a term needed by an interaction.
+        count[!names(count) %in% drop.scope(fit$terms$count)] <- NA_real_
+        zero[!names(zero) %in% drop.scope(fit$terms$zero)] <- NA_real_
+        candidates <- c(count, zero)
+        candidates[!is.finite(candidates)] <- NA_real_
+        if (!any(!is.na(candidates))) break
+        # Preserve the historical preference for the zero component on ties.
+        best <- which(candidates == max(candidates, na.rm = TRUE))
+        best <- best[length(best)]
+        if (candidates[best] <= alpha) break
+        component <- if (best <= length(count)) "count" else "zero"
+        term_index <- if (component == "count") best else best - length(count)
+        term <- names(candidates)[best]
+        if (trace) {
+            cat("\nstep", length(history) + 1L, "\n")
+            cat("drop variable in", component, "component:", term, "\n")
         }
-        if(length(rhs2)==0) rhs2tmp <- 1
-        else {
-        rhs2tmp <- rhs2[1]
-        if(length(rhs2) > 1)
-            for(i in 2:length(rhs2))
-                rhs2tmp <- paste(rhs2tmp, "+", rhs2[i])
-}
-        res <- deparse(terms(fit$terms$count)[[2]])      ### response variable
-        out <- paste(res, "~", rhs1tmp, "|", rhs2tmp)
-                                        # set the environment of the formula (i.e. where should
-                                        # R look for variables when data aren't specified?)
-	environment(out) <- parent.frame()
-        fit <- try(zeroinfl(eval(parse(text=out)), data=data, dist=dist))
-        if(inherits(fit, "try-error"))
-        break
-        if(trace){
-        print(summary(fit))
-        cat("\nloglik of zero-inflated model", logLik(fit), "\n")
-        cat("\nBIC of zero-inflated model", AIC(fit, k=log(dim(data)[1])))
-        cat("\nAIC of zero-inflated model", AIC(fit))
+
+        count_terms <- fit$terms$count
+        zero_terms <- fit$terms$zero
+        if (component == "count")
+            count_terms <- drop.terms(count_terms, term_index, keep.response = TRUE)
+        else
+            zero_terms <- drop.terms(zero_terms, term_index, keep.response = FALSE)
+        count_formula <- formula(count_terms)
+        zero_formula <- formula(zero_terms)
+        new_formula <- as.formula(call("~", count_formula[[2L]],
+                                       call("|", count_formula[[3L]], zero_formula[[2L]])),
+                                  env = environment(formula(fit)))
+        # Retain the original call's link, offsets, weights, and controls.
+        refit_call <- fit$call
+        refit_call$formula <- new_formula
+        refit_call$data <- quote(data)
+        refit_call$dist <- dist
+        refit_env <- new.env(parent = environment(new_formula))
+        refit_env$data <- data
+        refit_env$zeroinfl <- zeroinfl
+        next_fit <- tryCatch(eval(refit_call, envir = refit_env),
+                             error = function(e) {
+                                 warning("Could not refit after removing ", term,
+                                         " from the ", component, " component: ",
+                                         conditionMessage(e), call. = FALSE)
+                                 NULL
+                             })
+        if (is.null(next_fit)) break
+        fit <- next_fit
+        history[[length(history) + 1L]] <- c(loglik = as.numeric(logLik(fit)),
+                                             BIC = AIC(fit, k = log(fit$n)),
+                                             AIC = AIC(fit))
+        if (trace) {
+            print(summary(fit))
+            cat("\nloglik of zero-inflated model", logLik(fit), "\n")
+            cat("\nBIC of zero-inflated model", AIC(fit, k = log(fit$n)))
+            cat("\nAIC of zero-inflated model", AIC(fit), "\n")
         }
-        RET[j,1] <- logLik(fit)
-        RET[j,2] <- AIC(fit, k=log(dim(data)[1]))
-        RET[j,3] <- AIC(fit)
-        j <- j + 1
     }
-    if(trace) print(RET[complete.cases(RET),])                                    #}
-    return(fit)
+    if (trace && length(history)) print(do.call(rbind, history))
+    fit
 }
-
