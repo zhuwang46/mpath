@@ -13,7 +13,7 @@ glmregNB(formula, data, weights, offset=NULL, nlambda = 100, lambda=NULL,
          theta.fixed=FALSE, theta0=NULL, init.theta=NULL, link=log, 
          penalty=c("enet","mnet","snet"), method="glmreg_fit", model=TRUE, 
          x.keep=FALSE, y.keep=TRUE, contrasts=NULL, convex=FALSE, 
-         parallel=TRUE, n.cores=2, ...)
+         parallel=TRUE, n.cores=NULL, ...)
 }
 
 \arguments{
@@ -65,7 +65,10 @@ glmregNB(formula, data, weights, offset=NULL, nlambda = 100, lambda=NULL,
     of the fit (model frame, response, model matrix) are returned.}
 \item{contrasts}{the contrasts corresponding to \code{levels} from the
     respective models}
-\item{parallel, n.cores}{a logical value, parallel computing or not for sequence of \code{lambda} with the number of CPU cores to use. The \code{lambda} loop will attempt to send different \code{lambda} off to different cores.}
+\item{parallel, n.cores}{Whether to fit lambda values in parallel and the
+  number of CPU cores to use. On Unix-like systems forked workers are used;
+  elsewhere socket workers are stopped on exit, including on errors. The
+  caller's registered foreach backend is not changed.}
 }
 \details{
  The sequence of models implied by \code{lambda} is fit by coordinate

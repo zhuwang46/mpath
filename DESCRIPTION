@@ -10,7 +10,7 @@ Description: Algorithms compute robust estimators for loss functions in the conc
       Wang (2021) <doi:10.1007/s11749-021-00770-2>,
       Wang (2020) <arXiv:2010.02848>.
 Depends: R (>= 3.5.0), methods, glmnet, pamr
-Imports: MASS, pscl, numDeriv, foreach, doParallel, bst, WeightSVM
+Imports: MASS, pscl, numDeriv, foreach, doParallel, parallel, bst, WeightSVM
 Suggests: zic, R.rsp, knitr, rmarkdown, gdata, e1071, SparseM, slam
 VignetteBuilder: R.rsp, knitr
 License: GPL-2

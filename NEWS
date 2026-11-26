@@ -341,3 +341,5 @@
   o improve numerical stability of count-model fitting for highly skewed
     observations and correct cv.glmregNB contrasts, fold labels, and
     misleading parallel trace warnings (issue #8)
+  o manage parallel workers in cv.glmregNB and glmregNB without changing the
+    caller's foreach backend, and clean up socket workers on errors (issue #9)

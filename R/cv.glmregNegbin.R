@@ -1,5 +1,5 @@
 cv.glmregNB <- function(formula, data, weights, offset=NULL, 
-lambda=NULL, nfolds=10, foldid, plot.it=TRUE, se=TRUE, n.cores=2, trace=FALSE, parallel=FALSE, contrasts=NULL,
+lambda=NULL, nfolds=10, foldid, plot.it=TRUE, se=TRUE, n.cores=NULL, trace=FALSE, parallel=FALSE, contrasts=NULL,
 ...){
     call <- match.call()
  mf <- Call <- match.call()
@@ -86,11 +86,11 @@ lambda=NULL, nfolds=10, foldid, plot.it=TRUE, se=TRUE, n.cores=2, trace=FALSE, p
   environment(foldwork) <- foldenv
 
   if(parallel){
-    cl <- parallel::makeCluster(n.cores)
-    on.exit(parallel::stopCluster(cl), add = TRUE)
-    registerDoParallel(cl)
-    i <- 1
-    fold.results <- foreach(i=seq_len(K), .packages="mpath") %dopar% foldwork(i)
+    dc <- parallel::detectCores(logical=TRUE)
+    if(is.na(dc)) dc <- 1L
+    if(is.null(n.cores)) n.cores <- dc
+    n.cores <- max(1L, min(as.integer(n.cores), K, dc))
+    fold.results <- .mpath_parallel_map(seq_len(K), foldwork, n.cores)
   } else {
     fold.results <- vector("list", K)
     for(i in seq_len(K)) {
