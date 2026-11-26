@@ -374,6 +374,8 @@ zipath_fit <- function(X, Z, Y, weights, offsetx, offsetz, standardize=TRUE, int
     
     ## convenience variables
     n <- length(Y)
+    if (any(!is.finite(X)) || any(!is.finite(Z)))
+        stop("count and zero model matrices must contain only finite values")
     kx <- NCOL(X)
     kz <- NCOL(Z)
     Xold <- X
@@ -390,6 +392,8 @@ zipath_fit <- function(X, Z, Y, weights, offsetx, offsetz, standardize=TRUE, int
     sumw <- sum(weights)
     weights <- weights/sumw 
     weights <- as.vector(weights)
+    positive_weights <- which(weights > 0)
+    if (!length(positive_weights)) stop("at least one observation must have positive weight")
     if(is.null(offsetx)) offsetx <- 0
     if(length(offsetx) == 1) offsetx <- rep.int(offsetx, n)
     offsetx <- as.vector(offsetx)
@@ -402,19 +406,37 @@ zipath_fit <- function(X, Z, Y, weights, offsetx, offsetz, standardize=TRUE, int
         one <- rep(1, length(Y))
         if(dim(Xnew)[2] > 0){
             xx <- Xnew
+            constantx <- colSums(sweep(xx[positive_weights, , drop=FALSE],
+                                       2, xx[positive_weights[1], ], `!=`)) == 0
+            if (!intercept && any(constantx))
+                stop("constant count predictors with standardize=TRUE require intercept=TRUE")
             meanx <- drop(wt %*% Xnew)
             Xnew <- scale(Xnew, meanx, FALSE) # centers x
             Xnew <- sqrt(wt) * Xnew
             normx <- sqrt(drop(one %*% (Xnew^2)))
-            X[,-1] <- Xnew <- scale(xx, meanx, normx)
+            if (any(!is.finite(normx))) stop("non-finite count predictor scale")
+            constantx <- constantx | normx == 0
+            normx[constantx] <- 1
+            Xnew <- scale(xx, meanx, normx)
+            Xnew[, constantx] <- 0
+            X[,-1] <- Xnew
         }
         if(dim(Znew)[2] > 0){
             zz <- Znew
+            constantz <- colSums(sweep(zz[positive_weights, , drop=FALSE],
+                                       2, zz[positive_weights[1], ], `!=`)) == 0
+            if (!intercept && any(constantz))
+                stop("constant zero predictors with standardize=TRUE require intercept=TRUE")
             meanz <- drop(wt %*% Znew)
             Znew <- scale(Znew, meanz, FALSE) # centers x
             Znew <- sqrt(wt) * Znew
             normz <- sqrt(drop(one %*% (Znew^2)))
-            Z[,-1] <- Znew <- scale(zz, meanz, normz)
+            if (any(!is.finite(normz))) stop("non-finite zero predictor scale")
+            constantz <- constantz | normz == 0
+            normz[constantz] <- 1
+            Znew <- scale(zz, meanz, normz)
+            Znew[, constantz] <- 0
+            Z[,-1] <- Znew
         }
     }
 
@@ -451,7 +473,8 @@ zipath_fit <- function(X, Z, Y, weights, offsetx, offsetz, standardize=TRUE, int
         if(length(lambda.count) != length(lambda.zero))
             stop("length of lambda.count must be the same as lambda.zero\n")
         else nlambda <- length(lambda.count)
-    } 
+    } else if(!is.null(lambda.count)) nlambda <- length(lambda.count)
+    else if(!is.null(lambda.zero)) nlambda <- length(lambda.zero)
     if(family == "negbin") theta <- rep(NA, nlambda)
     coefc <- matrix(NA, nrow=dim(X)[2], ncol=nlambda) 
     coefz <- matrix(NA, nrow=dim(Z)[2], ncol=nlambda) 
@@ -488,12 +511,12 @@ zipath_fit <- function(X, Z, Y, weights, offsetx, offsetz, standardize=TRUE, int
         kz <- NCOL(Z)
     }
     if(is.null(penalty.factor.count)) penalty.factor.count <- rep(1, dim(Xnew)[2])
-    if(all(penalty.factor.count==0)){
+    if(length(penalty.factor.count) && all(penalty.factor.count==0)){
         penalty.factor.count <- rep(1, dim(Xnew)[2])
         lambda.count <- rep(0, nlambda)
     }
     if(is.null(penalty.factor.zero)) penalty.factor.zero <- rep(1, dim(Znew)[2])
-    if(all(penalty.factor.zero==0)){
+    if(length(penalty.factor.zero) && all(penalty.factor.zero==0)){
         penalty.factor.zero <- rep(1, dim(Znew)[2])
         lambda.zero <- rep(0, nlambda)
     }
@@ -524,16 +547,18 @@ zipath_fit <- function(X, Z, Y, weights, offsetx, offsetz, standardize=TRUE, int
                          lmax_count=as.double(1),
                          lmax_zero=as.double(1),
                          PACKAGE="mpath")
-        if(kx > 1){
+        if(is.null(lambda.count) && kx > 1 && is.finite(lmax$lmax_count) && lmax$lmax_count > 0){
             lpath <- seq(log(lmax$lmax_count), log(lambda.count.min.ratio * lmax$lmax_count), length.out=nlambda)
             lambda.count <- exp(lpath)
         }
-        else lambda.count <- rep(0, nlambda)
-        if(kz > 1){
+        else if(is.null(lambda.count) && (kx == 1 || (is.finite(lmax$lmax_count) && lmax$lmax_count == 0))) lambda.count <- rep(0, nlambda)
+        else if(is.null(lambda.count)) stop("cannot compute a finite count lambda sequence; supply lambda.count")
+        if(is.null(lambda.zero) && kz > 1 && is.finite(lmax$lmax_zero) && lmax$lmax_zero > 0){
             lpath <- seq(log(lmax$lmax_zero), log(lambda.zero.min.ratio * lmax$lmax_zero), length.out=nlambda)
             lambda.zero <- exp(lpath)
         }
-        else lambda.zero <- rep(0, nlambda)
+        else if(is.null(lambda.zero) && (kz == 1 || (is.finite(lmax$lmax_zero) && lmax$lmax_zero == 0))) lambda.zero <- rep(0, nlambda)
+        else if(is.null(lambda.zero)) stop("cannot compute a finite zero lambda sequence; supply lambda.zero")
     }
     model_count <- list(coefficients = c(fit0$coefficients$count, rep(0, dim(Xnew)[2])), fitted.values=predict(fit0, type="count"))
     model_zero <- list(coefficients = c(fit0$coefficients$zero, rep(0, dim(Znew)[2])), fitted.values=predict(fit0, type="zero"))

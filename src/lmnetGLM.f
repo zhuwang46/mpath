@@ -108,7 +108,11 @@ C     cycle through in the active set (begin with if statement)
  50      continue 
          z = xwr+ xwx * beta_old(j)
          xd(j) = xwx   
-         if(penalty.EQ.1) then
+C     A predictor with zero weighted curvature has no information in this
+C     fit. Keep its coefficient at zero, including when lambda is zero.
+         if(xwx.EQ.0.0D0) then
+            beta(j) = 0.0D0
+         else if(penalty.EQ.1) then
             call enet(z,xd(j), lambda(j)*alpha, lambda(j)*(1-alpha),
      +           beta(j))
          else if(penalty.EQ.2) then

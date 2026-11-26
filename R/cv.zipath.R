@@ -90,7 +90,15 @@ cv.zipath_fit <- function(X, Z, Y, weights, offsetx, offsetz, nlambda=100, lambd
     n <- length(Y)
     K <- nfolds
     ### only to obtain lambda values
-    zipath.obj <- zipath_fit(X, Z, Y, weights, offsetx, offsetz, nlambda=nlambda, lambda.count=lambda.count, lambda.zero=lambda.zero, maxit=1, ...)
+    initial_dots <- list(...)
+    initial_dots$maxit <- NULL
+    zipath.obj <- do.call(zipath_fit, c(list(X=X, Z=Z, Y=Y,
+                                             weights=weights,
+                                             offsetx=offsetx, offsetz=offsetz,
+                                             nlambda=nlambda,
+                                             lambda.count=lambda.count,
+                                             lambda.zero=lambda.zero, maxit=1),
+                                        initial_dots))
     #zipath.obj <- do.call("zipath", list(formula, data, weights, nlambda=nlambda, lambda.count=lambda.count, lambda.zero=lambda.zero, ...))
     if(is.null(lambda.count) || is.null(lambda.zero)){
     lambda.count <- zipath.obj$lambda.count

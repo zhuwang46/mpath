@@ -34,7 +34,10 @@ zipath_fit(X, Z, Y, weights, offsetx, offsetz, standardize=TRUE,
    zero (FALSE)}
   \item{standardize}{Logical flag for x variable standardization, prior to
     fitting the model sequence. The coefficients are always returned on
-    the original scale. 
+    the original scale. With an intercept, predictors that are constant among
+    positive-weight observations receive zero coefficients; their columns are
+    retained in the result. Constant predictors cannot be standardized when
+    \code{intercept=FALSE}.
     Default is \code{standardize=TRUE}.}
   \item{family}{character specification of count model family (a log link is 
     always used).}
