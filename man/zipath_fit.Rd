@@ -45,7 +45,10 @@ zipath_fit(X, Z, Y, weights, offsetx, offsetz, standardize=TRUE,
     zero-inflation model (a binomial family is always used).}
   \item{y, x}{logicals. If \code{TRUE} the corresponding response and model matrix are returned.}
   \item{penalty}{penalty considered as one of \code{enet, mnet, snet}.}
-  \item{start}{starting values for the parameters in the linear predictor.}
+  \item{start}{Optional list with \code{count} and \code{zero} coefficient
+    vectors, including intercepts, on the original predictor scale. For a
+    negative-binomial model it may also contain a positive \code{theta}.
+    Supplied starts currently require the logit zero-component link.}
   \item{nlambda}{number of \code{lambda} value, default value is 100. The sequence may be truncated before \code{nlambda} is reached if a close to saturated model for the zero component is fitted.}
   \item{lambda.count}{A user supplied \code{lambda.count} sequence. Typical usage is to have the program compute its own \code{lambda.count} and \code{lambda.zero} sequence based on
     \code{nlambda} and \code{lambda.min.ratio}.} 
@@ -73,9 +76,14 @@ Note, there is a closed formula for \code{lambda.max} for \code{penalty="enet"}.
   \item{gamma.count}{The tuning parameter of the \code{snet} or \code{mnet} penalty for the count part of model.}
   \item{gamma.zero}{The tuning parameter of the \code{snet} or \code{mnet} penalty for the zero part of model.}
   \item{rescale}{logical value, if TRUE, adaptive rescaling}
-  \item{init.theta}{The initial value of \code{theta} for \code{family="negbin"}. This is set to \code{NULL} since version 0.3-24.} 
+  \item{init.theta}{A positive initial value of \code{theta} for
+    \code{family="negbin"}. If supplied, it takes precedence over
+    \code{start$theta}.}
   \item{theta.fixed}{Logical value only used for \code{family="negbin"}. If \code{TRUE} and \code{init.theta} is provided with a numeric value > 0, then \code{init.theta} is not updated. 
-      If \code{theta.fixed=FALSE}, then \code{init.theta} will be updated. In this case, if \code{init.theta=NULL}, its initial value is computed with intercept-only zero-inflated negbin model. }
+      If \code{theta.fixed=FALSE}, then \code{init.theta} will be updated. If
+      it is \code{NULL}, \code{start$theta} is used when supplied; otherwise
+      the initial value is estimated from an intercept-only model. When theta
+      is fixed, any supplied \code{start$theta} must agree with \code{init.theta}.}
 \item{EM}{Using \code{EM} algorithm. Not implemented otherwise}
 \item{convtype}{convergency type, default is for count component only for speedy computation} 
 \item{maxit.em}{Maximum number of EM algorithm}

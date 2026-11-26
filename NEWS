@@ -343,3 +343,5 @@
     misleading parallel trace warnings (issue #8)
   o manage parallel workers in cv.glmregNB and glmregNB without changing the
     caller's foreach backend, and clean up socket workers on errors (issue #9)
+  o honor init.theta and supplied starting coefficients in zipath; use the
+    requested fixed negative-binomial dispersion throughout the path (issue #10)

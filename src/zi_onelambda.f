@@ -28,22 +28,53 @@ C     outputs: betax, b0_x, betaz, b0z, theta, start_count_act, start_zero_act
      +     epsbino, theta, b0_x, b0z,yhat(n), d, del, theta0, penval,
      +     x_act(n, m_count_act), z_act(n, m_zero_act), pll_old, pll,
      +     start_count_act(m_count_act+1), start_zero_act(m_zero_act+1),
-     +     betax(m_count_act), betaz(m_zero_act), los_old,los
+     +     betax(m_count_act), betaz(m_zero_act), los_old,los,
+     +     zero_offset(n),penalty_count(m_count_act),
+     +     penalty_zero(m_zero_act),sum_penalty
       external :: dpois, dnbinom, gfunc, ziloss
 
       stopit = 0
+      do ii=1,n
+         zero_offset(ii)=0.0D0
+      enddo
+C     Match the penalty-factor normalization used by glmreg_fit_fortran.
+      if(m_count_act.GT.0)then
+         sum_penalty=sum(penaltyfactor_count_act)
+         if(sum_penalty.GT.0.0D0)then
+            do ii=1,m_count_act
+               penalty_count(ii)=lambda_count*
+     +              penaltyfactor_count_act(ii)*m_count_act/sum_penalty
+            enddo
+         else
+            penalty_count=0.0D0
+         endif
+      endif
+      if(m_zero_act.GT.0)then
+         sum_penalty=sum(penaltyfactor_zero_act)
+         if(sum_penalty.GT.0.0D0)then
+            do ii=1,m_zero_act
+               penalty_zero(ii)=lambda_zero*penaltyfactor_zero_act(ii)
+     +              *m_zero_act/sum_penalty
+            enddo
+         else
+            penalty_zero=0.0D0
+         endif
+      endif
       k = 1
       d = 10
       call gfunc(mustart_count, n, family,epsbino,etastart_count)
       call gfunc(mustart_zero, n, 2, 0.0D0, etastart_zero)
-      call ziloss(n, y, offsetx, offsetz, weights, etastart_count,
-     +     etastart_zero, family, theta, los_old)
-      call penGLM(betax, m_count_act, 
-     +     lambda_count*penaltyfactor_count_act, 
+C     The predictors obtained from mustart already include offsets.
+      call ziloss(n, y, zero_offset, zero_offset, weights,
+     +     etastart_count, etastart_zero, family, theta, los_old)
+      penval = 0.0D0
+      if(m_count_act.GT.0) call penGLM(start_count_act(2), m_count_act,
+     +     penalty_count,
      +     alpha_count, gam_count, penalty, penval)
       pll_old=los_old - penval
-      call penGLM(betaz, m_zero_act, 
-     +     lambda_zero*penaltyfactor_zero_act, 
+      penval = 0.0D0
+      if(m_zero_act.GT.0) call penGLM(start_zero_act(2), m_zero_act,
+     +     penalty_zero,
      +     alpha_zero, gam_zero, penalty, penval)
       pll_old=pll_old - penval
  500  if(d .GT. del .AND. k .LE. iter)then
@@ -112,14 +143,14 @@ C         call gfunc(mustart_zero, n, 2, 0.0D0, etastart_zero)
                start_zero_act(j+1)=betaz(j)
  1100       continue
          endif
-         call ziloss(n, y, offsetx, offsetz, weights, etastart_count,
-     +        etastart_zero, family, theta, los)
+         call ziloss(n, y, zero_offset, zero_offset, weights,
+     +        etastart_count, etastart_zero, family, theta, los)
          call penGLM(betax, m_count_act, 
-     +        lambda_count*penaltyfactor_count_act, 
+     +        penalty_count,
      +        alpha_count, gam_count, penalty, penval)
          pll=los - penval
          call penGLM(betaz, m_zero_act, 
-     +        lambda_zero*penaltyfactor_zero_act, 
+     +        penalty_zero,
      +        alpha_zero, gam_zero, penalty, penval)
          pll=pll - penval
          d=abs((pll-pll_old)/pll_old)

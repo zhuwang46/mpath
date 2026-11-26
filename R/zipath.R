@@ -76,14 +76,20 @@ zipath.matrix <- function(X, Z, Y, weights, offsetx=NULL, offsetz=NULL, ...){
 zipath_fit <- function(X, Z, Y, weights, offsetx, offsetz, standardize=TRUE, intercept=TRUE, family = c("poisson", "negbin", "geometric"), link = c("logit", "probit", "cloglog", "cauchit", "log"), penalty = c("enet", "mnet", "snet"), start = NULL, y = TRUE, x = FALSE, nlambda=100, lambda.count=NULL, lambda.zero=NULL, type.path=c("active", "nonactive"), penalty.factor.count=NULL, penalty.factor.zero=NULL, lambda.count.min.ratio=.0001, lambda.zero.min.ratio=.1, alpha.count=1, alpha.zero=alpha.count, gamma.count=3, gamma.zero=gamma.count, rescale=FALSE, init.theta=NULL, theta.fixed=FALSE, EM=TRUE, maxit.em=200, convtype=c("count", "both"), maxit= 1000, maxit.theta =10, reltol = 1e-5, thresh=1e-6, eps.bino=1e-5, shortlist=FALSE, trace=FALSE, ...)
 {
     family <- match.arg(family)
+    supplied.theta <- !is.null(init.theta)
     if(is.null(init.theta) && family=="negbin" && theta.fixed)
         stop("missing argument init.theta while family=='negbin' and theta.fixed is TRUE\n")
+    if (family == "negbin" && !is.null(init.theta) &&
+        (!is.numeric(init.theta) || length(init.theta) != 1L ||
+         !is.finite(init.theta) || init.theta <= 0))
+        stop("init.theta must be a single finite positive number")
     if(length(gamma.count) > 1 || length(gamma.zero) > 1)
         stop("gamma.count or gamma.zero must be a scalar")
     if(family=="geometric"){
         family <- "negbin"
         init.theta <- 1
         theta.fixed <- TRUE
+        supplied.theta <- TRUE
     }
     penalty <- match.arg(penalty)
     link <- match.arg(link)
@@ -442,6 +448,9 @@ zipath_fit <- function(X, Z, Y, weights, offsetx, offsetz, standardize=TRUE, int
 
     ## starting values
     if(!is.null(start)) {
+        if (!is.list(start)) stop("start must be a list of starting values")
+        if (link != "logit")
+            stop("user-supplied starting values currently require link='logit'")
         valid <- TRUE
         if(!("count" %in% names(start))) {
             valid <- FALSE
@@ -461,14 +470,24 @@ zipath_fit <- function(X, Z, Y, weights, offsetx, offsetz, standardize=TRUE, int
             valid <- FALSE
             warning("invalid starting values, wrong number of zero-inflation model coefficients")
         }
+        if (valid && (!is.numeric(start$count) || !is.numeric(start$zero) ||
+                      any(!is.finite(start$count)) || any(!is.finite(start$zero))))
+            stop("starting coefficients must be finite numeric values")
         if(family == "negbin") {
-            if(!("theta" %in% names(start))) start$theta <- 1
-            start <- list(count = start$count, zero = start$zero, theta = as.vector(start$theta[1]))
+            if (!is.null(start$theta) &&
+                (!is.numeric(start$theta) || length(start$theta) != 1L ||
+                 !is.finite(start$theta) || start$theta <= 0))
+                stop("start$theta must be a single finite positive number")
+            if (theta.fixed && !is.null(start$theta) &&
+                !isTRUE(all.equal(as.double(start$theta), as.double(init.theta))))
+                stop("start$theta must agree with init.theta when theta.fixed=TRUE")
+            start <- list(count = start$count, zero = start$zero, theta = start$theta)
         } else {
             start <- list(count = start$count, zero = start$zero)
         }
         if(!valid) start <- NULL
     }
+    user.start <- start
     if(!is.null(lambda.count) && !is.null(lambda.zero)){
         if(length(lambda.count) != length(lambda.zero))
             stop("length of lambda.count must be the same as lambda.zero\n")
@@ -506,10 +525,12 @@ zipath_fit <- function(X, Z, Y, weights, offsetx, offsetz, standardize=TRUE, int
     else weightsnow <- weights
     fit0 <- zeroinfl(Y~1+offset(offsetx)|1+offset(offsetz), weights=weightsnow, dist=family)
     if(family=="negbin" && is.null(init.theta))
-            init.theta <- fit0$theta
+        init.theta <- if (!is.null(user.start$theta)) user.start$theta else fit0$theta
+    if (family == "negbin" && (!is.finite(init.theta) || init.theta <= 0))
+        stop("cannot obtain a finite positive initial theta; supply init.theta")
 ### find solution of intercept model with family = negbin and fixed theta parameter, and replace the estimates for fit0
     ## ML estimation of theta
-    if(family=="negbin" && theta.fixed) {
+    if(family=="negbin" && (theta.fixed || supplied.theta || !is.null(user.start$theta))) {
         #if(is.null(init.theta)){
         #    init.theta <- fit0$theta
         #}
@@ -647,14 +668,42 @@ zipath_fit <- function(X, Z, Y, weights, offsetx, offsetz, standardize=TRUE, int
         model_count <- list(coefficients = c(fit0$coefficients$count, rep(0, dim(Xnew)[2])), fitted.values=predict(fit0, type="count"))
         model_zero <- list(coefficients = c(fit0$coefficients$zero, rep(0, dim(Znew)[2])), fitted.values=predict(fit0, type="zero"))
     }
+    if (!is.null(user.start)) {
+        count.start <- as.double(user.start$count)
+        zero.start <- as.double(user.start$zero)
+        if (!intercept && (count.start[1L] != 0 || zero.start[1L] != 0))
+            stop("starting intercepts must be zero when intercept=FALSE")
+        if (standardize) {
+            if (kx > 1L) {
+                adjustment <- sum(meanx * count.start[-1L])
+                if (!intercept && adjustment != 0)
+                    stop("starting count coefficients cannot be centered with intercept=FALSE")
+                count.start[1L] <- count.start[1L] + adjustment
+                count.start[-1L] <- count.start[-1L] * normx
+                count.start[-1L][constantx] <- 0
+            }
+            if (kz > 1L) {
+                adjustment <- sum(meanz * zero.start[-1L])
+                if (!intercept && adjustment != 0)
+                    stop("starting zero coefficients cannot be centered with intercept=FALSE")
+                zero.start[1L] <- zero.start[1L] + adjustment
+                zero.start[-1L] <- zero.start[-1L] * normz
+                zero.start[-1L][constantz] <- 0
+            }
+        }
+        model_count <- list(coefficients = count.start,
+                            fitted.values = exp(drop(X %*% count.start) + offsetx))
+        model_zero <- list(coefficients = zero.start,
+                           fitted.values = linkinv(drop(Z %*% zero.start) + offsetz))
+        if (any(!is.finite(model_count$fitted.values)) || any(model_count$fitted.values <= 0) ||
+            any(!is.finite(model_zero$fitted.values)))
+            stop("starting coefficients produce non-finite fitted values")
+    }
     start <- list(count = model_count$coefficients, zero = model_zero$coefficients)
     vcov <- vector("list", length=nlambda)
-    if(family == "negbin"){
-        #if(!theta.fixed)
-        #    start$theta <- fit0$theta
-        #else start$theta <- init.theta
-    }
-    if(is.null(start$theta)) start$theta <- if (has.free) initial.theta else 1
+    if (family == "negbin")
+        start$theta <- if (has.free && !supplied.theta && is.null(user.start$theta)) initial.theta else init.theta
+    else start$theta <- 1
     if(active==1 && (kx == 1 || kz == 1))
         warnings("type.path='active' is not implemented when count model or zero model is intercept-only, and the model is fitted with type.path='nonactive'.\n")
     if(active==1 && kx > 1 && kz > 1)
@@ -771,6 +820,17 @@ zipath_fit <- function(X, Z, Y, weights, offsetx, offsetz, standardize=TRUE, int
     }
     if(family != "negbin")  theta <- NULL
     else names(theta) <- lambda.count
+    # Expose starting coefficients on the same original scale as coef().
+    if (standardize) {
+        if (kx > 1L) {
+            start$count[-1L] <- start$count[-1L] / normx
+            start$count[1L] <- start$count[1L] - sum(meanx * start$count[-1L])
+        }
+        if (kz > 1L) {
+            start$zero[-1L] <- start$zero[-1L] / normz
+            start$zero[1L] <- start$zero[1L] - sum(meanz * start$zero[-1L])
+        }
+    }
     rownames(coefc) <- names(start$count) <- colnames(X)
     rownames(coefz) <- names(start$zero) <- colnames(Z)
     if(nlambda > 1){
