@@ -52,7 +52,9 @@ glmregNB(formula, data, weights, offset=NULL, nlambda = 100, lambda=NULL,
   \item{trace}{If \code{TRUE}, fitting progress is reported}
  \item{start, etastart, mustart, \dots}{ arguments for the \code{link{glmreg}} function}
  \item{init.theta}{ initial scaling parameter \code{theta}}
- \item{theta.fixed}{Estimate scale parameter theta? Default is FALSE. Note, the algorithm may become slow. In this case, one may use \code{glmreg} function with \code{family="negbin"}, and a fixed \code{theta}}.
+ \item{theta.fixed}{If \code{TRUE}, use the supplied \code{theta0} values
+    instead of estimating dispersion. The default is \code{FALSE}. A constant
+    response among positive-weight observations requires a fixed dispersion.}
  \item{theta0}{initial scale parameter vector theta, with length \code{nlambda} if \code{theta.fixed=TRUE}. Default is NULL}
 \item{convex}{Calculate index for which objective function ceases to
     be locally convex? Default is FALSE and only useful if \code{penalty="mnet" or "snet"}.}

@@ -31,7 +31,7 @@ glmregNB <- function(formula, data, weights, offset=NULL, nlambda=100, lambda=NU
     ## null model support
     X <- if (!is.empty.model(Terms)) model.matrix(Terms, mf, contrasts) else matrix(,NROW(Y),0)
     w <- model.weights(mf)
-    nm <- dim(X[,-1])
+    nm <- dim(X[,-1,drop=FALSE])
     nobs <- n <- nm[1]
     nvars <- m <- nm[2]
     if(is.null(penalty.factor))
@@ -40,13 +40,17 @@ glmregNB <- function(formula, data, weights, offset=NULL, nlambda=100, lambda=NU
     if(!length(w)) w <- weights <- rep(1, nrow(mf))
     else w <- weights
     if(any(w < 0)) stop("negative weights not allowed")
+    observed <- Y[w > 0]
+    if (!length(observed)) stop("at least one observation must have positive weight")
+    if (!theta.fixed && all(observed == observed[1L]))
+        stop("cannot initialize negative-binomial dispersion from a constant response; use theta.fixed=TRUE with a specified theta0", call. = FALSE)
     offset <- model.offset(mf)
     ## these allow starting values to be expressed in terms of other vars.
     mustart <- model.extract(mf, "mustart")
     etastart <- model.extract(mf, "etastart")
 ### thoughts: use glm.nb to estimate intercept-only model which can take care of theta estimate 
     if(is.null(lambda)){
-        lmax <- findlam(x=X[,-1], y=Y, weights=weights, family="negbin", theta=NULL, w=NULL, z=NULL, alpha=alpha, penalty.factor=penalty.factor, standardize=standardize)
+        lmax <- findlam(x=X[,-1,drop=FALSE], y=Y, weights=weights, family="negbin", theta=NULL, w=NULL, z=NULL, alpha=alpha, penalty.factor=penalty.factor, standardize=standardize)
         lpath <- seq(log(lmax), log(lambda.min.ratio * lmax), length.out=nlambda)
         lambda <- exp(lpath)
     }
@@ -55,7 +59,7 @@ glmregNB <- function(formula, data, weights, offset=NULL, nlambda=100, lambda=NU
     if(standardize){
         wt <- weights/sum(weights)
         one <- rep(1, length(Y))
-        Xnew <- X[,-1]
+        Xnew <- X[,-1,drop=FALSE]
         if(dim(Xnew)[2] > 0){
             xx <- Xnew
             meanx <- drop(wt %*% Xnew)
@@ -70,8 +74,8 @@ glmregNB <- function(formula, data, weights, offset=NULL, nlambda=100, lambda=NU
     pll <- matrix(NA, ncol=nlambda, nrow=maxit)
     b0 <- tht <- nulldev <- resdev <- rep(NA, nlambda)                           
     convout <- twologlik <- rep(NA, nlambda)
+    inner_converged <- rep(NA, nlambda)
     if(parallel){
-        warning("trace argument is ignored since parallel=TRUE")
         cl <- parallel::makeCluster(n.cores)
         registerDoParallel(cl)
         fitall <- foreach(k=1:nlambda) %dopar%{
@@ -84,9 +88,14 @@ glmregNB <- function(formula, data, weights, offset=NULL, nlambda=100, lambda=NU
                 glm.fitter <- stats::glm.fit
             }
             if(is.null(mustart) || missing(init.theta)){
-                fit <- glm.nb(Y ~ 1, weights=weights)
-                mu <- fit$fitted.values
-                th <- fit$theta
+                if (theta.fixed) {
+                    mu <- rep(max(weighted.mean(Y, w), .Machine$double.eps), n)
+                    th <- theta0[k]
+                } else {
+                    fit <- glm.nb(Y ~ 1, weights=weights)
+                    mu <- fit$fitted.values
+                    th <- fit$theta
+                }
             }
             else{
                 mu <- mustart
@@ -100,7 +109,7 @@ glmregNB <- function(formula, data, weights, offset=NULL, nlambda=100, lambda=NU
             converged <- FALSE                                    
             while((iter <- iter + 1) <= maxit.theta && !converged){
                 eta <- log(mu)
-                fit <- glmreg_fit(x=X[,-1], y=Y, weights=w, start = start, etastart=eta, mustart = mu, offset=offset, lambda=lambda[k],alpha=alpha,gamma=gamma,rescale=rescale, standardize=standardize, penalty.factor = penalty.factor, thresh=thresh, maxit=maxit, eps=eps, family="negbin", theta=th, trace=trace, penalty=penalty)
+                fit <- glmreg_fit(x=X[,-1,drop=FALSE], y=Y, weights=w, start = start, etastart=eta, mustart = mu, offset=offset, lambda=lambda[k],alpha=alpha,gamma=gamma,rescale=rescale, standardize=standardize, penalty.factor = penalty.factor, thresh=thresh, maxit=maxit, eps=eps, family="negbin", theta=th, trace=trace, penalty=penalty)
                 t0 <- th
                 mu <- fit$fitted.values
                 if(!theta.fixed){
@@ -120,7 +129,8 @@ glmregNB <- function(formula, data, weights, offset=NULL, nlambda=100, lambda=NU
                 converged <- abs((Lm0 - Lm)/d1) + abs(del/d2) < 1e-8
             }
             Lm <- loglik(n, th, mu, Y, w)
-            fit$converged <- converged
+            fit$inner.converged <- isTRUE(as.logical(fit$converged))
+            fit$converged <- converged && fit$inner.converged
             fit$twologlik <- 2 * Lm
             fit$th <- th
             fit
@@ -133,6 +143,7 @@ glmregNB <- function(formula, data, weights, offset=NULL, nlambda=100, lambda=NU
             b0[k] <- fitall[[k]]$b0
             fitted[,k] <- fitall[[k]]$fitted
             convout[k] <- fitall[[k]]$converged
+            inner_converged[k] <- fitall[[k]]$inner.converged
             twologlik[k] <- fitall[[k]]$twologlik
             nulldev[k] <- fitall[[k]]$nulldev
             resdev[k] <- fitall[[k]]$resdev
@@ -158,9 +169,14 @@ glmregNB <- function(formula, data, weights, offset=NULL, nlambda=100, lambda=NU
                     glm.fitter <- stats::glm.fit
                 }
                 if(is.null(mustart) || missing(init.theta)){
-                    fit <- glm.nb(Y ~ 1, weights=weights)
-                    mu <- fit$fitted.values
-                    th <- fit$theta
+                    if (theta.fixed) {
+                        mu <- rep(max(weighted.mean(Y, w), .Machine$double.eps), n)
+                        th <- theta0[k]
+                    } else {
+                        fit <- glm.nb(Y ~ 1, weights=weights)
+                        mu <- fit$fitted.values
+                        th <- fit$theta
+                    }
                 }
                 else{
                     mu <- mustart
@@ -177,7 +193,7 @@ glmregNB <- function(formula, data, weights, offset=NULL, nlambda=100, lambda=NU
             converged <- FALSE
             while((iter <- iter + 1) <= maxit.theta && !converged){
                 eta <- log(mu)
-                fit <- glmreg_fit(x=X[,-1], y=Y, weights=w, start = start, etastart=eta, mustart = mu, offset=offset, lambda=lambda[k],alpha=alpha,gamma=gamma,        rescale=rescale, standardize=standardize, penalty.factor = penalty.factor, thresh=thresh, maxit=maxit, eps=eps, family="negbin", theta=th, trace=trace,        penalty=penalty)
+                fit <- glmreg_fit(x=X[,-1,drop=FALSE], y=Y, weights=w, start = start, etastart=eta, mustart = mu, offset=offset, lambda=lambda[k],alpha=alpha,gamma=gamma,        rescale=rescale, standardize=standardize, penalty.factor = penalty.factor, thresh=thresh, maxit=maxit, eps=eps, family="negbin", theta=th, trace=trace,        penalty=penalty)
                 t0 <- th
                 mu <- fit$fitted.values
                 if(!theta.fixed){
@@ -214,7 +230,8 @@ glmregNB <- function(formula, data, weights, offset=NULL, nlambda=100, lambda=NU
             nulldev[k] <- fit$nulldev
             resdev[k] <- fit$resdev
             if(trace) pll[,k] <- fit$pll
-            convout[k] <- converged
+            inner_converged[k] <- isTRUE(as.logical(fit$converged))
+            convout[k] <- converged && inner_converged[k]
             fitted[,k] <- fit$fitted.values
             k <- k + 1
         }
@@ -243,8 +260,8 @@ glmregNB <- function(formula, data, weights, offset=NULL, nlambda=100, lambda=NU
     fit$xlevels <- .getXlevels(Terms, mf)
     fit$method <- method
     fit$offset <- fit$offset
-    if(is.null(colnames(X[,-1]))) varnames <- paste("V", 1:ncol(X[,-1]), sep="")
-    else varnames <- colnames(X[,-1])
+    if(is.null(colnames(X[,-1,drop=FALSE]))) varnames <- paste("V", 1:ncol(X[,-1,drop=FALSE]), sep="")
+    else varnames <- colnames(X[,-1,drop=FALSE])
     dimnames(beta) <- list(varnames, round(lambda, digits=4))
     fit$beta <- beta
     fit$b0 <- matrix(b0, nrow=1)
@@ -257,7 +274,11 @@ glmregNB <- function(formula, data, weights, offset=NULL, nlambda=100, lambda=NU
         fit$pll <- pll
     else fit$pll <- NULL
     fit$theta <- as.vector(tht)
+    if (any(!inner_converged))
+        warning("glmreg fitting did not converge for ",
+                sum(!inner_converged), " lambda value(s)", call. = FALSE)
     fit$converged <- convout
+    fit$inner.converged <- inner_converged
     fit
 }
 

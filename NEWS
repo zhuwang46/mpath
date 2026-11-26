@@ -338,3 +338,6 @@
 
   o fix zero penalty factors in zipath automatic lambda paths and use the
     nonactive solver for unpenalized predictors (issue #7)
+  o improve numerical stability of count-model fitting for highly skewed
+    observations and correct cv.glmregNB contrasts, fold labels, and
+    misleading parallel trace warnings (issue #8)

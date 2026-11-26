@@ -35,12 +35,15 @@ C     eta, mu
       implicit none
       integer standardize, trace, penalty, maxit, i, j, jj, nmid, n, 
      +     family, m,converged,convmid, satu, intercept,
-     +     rescale,activeset(m), jk, ii
+     +     rescale,activeset(m), jk, ii, backtrack, valid, cisnan
       double precision x(n,m),y(n), mu(n), z(n), eta(n), wt(n), w(n), 
      +     del,olddev,weights(n),yold(n), 
      +     thresh, nulldev, dev, theta, thetaold, wtw(n),lamk(m),alpha, 
      +     gam, eps, beta(m), betaold(m), b0, b0old, yhat(n), ep, 
-     +     pll(maxit), offset(n),lower(m),upper(m)
+     +     pll(maxit), offset(n),lower(m),upper(m),
+     +     betatry(m),b0try,oldmu(n),oldeta(n),oldobj,newobj,
+     +     oldpen,newpen,penscale,stepsize,oldfitdev,trialeta
+      external cisnan
 
       do 5 jj=1, maxit
          pll(jj)=0
@@ -63,6 +66,29 @@ C     eta, mu
          
          b0old = b0
          thetaold = theta
+C     For count models evaluate the current penalized objective before the
+C     IRLS update. Extreme observations can make a full Newton step diverge.
+         if(family.EQ.3 .OR. family.EQ.4)then
+            do i=1,n
+               oldeta(i)=b0old+offset(i)
+               do ii=1,jk
+                  j=activeset(ii)
+                  oldeta(i)=oldeta(i)+x(i,j)*betaold(j)
+               enddo
+               if(cisnan(oldeta(i)).NE.0 .OR.
+     +              abs(oldeta(i)).GT.huge(oldeta(i)) .OR.
+     +              oldeta(i).GT.600.0D0)then
+                  call rexit("non-finite or excessively large starting
+     + linear predictor in count model")
+               endif
+            enddo
+            call linkinv(n,oldeta,family,oldmu)
+            call deveval(n,yold,oldmu,theta,weights,family,oldfitdev)
+            call penGLM(betaold,m,lamk,alpha,gam,penalty,oldpen)
+            penscale=1.0D0
+            if(standardize.EQ.1) penscale=sum(weights)
+            oldobj=oldfitdev+2.0D0*penscale*oldpen
+         endif
          call glmlink(n,mu,family,theta,w, ep)
          call zeval(n, y, eta, mu, w, family, z)
 
@@ -74,6 +100,55 @@ C     eta, mu
      +        standardize, intercept,family,beta, b0, lamk, alpha, gam, 
      +        weights,trace,nmid, rescale, converged, theta,
      +        pll(jj),activeset, jk,lower,upper)
+C     Backtrack count-model proposals until their linear predictors are
+C     representable and the penalized deviance does not increase. This is
+C     essential for highly skewed counts: an undamped IRLS step can send
+C     exp(eta) to infinity or return a misleadingly converged fit.
+         if(family.EQ.3 .OR. family.EQ.4)then
+            call DCOPY(m,beta,1,betatry,1)
+            b0try=b0
+            stepsize=1.0D0
+            valid=0
+            do backtrack=1,60
+               b0=b0old+stepsize*(b0try-b0old)
+               do j=1,m
+                  beta(j)=betaold(j)+stepsize*(betatry(j)-betaold(j))
+               enddo
+               valid=1
+               do i=1,n
+                  trialeta=b0+offset(i)
+                  do ii=1,jk
+                     j=activeset(ii)
+                     trialeta=trialeta+x(i,j)*beta(j)
+                  enddo
+                  if(cisnan(trialeta).NE.0 .OR.
+     +                 abs(trialeta).GT.huge(trialeta) .OR.
+     +                 trialeta.GT.600.0D0) valid=0
+                  eta(i)=trialeta
+               enddo
+               if(valid.EQ.1)then
+                  call linkinv(n,eta,family,mu)
+                  call deveval(n,yold,mu,theta,weights,family,dev)
+                  call penGLM(beta,m,lamk,alpha,gam,penalty,newpen)
+                  newobj=dev+2.0D0*penscale*newpen
+                  if(cisnan(newobj).NE.0 .OR.
+     +                 abs(newobj).GT.huge(newobj)) valid=0
+                  if(penalty.EQ.1 .AND. valid.EQ.1)then
+                     if(newobj.GT.oldobj+1.0D-10*(1.0D0+
+     +                    abs(oldobj))) valid=0
+                  endif
+               endif
+               if(valid.EQ.1) exit
+               stepsize=stepsize*0.5D0
+            enddo
+            if(valid.EQ.0)then
+               call rexit("count-model iteration failed to find a finite
+     + acceptable step; consider increasing regularization")
+            endif
+            if(stepsize.LT.1.0D0) converged=0
+            if(intercept.EQ.1 .AND. abs(b0-b0old).GT.
+     +           thresh*max(1.0D0,abs(b0old))) converged=0
+         endif
          do 220 i = 1, n
             yhat(i) = b0
             do 230 ii = 1, jk
@@ -87,7 +162,11 @@ C        call DCOPY(n, yhat, 1, eta, 1)
             eta(i) = yhat(i)
  350     continue
          call linkinv(n, eta, family, mu)
-         olddev = dev
+         if(family.EQ.3 .OR. family.EQ.4)then
+            olddev=oldfitdev
+         else
+            olddev=dev
+         endif
 C     compute deviance dev
          call deveval(n, yold, mu, theta, weights, family, dev)
          if(family .EQ. 2)then
@@ -165,7 +244,13 @@ C     parameter (ep=1e-5)
 C     else if(mu(i) .GT. 1000)then  ### changed 5/29/15
 C     mu(i) = 1000
             endif
-            w(i) = mu(i)/(1 + 1/theta * mu(i))
+C     Use the algebraically equivalent form that avoids overflow when
+C     mu/theta is very large.
+            if(mu(i).GT.theta)then
+               w(i) = theta/(1.0D0 + theta/mu(i))
+            else
+               w(i) = mu(i)/(1.0D0 + mu(i)/theta)
+            endif
          endif
  10   continue
       
@@ -185,6 +270,8 @@ C     mu
       implicit none
       integer n, family, i
       double precision eta(n), mu(n)
+      integer cisnan
+      external cisnan
       
       do 10 i= 1, n
          if(family.EQ.1)then
@@ -199,7 +286,11 @@ C     mu
 C         else if(family.EQ.3)then
 C            mu(i) = exp(eta(i))
          else if(family.EQ.3 .OR. family.EQ.4)then
-            if(eta(i) .LT. log(1e-5))then
+            if(cisnan(eta(i)).NE.0 .OR.
+     +           eta(i).GT.log(huge(1.0D0))-1.0D0)then
+               call rexit("count-model linear predictor is too large
+     + to compute a finite mean")
+            else if(eta(i) .LT. log(1e-5))then
                mu(i) = 1e-5
             else
 C     else if(eta(i) .LT. log(1000D0))then  ### changed 5/29/15
@@ -287,15 +378,9 @@ C     dev
             dev=dev+2*(weights(i)*(y(i)*dlog(max(1.0D0,y(i))/mu(i))-
      +           (y(i)+theta)*dlog((y(i)+theta)/(mu(i) + theta)))) 
          endif
-         if(cisnan(dev).NE.0) then
-             call intpr("dev is NA in Fortran src/deveval, check if some
-     + columns of x have the same values", -1, 1, 1)
-            call intpr("i=", -1, i, 1)
-            call dblepr("y(i)=", -1, y(i), 1)
-            call dblepr("mu(i)=", -1, mu(i), 1)
-            call dblepr("theta=", -1, theta, 1)
-            call dblepr("dev=", -1, dev, 1)
-            exit
+         if(cisnan(dev).NE.0 .OR. abs(dev).GT.huge(dev)) then
+             call rexit("model deviance is not finite; check the
+     + data and consider increasing regularization")
          endif
  10   continue
       return

@@ -139,6 +139,18 @@ C     set maxit=1, and have a complete cycle through all the variables
      +              lower,upper)
                call find_activeset(m, beta, eps, activesetold, jkold)
 C     it is possible, jk=0 if beta=0, like intercept-only model
+C     A zero active set does not imply the intercept has converged. Continue
+C     the full iteration and recheck the coefficients before stopping.
+               if(jkold.EQ.0 .AND. convmid.EQ.0 .AND.
+     +              (family.EQ.3 .OR. family.EQ.4))then
+                  call midloopGLM(n,m,x,y,yold,weights,mu,eta,offset,
+     +                 family,penalty,lamk,alpha,gam,theta,rescale,
+     +                 standardize,intercept,
+     +                 eps,maxit,thresh,nulldev,wt,beta,b0,yhat,
+     +                 dev,trace,convmid,satu,ep,pll,fullset,m,
+     +                 lower,upper)
+                  call find_activeset(m,beta,eps,activesetold,jkold)
+               endif
                if(jkold .EQ. 0)then
                   convact=1
                   exit

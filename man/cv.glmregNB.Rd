@@ -6,7 +6,7 @@
 \usage{
 cv.glmregNB(formula, data, weights, offset=NULL, lambda=NULL, nfolds=10, 
             foldid, plot.it=TRUE, se=TRUE, n.cores=2, trace=FALSE, 
-            parallel=FALSE, ...)
+            parallel=FALSE, contrasts=NULL, ...)
 }
 \arguments{
   \item{formula}{symbolic description of the model}
@@ -19,15 +19,17 @@ cv.glmregNB(formula, data, weights, offset=NULL, lambda=NULL, nfolds=10,
   \item{nfolds}{number of folds - default is 10. Although \code{nfolds}
     can be as large as the sample size (leave-one-out CV), it is not
     recommended for large datasets. Smallest value allowable is \code{nfolds=3}}
-  \item{foldid}{an optional vector of values between 1 and \code{nfold}
-    identifying what fold each observation is in. If supplied,
-    \code{nfold} can be missing.}
+  \item{foldid}{An optional vector of positive integer fold labels, one per
+    observation, or a list of held-out observation indices that partitions the
+    data. At least three nonempty folds are required. If supplied, the number
+    of folds is determined by \code{foldid}.}
  \item{plot.it}{ a logical value, to plot the estimated log-likelihood values if \code{TRUE}. }
   \item{se}{ a logical value, to plot with standard errors. }
  \item{n.cores}{The number of CPU cores to use. The cross-validation loop
   will attempt to send different CV folds off to different cores.}
  \item{trace}{a logical value, print progress of cross-validation or not}
  \item{parallel}{a logical value, parallel computing or not}
+ \item{contrasts}{An optional list of contrasts passed to the model matrix.}
 \item{\dots}{Other arguments that can be passed to \code{glmregNB}.}
 }
 \details{The function runs \code{glmregNB} \code{nfolds}+1 times; the
@@ -60,7 +62,7 @@ cv.glmregNB(formula, data, weights, offset=NULL, lambda=NULL, nfolds=10,
 Zhu Wang, Shuangge Ma, Michael Zappitelli, Chirag Parikh, Ching-Yun Wang and Prasad Devarajan (2014)
 \emph{Penalized Count Data Regression with Application to Hospital Stay after Pediatric Cardiac Surgery}, \emph{Statistical Methods in Medical Research}. 2014 Apr 17. [Epub ahead of print] 
 }
-\author{Zhu Wang <wangz1@uthscsa.edu>}
+\author{Zhu Wang <zwang145@uthsc.edu>}
 \seealso{\code{\link{glmregNB}} and \code{\link{plot}}, \code{\link{predict}}, and \code{\link{coef}} methods for \code{"cv.glmregNB"} object.}
 \examples{
 \dontrun{

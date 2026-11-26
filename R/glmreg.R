@@ -172,14 +172,79 @@ glmreg_fit <- function(x, y, weights, start=NULL, etastart=NULL, mustart=NULL, o
     }
     ### ref: McCullagh and Nelder, 2nd edition, 1989, page 121
     ### compute intercept-only model
-    if(family!="negbin") tmpres <- glm(y~rep(1, nobs)-1, weights=weights, offset=offset, family=family)
-    else tmpres <- glm(y~rep(1, nobs)-1, weights=weights, offset=offset, family=negative.binomial(theta))
-    eta0 <- predict(tmpres, type="link")
-    mu0 <- predict(tmpres, type="response")
+    if (family %in% c("poisson", "negbin")) {
+        # stats::glm can fail or fail to converge on highly skewed counts
+        # before the regularized iteration begins. Keep its usual result
+        # when valid; otherwise solve the intercept-only score directly.
+        null_warnings <- list()
+        tmpres <- withCallingHandlers(
+            tryCatch(glm(y ~ rep(1, nobs) - 1, weights = weights,
+                         offset = offset,
+                         family = if (family == "negbin") negative.binomial(theta) else family),
+                     error = function(e) NULL),
+            warning = function(w) {
+                null_warnings[[length(null_warnings) + 1L]] <<- w
+                invokeRestart("muffleWarning")
+            })
+        valid_null <- !is.null(tmpres) && isTRUE(tmpres$converged) &&
+            all(is.finite(tmpres$linear.predictors)) &&
+            all(is.finite(tmpres$fitted.values)) && all(tmpres$fitted.values > 0)
+        if (valid_null) {
+            for (w in null_warnings) warning(w)
+            eta0 <- predict(tmpres, type = "link")
+            mu0 <- predict(tmpres, type = "response")
+        } else {
+            if (any(!is.finite(y)) || any(y < 0) || any(!is.finite(weights)) ||
+                any(weights < 0) || sum(weights) <= 0 || any(!is.finite(offset)) ||
+                !is.finite(theta))
+                stop("cannot initialize the count model: check response, weights, offset and theta")
+            null_weights <- weights / sum(weights)
+            mean_y <- sum(null_weights * y)
+            if (mean_y <= 0) {
+                intercept0 <- log(1e-5) - max(offset)
+            } else if (family == "poisson") {
+                positive <- null_weights > 0
+                log_terms <- log(null_weights[positive]) + offset[positive]
+                peak <- max(log_terms)
+                intercept0 <- log(mean_y) - peak - log(sum(exp(log_terms - peak)))
+            } else {
+                # The NB intercept score is strictly decreasing; writing it
+                # using plogis avoids overflow for large means and offsets.
+                score <- function(b) {
+                    log_ratio <- b + offset - log(theta)
+                    sum(null_weights * (y * plogis(-log_ratio) -
+                                        theta * plogis(log_ratio)))
+                }
+                center <- log(mean_y) - sum(null_weights * offset)
+                width <- 1
+                lower <- center - width
+                upper <- center + width
+                for (i in seq_len(60L)) {
+                    if (is.finite(lower) && is.finite(upper) &&
+                        score(lower) >= 0 && score(upper) <= 0) break
+                    width <- width * 2
+                    lower <- center - width
+                    upper <- center + width
+                }
+                if (!is.finite(lower) || !is.finite(upper) ||
+                    score(lower) < 0 || score(upper) > 0)
+                    stop("cannot initialize the negative-binomial intercept")
+                intercept0 <- uniroot(score, c(lower, upper), tol = 1e-10)$root
+            }
+            eta0 <- intercept0 + offset
+            if (any(!is.finite(eta0)) || any(eta0 > 600))
+                stop("cannot initialize the count model with finite means")
+            mu0 <- exp(pmax(eta0, log(1e-5)))
+        }
+    } else {
+        tmpres <- glm(y~rep(1, nobs)-1, weights=weights, offset=offset, family=family)
+        eta0 <- predict(tmpres, type="link")
+        mu0 <- predict(tmpres, type="response")
+    }
     nulldev <- .Fortran("deveval",
                         n=as.integer(n),
                         y=as.double(y),
-                        mu=as.double(rep(mu0, n)),
+                        mu=as.double(mu0),
                         theta=as.double(theta),
                         weights=as.double(weights),
                         family=as.integer(famtype),
@@ -209,7 +274,7 @@ glmreg_fit <- function(x, y, weights, start=NULL, etastart=NULL, mustart=NULL, o
                       n=as.integer(n),
                       y=as.double(y),
                       eta=as.double(eta),
-                      mu=as.double(rep(mu,n)),
+                      mu=as.double(mu),
                       w=as.double(rep(w,n)),
                       family=as.integer(famtype),
                       z=as.double(rep(0,n)),
