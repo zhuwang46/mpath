@@ -333,3 +333,8 @@
                CHANGES in `mpath' VERSION 0.4-2.22 (02-14-2022)
   
   o change COCO to IRCO which best describes the algorithm and is easier to understand
+
+               CHANGES in `mpath' (development version)
+
+  o fix zero penalty factors in zipath automatic lambda paths and use the
+    nonactive solver for unpenalized predictors (issue #7)

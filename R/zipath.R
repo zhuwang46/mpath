@@ -475,6 +475,26 @@ zipath_fit <- function(X, Z, Y, weights, offsetx, offsetz, standardize=TRUE, int
         else nlambda <- length(lambda.count)
     } else if(!is.null(lambda.count)) nlambda <- length(lambda.count)
     else if(!is.null(lambda.zero)) nlambda <- length(lambda.zero)
+    check_penalty_factor <- function(value, size, name) {
+        if (is.null(value)) return(rep(1, size))
+        if (!is.numeric(value) || length(value) != size ||
+            any(!is.finite(value)) || any(value < 0))
+            stop(name, " must contain one finite nonnegative value per predictor")
+        as.double(value)
+    }
+    penalty.factor.count <- check_penalty_factor(penalty.factor.count, ncol(Xnew), "penalty.factor.count")
+    penalty.factor.zero <- check_penalty_factor(penalty.factor.zero, ncol(Znew), "penalty.factor.zero")
+    free.count <- which(penalty.factor.count == 0)
+    free.zero <- which(penalty.factor.zero == 0)
+    has.free <- length(free.count) > 0L || length(free.zero) > 0L
+    if (has.free && !intercept)
+        stop("zero penalty factors currently require intercept=TRUE")
+    if (has.free && linkstr != "logit")
+        stop("zero penalty factors currently require link='logit'")
+    if (has.free && active == 1) {
+        warning("zero penalty factors require the nonactive path; using type.path='nonactive'", call. = FALSE)
+        active <- 0
+    }
     if(family == "negbin") theta <- rep(NA, nlambda)
     coefc <- matrix(NA, nrow=dim(X)[2], ncol=nlambda) 
     coefz <- matrix(NA, nrow=dim(Z)[2], ncol=nlambda) 
@@ -520,8 +540,65 @@ zipath_fit <- function(X, Z, Y, weights, offsetx, offsetz, standardize=TRUE, int
         penalty.factor.zero <- rep(1, dim(Znew)[2])
         lambda.zero <- rep(0, nlambda)
     }
+    # Fit the null model jointly over all unpenalized predictors.  Lambda
+    # maxima must be evaluated at this fit, not at an intercept-only model.
+    if (has.free) {
+        initial <- c(fit0$coefficients$count[1], rep(0, kx - 1L),
+                     fit0$coefficients$zero[1], rep(0, kz - 1L))
+        if (family == "negbin") initial <- c(initial, log(init.theta))
+        free <- c(1L, free.count + 1L, kx + 1L, kx + 1L + free.zero)
+        if (family == "negbin" && !theta.fixed) free <- c(free, kx + kz + 1L)
+        objective <- function(par) {
+            value <- initial
+            value[free] <- par
+            loglikfun(value)
+        }
+        gradient <- function(par) {
+            value <- initial
+            value[free] <- par
+            result <- gradfun(value)
+            # gradNegBin's theta entry is not weighted; differentiate the
+            # weighted likelihood for that one parameter instead.
+            if (family == "negbin" && !theta.fixed) {
+                j <- length(value)
+                h <- 1e-5 * max(1, abs(value[j]))
+                plus <- minus <- value
+                plus[j] <- plus[j] + h
+                minus[j] <- minus[j] - h
+                result[j] <- (loglikfun(plus) - loglikfun(minus))/(2*h)
+            }
+            result[free]
+        }
+        null.fit <- optim(initial[free], objective, gradient, method = "BFGS",
+                          control = list(fnscale = -1, maxit = max(1000L, maxit),
+                                         reltol = min(reltol, 1e-10)))
+        if (!is.finite(null.fit$value) || any(!is.finite(null.fit$par)))
+            stop("could not obtain a finite unpenalized initial model")
+        if (null.fit$convergence != 0)
+            warning("the unpenalized initial model did not converge", call. = FALSE)
+        initial[free] <- null.fit$par
+        initial.count <- initial[seq_len(kx)]
+        initial.zero <- initial[kx + seq_len(kz)]
+        initial.theta <- if (family == "negbin") exp(initial[kx + kz + 1L]) else 1
+    }
                                         #for poisson family or negbin using KKT conditions to compute lambda_count and lambda_zero values
     if(is.null(lambda.count) || is.null(lambda.zero)){
+        if (has.free) {
+            score <- gradfun(initial)
+            score.count <- abs(score[seq_len(kx)][-1L])
+            score.zero <- abs(score[kx + seq_len(kz)][-1L])
+            max_penalized <- function(score, factor, free, alpha) {
+                eligible <- setdiff(seq_along(factor), free)
+                if (!length(eligible)) return(0)
+                # glmreg_fit_fortran normalizes penalty factors over all
+                # predictors, excluding the intercept.
+                scaled <- factor * length(factor) / sum(factor)
+                alpha.for.path <- if (alpha == 0) 0.001 else alpha
+                max(score[eligible] / (scaled[eligible] * alpha.for.path))
+            }
+            lmax <- list(lmax_count = max_penalized(score.count, penalty.factor.count, free.count, alpha.count),
+                         lmax_zero = max_penalized(score.zero, penalty.factor.zero, free.zero, alpha.zero))
+        } else {
         if(family=="poisson") thetanow <- 10000
             else thetanow <- init.theta
             #if(family=="negbin")
@@ -547,6 +624,7 @@ zipath_fit <- function(X, Z, Y, weights, offsetx, offsetz, standardize=TRUE, int
                          lmax_count=as.double(1),
                          lmax_zero=as.double(1),
                          PACKAGE="mpath")
+        }
         if(is.null(lambda.count) && kx > 1 && is.finite(lmax$lmax_count) && lmax$lmax_count > 0){
             lpath <- seq(log(lmax$lmax_count), log(lambda.count.min.ratio * lmax$lmax_count), length.out=nlambda)
             lambda.count <- exp(lpath)
@@ -560,8 +638,15 @@ zipath_fit <- function(X, Z, Y, weights, offsetx, offsetz, standardize=TRUE, int
         else if(is.null(lambda.zero) && (kz == 1 || (is.finite(lmax$lmax_zero) && lmax$lmax_zero == 0))) lambda.zero <- rep(0, nlambda)
         else if(is.null(lambda.zero)) stop("cannot compute a finite zero lambda sequence; supply lambda.zero")
     }
-    model_count <- list(coefficients = c(fit0$coefficients$count, rep(0, dim(Xnew)[2])), fitted.values=predict(fit0, type="count"))
-    model_zero <- list(coefficients = c(fit0$coefficients$zero, rep(0, dim(Znew)[2])), fitted.values=predict(fit0, type="zero"))
+    if (has.free) {
+        model_count <- list(coefficients = initial.count,
+                            fitted.values = exp(drop(X %*% initial.count) + offsetx))
+        model_zero <- list(coefficients = initial.zero,
+                           fitted.values = linkinv(drop(Z %*% initial.zero) + offsetz))
+    } else {
+        model_count <- list(coefficients = c(fit0$coefficients$count, rep(0, dim(Xnew)[2])), fitted.values=predict(fit0, type="count"))
+        model_zero <- list(coefficients = c(fit0$coefficients$zero, rep(0, dim(Znew)[2])), fitted.values=predict(fit0, type="zero"))
+    }
     start <- list(count = model_count$coefficients, zero = model_zero$coefficients)
     vcov <- vector("list", length=nlambda)
     if(family == "negbin"){
@@ -569,7 +654,7 @@ zipath_fit <- function(X, Z, Y, weights, offsetx, offsetz, standardize=TRUE, int
         #    start$theta <- fit0$theta
         #else start$theta <- init.theta
     }
-    if(is.null(start$theta)) start$theta <- 1
+    if(is.null(start$theta)) start$theta <- if (has.free) initial.theta else 1
     if(active==1 && (kx == 1 || kz == 1))
         warnings("type.path='active' is not implemented when count model or zero model is intercept-only, and the model is fitted with type.path='nonactive'.\n")
     if(active==1 && kx > 1 && kz > 1)

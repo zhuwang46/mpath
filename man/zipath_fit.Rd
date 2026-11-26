@@ -52,13 +52,20 @@ zipath_fit(X, Z, Y, weights, offsetx, offsetz, standardize=TRUE,
   \item{lambda.zero}{A user supplied \code{lambda.zero} sequence.}
 \item{type.path}{solution path with default value \code{"active"}, which is less time computing than \code{"nonactive"}. If \code{type.path="nonactive"}, no active set for each element of the lambda sequence and cycle through all the predictor variables. 
     If \code{type.path="active"}, then cycle through only the active set, then cycle through all the variables for the same penalty parameter. See details below.} 
-  \item{penalty.factor.count, penalty.factor.zero}{These are numeric vectors with the same length as predictor variables. that multiply \code{lambda.count, lambda.zero}, respectively, to allow differential shrinkage of coefficients. Can be 0 for some variables, which implies
-    no shrinkage, and that variable is always included in the
-    model. Default is same shrinkage for all variables.}
+  \item{penalty.factor.count, penalty.factor.zero}{Finite nonnegative numeric
+    vectors, one value per predictor in the respective component. A zero value
+    leaves that coefficient unpenalized. When any factor is zero, an intercept
+    and the logit zero-component link are required, and the nonactive path is
+    used (with a warning if the active path was requested). For automatic
+    lambda sequences, the initial model jointly fits the unpenalized predictors.
+    The default is equal shrinkage for all predictors.}
  \item{lambda.count.min.ratio, lambda.zero.min.ratio}{Smallest value for \code{lambda.count} 
        and \code{lambda.zero}, respectively, as a fraction of
     \code{lambda.max}, the (data derived) entry value (i.e. the smallest
-  value for which all coefficients are zero except the intercepts).
+  value for which all penalized coefficients are zero; the intercepts and
+  coefficients with zero penalty factors remain unpenalized). When any penalty
+  factor is zero, the automatic path for a pure ridge component
+  (\code{alpha=0}) uses \code{alpha=0.001} to obtain a finite starting value.
 Note, there is a closed formula for \code{lambda.max} for \code{penalty="enet"}. If \code{rescale=TRUE}, \code{lambda.max} is the same for \code{penalty="mnet" or "snet"}. Otherwise, some modifications are required. In the current implementation, for small \code{gamma} value, the square root of the computed \code{lambda.zero[1]} is used when \code{penalty="mnet" or "snet"}. 
 }
   \item{alpha.count}{The elastic net mixing parameter for the count part of model. The default value 1 implies no L_2 penalty, as in LASSO.}  
